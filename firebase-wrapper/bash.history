@@ -1,0 +1,47 @@
+$ node -v
+v20.10.0
+
+$ npm -v
+10.2.3
+
+# set up package.json
+$ npm init -y
+Wrote to .../auth/firebase-wrapper/package.json:
+{
+  "name": "firebase-wrapper",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
+
+# install typescript compiler (.ts -> .js) as a development tool only
+$ npm install --save-dev typescript
+
+added 1 package, and audited 2 packages in 6s
+
+found 0 vulnerabilities
+
+$ npx tsc --init
+Created a new tsconfig.json with:  TS
+  target: es2016
+  module: commonjs
+  strict: true
+  esModuleInterop: true
+  skipLibCheck: true
+  forceConsistentCasingInFileNames: true
+
+You can learn more at https://aka.ms/tsconfig
+
+# edited tsconfig.json for es6, ./src & ./dist dirs
+
+# compile
+$ npx tsc
+
+# compile when changes are detected
+$ npx tsc --watch
