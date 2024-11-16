@@ -45,3 +45,7 @@ $ npx tsc
 
 # compile when changes are detected
 $ npx tsc --watch
+
+$ npm install firebase
+# note: no need for $(npm uninstall @types/firebase) since firebase version
+# 9 now includes ts types in the main package
