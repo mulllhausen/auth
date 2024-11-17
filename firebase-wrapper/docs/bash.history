@@ -49,3 +49,8 @@ $ npx tsc --watch
 $ npm install firebase
 # note: no need for $(npm uninstall @types/firebase) since firebase version
 # 9 now includes ts types in the main package
+
+# install to run typescript files using node
+$ npm install --save-dev ts-node
+
+$ npm install --save-dev prettier

@@ -1,6 +1,6 @@
-import { initializeApp } from "firebase/app";
+import { initializeApp, FirebaseOptions } from "firebase/app";
 
-const firebaseConfig = {
+const firebaseConfig: FirebaseOptions = {
     apiKey: "AIzaSyD1j1JxchDa4kCjIVxKPpZTFZDc9a084fw",
     authDomain: "496b-120-20-35-80.ngrok-free.app",
     databaseURL: "https://half-now-default-rtdb.asia-southeast1.firebasedatabase.app",
