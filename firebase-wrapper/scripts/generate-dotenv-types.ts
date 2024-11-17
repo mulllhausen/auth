@@ -22,9 +22,9 @@ ${dotenv2Types(env)}
 
 fs.writeFileSync("./src/.env.d.ts", dotenvDTsContent, "utf8");
 console.log(".env.d.ts has been generated.");
-
 function dotenv2Types(parsedDotenvVars: dotenv.DotenvParseOutput): string {
+    const tab: string = "    ";
     return Object.keys(parsedDotenvVars)
-        .map((key) => `        ${key}: string;`)
+        .map((key) => `${tab}${key}: string;`)
         .join("\n");
 }
