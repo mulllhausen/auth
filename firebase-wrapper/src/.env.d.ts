@@ -1,7 +1,4 @@
-/// <reference types="node" />
-
-declare namespace NodeJS {
-    interface ProcessEnv {
+export interface ProcessEnv {
         FIREBASE_API_KEY: string;
         FIREBASE_AUTH_DOMAIN: string;
         FIREBASE_DB_URL: string;
@@ -10,7 +7,6 @@ declare namespace NodeJS {
         FIREBASE_MESSAGING_SENDER_ID: string;
         FIREBASE_APP_ID: string;
         FIREBASE_MEASUREMENT_ID: string;
-    }
+        PROJECT_DOMAIN: string;
+        PROJECT_NAME: string;
 }
-
-export {};

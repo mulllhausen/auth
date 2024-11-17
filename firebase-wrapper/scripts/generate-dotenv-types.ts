@@ -15,22 +15,16 @@ if (!env) {
     process.exit(1);
 }
 
-const dotenvDTsContent = `/// <reference types="node" />
-
-declare namespace NodeJS {
-    interface ProcessEnv {
+const dotenvDTsContent = `export interface ProcessEnv {
 ${dotenv2Types(env)}
-    }
 }
-
-export {};
 `;
 
-fs.writeFileSync(".env.d.ts", dotenvDTsContent, "utf8");
+fs.writeFileSync("./src/.env.d.ts", dotenvDTsContent, "utf8");
 console.log(".env.d.ts has been generated.");
 
 function dotenv2Types(parsedDotenvVars: dotenv.DotenvParseOutput): string {
     return Object.keys(parsedDotenvVars)
         .map((key) => `        ${key}: string;`)
-        .join("\n")
+        .join("\n");
 }
