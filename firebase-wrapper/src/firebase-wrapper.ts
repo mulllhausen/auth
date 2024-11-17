@@ -9,6 +9,8 @@ import {
     sendSignInLinkToEmail,
     ActionCodeSettings,
     isSignInWithEmailLink,
+    signInWithEmailLink,
+    onAuthStateChanged,
 } from "firebase/auth";
 import { ProcessEnv } from "./.env.d";
 
@@ -17,7 +19,7 @@ type SupportedProviders =
     | GoogleAuthProvider
     | EmailAuthProvider;
 
-class FirebaseAuthService {
+export class FirebaseAuthService {
     private _window: Window;
     private env: ProcessEnv;
     private auth!: Auth;
@@ -27,7 +29,12 @@ class FirebaseAuthService {
     private emailActionCodeSettings!: ActionCodeSettings;
     localStorageEmailAddressKey = "firebaseEmailAddress";
 
-    constructor(window: Window, env: ProcessEnv) {
+    constructor(
+        window: Window,
+        env: ProcessEnv,
+        signedInCallback: Function,
+        signedOutCallback: Function,
+    ) {
         this._window = window;
         this.env = env;
 
@@ -47,11 +54,27 @@ class FirebaseAuthService {
         };
         this.firebase = initializeApp(firebaseOptions);
         this.auth = getAuth(this.firebase);
+        this.setupListeners(signedInCallback, signedOutCallback);
     }
 
     public SetupForEmailSign(emailAddress: string, emailPassword: string) {
         this.emailAddress = emailAddress;
         this.emailPassword = emailPassword;
+    }
+
+    private setupListeners(
+        signedInCallback: Function,
+        signedOutCallback: Function,
+    ) {
+        onAuthStateChanged(this.auth, (user) => {
+            if (user) {
+                // User is signed in, see docs for a list of available properties
+                // https://firebase.google.com/docs/reference/js/firebase.User
+                signedInCallback(user);
+            } else {
+                signedOutCallback(user);
+            }
+        });
     }
 
     public async Signin(provider: SupportedProviders) {
@@ -82,22 +105,47 @@ class FirebaseAuthService {
     }
 
     public async EmailSignInStep2() {
-        if (isSignInWithEmailLink(this.auth, this._window.localStorage.href)) {
-            let email = this._window.localStorage.getItem(
-                this.localStorageEmailAddressKey,
+        if (!isSignInWithEmailLink(this.auth, this._window.localStorage.href)) {
+            // the current page url was not a sign-in-with-email-link.
+            // no worries. no action needed
+            return;
+        }
+        let email = this._window.localStorage.getItem(
+            this.localStorageEmailAddressKey,
+        );
+        if (email) {
+            this.emailAddress = email.toString();
+        } else {
+            // User opened the link on a different device. To prevent session fixation
+            // attacks, ask the user to provide the associated email again. For example:
+            email = window.prompt(
+                `Please provide your email address to finalise signing-in to ${this.env.PROJECT_NAME}`,
             );
             if (email) {
                 this.emailAddress = email.toString();
-            } else {
-                // User opened the link on a different device. To prevent session fixation
-                // attacks, ask the user to provide the associated email again. For example:
-                email = window.prompt(
-                    `Please provide your email address to finalise signing-in to ${this.env.PROJECT_NAME}`,
-                );
-                throw new Error("No email address found in local storage.");
             }
         }
+        // The client SDK will parse the code from the link for you.
+        signInWithEmailLink(
+            this.auth,
+            this.emailAddress,
+            this._window.location.href,
+        )
+            .then((result) => {
+                // Clear email from storage.
+                window.localStorage.removeItem(
+                    this.localStorageEmailAddressKey,
+                );
+                // You can access the new user via result.user
+                // Additional user info profile not available via:
+                // result.additionalUserInfo.profile == null
+                // You can check if the user is new or existing:
+                // result.additionalUserInfo.isNewUser
+            })
+            .catch((error) => {
+                console.log(error);
+                // Some error occurred, you can inspect the code: error.code
+                // Common errors could be invalid email and invalid or expired OTPs.
+            });
     }
 }
-
-export default FirebaseAuthService;
