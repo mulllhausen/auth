@@ -5,7 +5,9 @@
     "main": "index.js",
     "type": "module",
     "scripts": {
-        "build": "tsc && prettier --write ./dist/*.js",
+        "dev": "vite",
+        "build": "tsc --emitDeclarationOnly && vite build",
+        "preview": "vite preview",
         "generate-dotenv-types": "node --import ./scripts/loader.mjs ./scripts/generate-dotenv-types.ts",
         "test": "echo \"Error: no test specified\" && exit 1"
     },

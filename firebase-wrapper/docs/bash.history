@@ -54,3 +54,6 @@ $ npm install firebase
 $ npm install --save-dev ts-node
 
 $ npm install --save-dev prettier
+
+# install and set up vite js bundler
+$ npm install vite --save-dev
