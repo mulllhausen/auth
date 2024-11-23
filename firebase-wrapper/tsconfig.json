@@ -26,7 +26,7 @@
 
         /* Modules */
         "module": "es6" /*"commonjs",*/ /* Specify what module code is generated. */,
-        "rootDir": "." /* Specify the root folder within your source files. */,
+        "rootDir": "src" /* Specify the root folder within your source files. */,
         "moduleResolution": "node10" /* Specify how TypeScript looks up a file from a given module specifier. */,
         // "baseUrl": "./",                                  /* Specify the base directory to resolve non-relative module names. */
         // "paths": {},                                      /* Specify a set of entries that re-map imports to additional lookup locations. */
@@ -108,6 +108,6 @@
         "skipLibCheck": true /* Skip type checking all .d.ts files. */,
         "pretty": true /* pretty error messages*/
     },
-    "include": ["src", "vite.config.ts"],
+    "include": ["src"],
     "exclude": ["scripts"] /* do not copy these files into outDir */
 }
