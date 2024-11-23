@@ -11,13 +11,15 @@ import {
     isSignInWithEmailLink,
     signInWithEmailLink,
     onAuthStateChanged,
+    AuthProvider,
 } from "firebase/auth";
 import { ProcessEnv } from "./.env.d";
 
-type SupportedProviders =
-    | FacebookAuthProvider
-    | GoogleAuthProvider
-    | EmailAuthProvider;
+export enum AuthProviders {
+    Email = "email",
+    Google = "google",
+    Facebook = "facebook",
+}
 
 export class FirebaseAuthService {
     private _window: Window;
@@ -57,7 +59,10 @@ export class FirebaseAuthService {
         this.setupListeners(signedInCallback, signedOutCallback);
     }
 
-    public SetupForEmailSign(emailAddress: string, emailPassword: string) {
+    public SetupForEmailSign(
+        emailAddress: string,
+        emailPassword: string,
+    ): void {
         this.emailAddress = emailAddress;
         this.emailPassword = emailPassword;
     }
@@ -65,7 +70,7 @@ export class FirebaseAuthService {
     private setupListeners(
         signedInCallback: Function,
         signedOutCallback: Function,
-    ) {
+    ): void {
         onAuthStateChanged(this.auth, (user) => {
             if (user) {
                 // User is signed in, see docs for a list of available properties
@@ -77,14 +82,23 @@ export class FirebaseAuthService {
         });
     }
 
-    public async Signin(provider: SupportedProviders) {
-        if (provider instanceof EmailAuthProvider) {
-            await this.emailSignInStep1();
-        } else {
-            signInWithRedirect(this.auth, provider);
+    public async Signin(provider: AuthProviders): Promise<void> {
+        switch (provider) {
+            case AuthProviders.Email:
+                await this.emailSignInStep1();
+                break;
+            case AuthProviders.Google:
+                signInWithRedirect(this.auth, new GoogleAuthProvider());
+                break;
+            case AuthProviders.Facebook:
+                signInWithRedirect(this.auth, new FacebookAuthProvider());
+                break;
+            default:
+                throw new Error(`unsupported provider for sign-in ${provider}`);
         }
     }
-    private async emailSignInStep1() {
+
+    private async emailSignInStep1(): Promise<void> {
         sendSignInLinkToEmail(
             this.auth,
             this.emailAddress,

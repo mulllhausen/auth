@@ -1,14 +1,55 @@
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
+var __awaiter =
+    (this && this.__awaiter) ||
+    function (thisArg, _arguments, P, generator) {
+        function adopt(value) {
+            return value instanceof P
+                ? value
+                : new P(function (resolve) {
+                      resolve(value);
+                  });
+        }
+        return new (P || (P = Promise))(function (resolve, reject) {
+            function fulfilled(value) {
+                try {
+                    step(generator.next(value));
+                } catch (e) {
+                    reject(e);
+                }
+            }
+            function rejected(value) {
+                try {
+                    step(generator["throw"](value));
+                } catch (e) {
+                    reject(e);
+                }
+            }
+            function step(result) {
+                result.done
+                    ? resolve(result.value)
+                    : adopt(result.value).then(fulfilled, rejected);
+            }
+            step(
+                (generator = generator.apply(thisArg, _arguments || [])).next(),
+            );
+        });
+    };
 import { initializeApp } from "firebase/app";
-import { getAuth, signInWithRedirect, EmailAuthProvider, sendSignInLinkToEmail, isSignInWithEmailLink, signInWithEmailLink, onAuthStateChanged, } from "firebase/auth";
+import {
+    getAuth,
+    signInWithRedirect,
+    FacebookAuthProvider,
+    GoogleAuthProvider,
+    sendSignInLinkToEmail,
+    isSignInWithEmailLink,
+    signInWithEmailLink,
+    onAuthStateChanged,
+} from "firebase/auth";
+export var AuthProviders;
+(function (AuthProviders) {
+    AuthProviders["Email"] = "email";
+    AuthProviders["Google"] = "google";
+    AuthProviders["Facebook"] = "facebook";
+})(AuthProviders || (AuthProviders = {}));
 export class FirebaseAuthService {
     constructor(window, env, signedInCallback, signedOutCallback) {
         this.localStorageEmailAddressKey = "firebaseEmailAddress";
@@ -39,74 +80,85 @@ export class FirebaseAuthService {
     setupListeners(signedInCallback, signedOutCallback) {
         onAuthStateChanged(this.auth, (user) => {
             if (user) {
-                // User is signed in, see docs for a list of available properties
-                // https://firebase.google.com/docs/reference/js/firebase.User
                 signedInCallback(user);
-            }
-            else {
+            } else {
                 signedOutCallback(user);
             }
         });
     }
     Signin(provider) {
         return __awaiter(this, void 0, void 0, function* () {
-            if (provider instanceof EmailAuthProvider) {
-                yield this.emailSignInStep1();
-            }
-            else {
-                signInWithRedirect(this.auth, provider);
+            switch (provider) {
+                case AuthProviders.Email:
+                    yield this.emailSignInStep1();
+                    break;
+                case AuthProviders.Google:
+                    signInWithRedirect(this.auth, new GoogleAuthProvider());
+                    break;
+                case AuthProviders.Facebook:
+                    signInWithRedirect(this.auth, new FacebookAuthProvider());
+                    break;
+                default:
+                    throw new Error(
+                        `unsupported provider for sign-in ${provider}`,
+                    );
             }
         });
     }
     emailSignInStep1() {
         return __awaiter(this, void 0, void 0, function* () {
-            sendSignInLinkToEmail(this.auth, this.emailAddress, this.emailActionCodeSettings)
+            sendSignInLinkToEmail(
+                this.auth,
+                this.emailAddress,
+                this.emailActionCodeSettings,
+            )
                 .then(() => {
-                // The link was successfully sent. Inform the user.
-                // Save the email locally so we don't need to ask the user for it again
-                // if they open the link on the same device.
-                this._window.localStorage.setItem(this.localStorageEmailAddressKey, this.emailAddress);
-            })
+                    this._window.localStorage.setItem(
+                        this.localStorageEmailAddressKey,
+                        this.emailAddress,
+                    );
+                })
                 .catch((error) => {
-                console.error("error when signing in by email", error);
-            });
+                    console.error("error when signing in by email", error);
+                });
         });
     }
     EmailSignInStep2() {
         return __awaiter(this, void 0, void 0, function* () {
-            if (!isSignInWithEmailLink(this.auth, this._window.localStorage.href)) {
-                // the current page url was not a sign-in-with-email-link.
-                // no worries. no action needed
+            if (
+                !isSignInWithEmailLink(
+                    this.auth,
+                    this._window.localStorage.href,
+                )
+            ) {
                 return;
             }
-            let email = this._window.localStorage.getItem(this.localStorageEmailAddressKey);
+            let email = this._window.localStorage.getItem(
+                this.localStorageEmailAddressKey,
+            );
             if (email) {
                 this.emailAddress = email.toString();
-            }
-            else {
-                // User opened the link on a different device. To prevent session fixation
-                // attacks, ask the user to provide the associated email again. For example:
-                email = window.prompt(`Please provide your email address to finalise signing-in to ${this.env.PROJECT_NAME}`);
+            } else {
+                email = window.prompt(
+                    `Please provide your email address to finalise signing-in to ${this.env.PROJECT_NAME}`,
+                );
                 if (email) {
                     this.emailAddress = email.toString();
                 }
             }
-            // The client SDK will parse the code from the link for you.
-            signInWithEmailLink(this.auth, this.emailAddress, this._window.location.href)
+            signInWithEmailLink(
+                this.auth,
+                this.emailAddress,
+                this._window.location.href,
+            )
                 .then((result) => {
-                // Clear email from storage.
-                window.localStorage.removeItem(this.localStorageEmailAddressKey);
-                // You can access the new user via result.user
-                // Additional user info profile not available via:
-                // result.additionalUserInfo.profile == null
-                // You can check if the user is new or existing:
-                // result.additionalUserInfo.isNewUser
-            })
+                    window.localStorage.removeItem(
+                        this.localStorageEmailAddressKey,
+                    );
+                })
                 .catch((error) => {
-                console.log(error);
-                // Some error occurred, you can inspect the code: error.code
-                // Common errors could be invalid email and invalid or expired OTPs.
-            });
+                    console.log(error);
+                });
         });
     }
 }
