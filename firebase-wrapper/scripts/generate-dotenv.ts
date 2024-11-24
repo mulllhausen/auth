@@ -18,10 +18,11 @@ if (!env) {
 const dotenvDTsContent = `export interface ProcessEnv {
 ${dotenv2Types(env)}
 }
+export const env: ProcessEnv = ${JSON.stringify(env, null, 4)};
 `;
 
-fs.writeFileSync("./src/.env.d.ts", dotenvDTsContent, "utf8");
-console.log(".env.d.ts has been generated.");
+fs.writeFileSync("./src/.env.ts", dotenvDTsContent, "utf8");
+console.log(".env.ts has been generated.");
 function dotenv2Types(parsedDotenvVars: dotenv.DotenvParseOutput): string {
     const tab: string = "    ";
     return Object.keys(parsedDotenvVars)

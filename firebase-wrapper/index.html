@@ -1,14 +1,17 @@
 <!doctype html>
 <html>
     <head>
-        <title>typeScript test</title>
+        <title>firebase auth</title>
         <script type="module" src="./dist/firebase-wrapper.js"></script>
     </head>
     <body>
         <h1>login using firebase</h1>
-        <button>facebook</button>
-        <button>google</button>
-        <button>github</button>
-        <button>email</button>
+        <input class="email"></input>
+        <input class="password"></input>
+        <checkbox class="no-password">email me a link instead of using password</checkbox>
+        <button class="login" data-service-provider="facebook">facebook</button>
+        <button class="login" data-service-provider="google">google</button>
+        <button class="login" data-service-provider="github">github</button>
+        <button class="login" data-service-provider="email">email</button>
     </body>
 </html>

@@ -6,6 +6,7 @@ import {
     GoogleAuthProvider,
     EmailAuthProvider,
     Auth,
+    User,
     sendSignInLinkToEmail,
     ActionCodeSettings,
     isSignInWithEmailLink,
@@ -13,7 +14,7 @@ import {
     onAuthStateChanged,
     AuthProvider,
 } from "firebase/auth";
-import { ProcessEnv } from "./.env.d";
+import { ProcessEnv } from "./.env";
 
 export enum AuthProviders {
     Email = "email",
@@ -21,9 +22,27 @@ export enum AuthProviders {
     Facebook = "facebook",
 }
 
+export type DefaultAction = null;
+export const defaultAction: DefaultAction = null;
+
+export interface WrapperSettings {
+    loginButtonCssClass: string;
+    authProviderSettings: {
+        [key in AuthProviders]: {
+            loginButtonClicked:
+                | DefaultAction
+                | ((self: FirebaseAuthService, e: MouseEvent) => Promise<void>);
+        };
+    };
+    signedInCallback: (user: User) => void;
+    signedOutCallback: () => void;
+}
+
 export class FirebaseAuthService {
     private _window: Window;
+    _document: Document;
     private env: ProcessEnv;
+    private settings: WrapperSettings;
     private auth!: Auth;
     private firebase!: FirebaseApp;
     private emailAddress!: string;
@@ -31,14 +50,11 @@ export class FirebaseAuthService {
     private emailActionCodeSettings!: ActionCodeSettings;
     localStorageEmailAddressKey = "firebaseEmailAddress";
 
-    constructor(
-        window: Window,
-        env: ProcessEnv,
-        signedInCallback: Function,
-        signedOutCallback: Function,
-    ) {
+    constructor(window: Window, env: ProcessEnv, settings: WrapperSettings) {
         this._window = window;
+        this._document = window.document;
         this.env = env;
+        this.settings = settings;
 
         const firebaseOptions: FirebaseOptions = {
             apiKey: this.env.FIREBASE_API_KEY,
@@ -56,7 +72,31 @@ export class FirebaseAuthService {
         };
         this.firebase = initializeApp(firebaseOptions);
         this.auth = getAuth(this.firebase);
-        this.setupListeners(signedInCallback, signedOutCallback);
+        this.SetupEvents();
+        this.setupListeners();
+    }
+
+    private SetupEvents(): void {
+        const loginButtons = this._document.querySelectorAll(
+            this.settings.loginButtonCssClass,
+        );
+        if (!loginButtons) {
+            return;
+        }
+        for (const button of loginButtons) {
+            const tsButton = button as HTMLButtonElement;
+            const provider = tsButton.dataset.provider as AuthProviders;
+            const action =
+                this.settings.authProviderSettings[provider]
+                    ?.loginButtonClicked;
+            tsButton.addEventListener("click", async (e) => {
+                if (action === defaultAction) {
+                    await this.Signin(provider);
+                } else {
+                    await action(this, e);
+                }
+            });
+        }
     }
 
     public SetupForEmailSign(
@@ -67,17 +107,14 @@ export class FirebaseAuthService {
         this.emailPassword = emailPassword;
     }
 
-    private setupListeners(
-        signedInCallback: Function,
-        signedOutCallback: Function,
-    ): void {
+    private setupListeners(): void {
         onAuthStateChanged(this.auth, (user) => {
             if (user) {
                 // User is signed in, see docs for a list of available properties
                 // https://firebase.google.com/docs/reference/js/firebase.User
-                signedInCallback(user);
+                this.settings.signedInCallback(user);
             } else {
-                signedOutCallback(user);
+                this.settings.signedOutCallback();
             }
         });
     }
