@@ -14,7 +14,7 @@ import {
     onAuthStateChanged,
     AuthProvider,
 } from "firebase/auth";
-import { ProcessEnv } from "./.env";
+import { ProcessEnv } from "./dotenv";
 
 export enum AuthProviders {
     Email = "email",
@@ -46,6 +46,7 @@ export class FirebaseAuthService {
     private auth!: Auth;
     private firebase!: FirebaseApp;
     private emailAddress!: string;
+    private useLinkInsteadOfPassword!: boolean;
     private emailPassword!: string;
     private emailActionCodeSettings!: ActionCodeSettings;
     localStorageEmailAddressKey = "firebaseEmailAddress";
@@ -73,41 +74,40 @@ export class FirebaseAuthService {
         this.firebase = initializeApp(firebaseOptions);
         this.auth = getAuth(this.firebase);
         this.SetupEvents();
-        this.setupListeners();
+        this.setupFirebaseListeners();
     }
 
     private SetupEvents(): void {
         const loginButtons = this._document.querySelectorAll(
             this.settings.loginButtonCssClass,
         );
-        if (!loginButtons) {
-            return;
-        }
+        if (!loginButtons) return;
         for (const button of loginButtons) {
             const tsButton = button as HTMLButtonElement;
-            const provider = tsButton.dataset.provider as AuthProviders;
-            const action =
-                this.settings.authProviderSettings[provider]
-                    ?.loginButtonClicked;
+            const provider = tsButton.dataset.serviceProvider as AuthProviders;
+            const foundProvider = this.settings.authProviderSettings[provider];
+            let action;
+            if (foundProvider) action = foundProvider?.loginButtonClicked;
+            else action = this.serviceProviderNotFoundAction;
             tsButton.addEventListener("click", async (e) => {
-                if (action === defaultAction) {
-                    await this.Signin(provider);
-                } else {
-                    await action(this, e);
-                }
+                if (action === defaultAction) await this.Signin(provider);
+                else await action(this, e);
             });
         }
     }
 
     public SetupForEmailSign(
         emailAddress: string,
+        useLinkInsteadOfPassword: boolean,
         emailPassword: string,
-    ): void {
+    ): FirebaseAuthService {
         this.emailAddress = emailAddress;
+        this.useLinkInsteadOfPassword = useLinkInsteadOfPassword;
         this.emailPassword = emailPassword;
+        return this;
     }
 
-    private setupListeners(): void {
+    private setupFirebaseListeners(): void {
         onAuthStateChanged(this.auth, (user) => {
             if (user) {
                 // User is signed in, see docs for a list of available properties
@@ -136,23 +136,27 @@ export class FirebaseAuthService {
     }
 
     private async emailSignInStep1(): Promise<void> {
-        sendSignInLinkToEmail(
-            this.auth,
-            this.emailAddress,
-            this.emailActionCodeSettings,
-        )
-            .then(() => {
-                // The link was successfully sent. Inform the user.
-                // Save the email locally so we don't need to ask the user for it again
-                // if they open the link on the same device.
-                this._window.localStorage.setItem(
-                    this.localStorageEmailAddressKey,
-                    this.emailAddress,
-                );
-            })
-            .catch((error) => {
-                console.error("error when signing in by email", error);
-            });
+        if (this.useLinkInsteadOfPassword) {
+            sendSignInLinkToEmail(
+                this.auth,
+                this.emailAddress,
+                this.emailActionCodeSettings,
+            )
+                .then(() => {
+                    // The link was successfully sent. Inform the user.
+                    // Save the email locally so we don't need to ask the user for it again
+                    // if they open the link on the same device.
+                    this._window.localStorage.setItem(
+                        this.localStorageEmailAddressKey,
+                        this.emailAddress,
+                    );
+                })
+                .catch((error) => {
+                    console.error("error when signing in by email", error);
+                });
+        } else {
+            // TODO: sign in with email and password
+        }
     }
 
     public async EmailSignInStep2() {
@@ -198,5 +202,9 @@ export class FirebaseAuthService {
                 // Some error occurred, you can inspect the code: error.code
                 // Common errors could be invalid email and invalid or expired OTPs.
             });
+    }
+
+    serviceProviderNotFoundAction(self: FirebaseAuthService, e: MouseEvent) {
+        console.error(`Service provider not found`);
     }
 }

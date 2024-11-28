@@ -5,7 +5,7 @@ import {
     WrapperSettings,
     defaultAction,
 } from "./firebase-wrapper";
-import { env } from "./.env";
+import { env } from "./dotenv";
 
 const wrapperSettings: WrapperSettings = {
     loginButtonCssClass: "button.login",
@@ -19,31 +19,8 @@ const wrapperSettings: WrapperSettings = {
             loginButtonClicked: defaultAction,
         },
         [AuthProviders.Email]: {
-            loginButtonClicked: async (
-                _this: FirebaseAuthService,
-                e: MouseEvent,
-            ) => {
-                const email: string = (
-                    _this._document.querySelector(
-                        "input.email",
-                    ) as HTMLInputElement
-                )?.value;
-                if (email === undefined) {
-                    console.error("Email is undefined");
-                }
-                const password: string = (
-                    _this._document.querySelector(
-                        "input.password",
-                    ) as HTMLInputElement
-                )?.value;
-
-                if (password === undefined) {
-                    console.error("Password is undefined");
-                }
-
-                _this.SetupForEmailSign(email, password);
-                await _this.Signin(AuthProviders.Email);
-            },
+            loginButtonClicked: (self: FirebaseAuthService, e: MouseEvent) =>
+                handleEmailLogin(self, e),
         },
     },
 };
@@ -53,6 +30,45 @@ const firebaseAuthService = new FirebaseAuthService(
     env,
     wrapperSettings,
 );
+
+async function handleEmailLogin(
+    _firebaseService: FirebaseAuthService,
+    e: MouseEvent,
+): Promise<void> {
+    debugger;
+    const email: string = (
+        _firebaseService._document.querySelector(
+            "input.email",
+        ) as HTMLInputElement
+    )?.value;
+    if (email == null || email.trim() === "") {
+        console.error("Email is undefined");
+        return;
+    }
+
+    const useLinkInsteadOfPassword: boolean = (
+        _firebaseService._document.querySelector(
+            "input.no-password",
+        ) as HTMLInputElement
+    )?.checked;
+
+    const password: string = (
+        _firebaseService._document.querySelector(
+            "input.password",
+        ) as HTMLInputElement
+    )?.value;
+    if (
+        !useLinkInsteadOfPassword &&
+        (password == null || password.trim() === "")
+    ) {
+        console.error("Password is undefined");
+        return;
+    }
+
+    _firebaseService
+        .SetupForEmailSign(email, useLinkInsteadOfPassword, password)
+        .Signin(AuthProviders.Email);
+}
 
 function signedInCallback(user: User) {
     console.log("Signed in");
