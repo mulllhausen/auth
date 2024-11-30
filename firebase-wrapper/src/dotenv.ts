@@ -1,4 +1,5 @@
 export interface ProcessEnv {
+    BASE_PATH: string;
     FIREBASE_API_KEY: string;
     FIREBASE_AUTH_DOMAIN: string;
     FIREBASE_DB_URL: string;
@@ -11,6 +12,7 @@ export interface ProcessEnv {
     PROJECT_NAME: string;
 }
 export const env: ProcessEnv = {
+    "BASE_PATH": "/firebase-wrapper/dist/",
     "FIREBASE_API_KEY": "AIzaSyB95EOVd6k5ItdhRVDKmPuAJ8zBwVXtKxc",
     "FIREBASE_AUTH_DOMAIN": "auth.null.place",
     "FIREBASE_DB_URL": "unused in this project",
