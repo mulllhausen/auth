@@ -57,3 +57,6 @@ $ npm install --save-dev prettier
 
 # install and set up vite js bundler
 $ npm install vite --save-dev
+
+# make gitbash autocomplete npm run options
+$ wget https://github.com/scop/bash-completion/blob/main/bash_completion > /usr/etc/bash_completion

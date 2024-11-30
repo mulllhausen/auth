@@ -5,10 +5,11 @@
     "main": "index.js",
     "type": "module",
     "scripts": {
-        "dev": "vite",
-        "build": "tsc --emitDeclarationOnly && vite build",
+        "dev": "npm run generate-dotenv-debug && vite",
+        "build": "npm run generate-dotenv tsc --emitDeclarationOnly && vite build",
         "preview": "vite preview",
         "generate-dotenv": "node --import ./scripts/loader.mjs ./scripts/generate-dotenv.ts",
+        "generate-dotenv-debug": "echo in vscode press F5 && node --inspect-brk --import ./scripts/loader.mjs ./scripts/generate-dotenv.ts",
         "test": "echo \"Error: no test specified\" && exit 1"
     },
     "engines": {

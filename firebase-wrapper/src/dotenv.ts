@@ -11,15 +11,14 @@ export interface ProcessEnv {
     PROJECT_NAME: string;
 }
 export const env: ProcessEnv = {
-    FIREBASE_API_KEY: "AIzaSyD1j1JxchDa4kCjIVxKPpZTFZDc9a084fw",
-    FIREBASE_AUTH_DOMAIN: "496b-120-20-35-80.ngrok-free.app",
-    FIREBASE_DB_URL:
-        "https://half-now-default-rtdb.asia-southeast1.firebasedatabase.app",
-    FIREBASE_PROJECT_ID: "half-now",
-    FIREBASE_STORAGE_BUCKET: "half-now.appspot.com",
-    FIREBASE_MESSAGING_SENDER_ID: "1022216288188",
-    FIREBASE_APP_ID: "1:1022216288188:web:fbf335e1f0918eb1345db9",
-    FIREBASE_MEASUREMENT_ID: "G-04C5HYLHKH",
-    PROJECT_DOMAIN: "auth-test.null.place",
-    PROJECT_NAME: "Auth Test",
+    "FIREBASE_API_KEY": "AIzaSyB95EOVd6k5ItdhRVDKmPuAJ8zBwVXtKxc",
+    "FIREBASE_AUTH_DOMAIN": "auth.null.place",
+    "FIREBASE_DB_URL": "unused in this project",
+    "FIREBASE_PROJECT_ID": "auth-94762",
+    "FIREBASE_STORAGE_BUCKET": "unused in this project",
+    "FIREBASE_MESSAGING_SENDER_ID": "190381967079",
+    "FIREBASE_APP_ID": "1:190381967079:web:9436046b42e133ebf18442",
+    "FIREBASE_MEASUREMENT_ID": "G-QZB6RJE8ZS",
+    "PROJECT_DOMAIN": "auth.null.place",
+    "PROJECT_NAME": "Auth Test"
 };
