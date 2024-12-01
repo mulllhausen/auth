@@ -62,3 +62,6 @@ $ npm install vite --save-dev
 $ wget https://github.com/scop/bash-completion/blob/main/bash_completion > /usr/etc/bash_completion
 
 $ npm install --save-dev cross-env
+
+# install ngrok (https://dashboard.ngrok.com/get-started/setup/windows)
+# add to path in .bashrc

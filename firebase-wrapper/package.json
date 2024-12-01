@@ -8,10 +8,12 @@
         "dev": "npm run generate-dotenv && vite",
         "build": "npm run generate-dotenv tsc --emitDeclarationOnly && vite build && npm run postprocess-index-html",
         "preview": "vite preview",
-        "generate-dotenv": "node --import ./scripts/loader.mjs ./scripts/generate-dotenv.ts",
-        "generate-dotenv-debug": "echo in vscode press F5 && node --inspect-brk --import ./scripts/loader.mjs ./scripts/generate-dotenv.ts",
-        "postprocess-index-html": "node --import ./scripts/loader.mjs ./scripts/postprocess-index-html-hashes.ts",
-        "test": "echo \"Error: no test specified\" && exit 1"
+        "generate-dotenv": "npm run node-ts ./scripts/generate-dotenv.ts",
+        "postprocess-index-html": "npm run node-ts ./scripts/postprocess-index-html-hashes.ts",
+        "ngrok": "./scripts/ngrok.sh",
+        "test": "echo \"Error: no test specified\" && exit 1",
+        "node-ts": "node --import ./scripts/loader.mjs",
+        "node-ts-dev": "echo in vs-code press F5 && node --inspect-brk --import ./scripts/loader.mjs"
     },
     "engines": {
         "npm": ">=6.14.18",

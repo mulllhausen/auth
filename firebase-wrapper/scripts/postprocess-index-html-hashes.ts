@@ -1,9 +1,9 @@
 import * as fs from "fs";
 import * as path from "path";
 import * as crypto from "crypto";
+import dotenv from "dotenv";
 
-// note: if this were possible it would simplify this script a lot!
-//import { env } from "../src/dotenv.ts";
+dotenv.config();
 
 // loop over the <script> files referenced in index.html
 // calculate the hash for each file
@@ -14,7 +14,7 @@ const indexPath: string = path.join(distDir, "index.html");
 let indexHTML: string = fs.readFileSync(indexPath, "utf-8");
 
 indexHTML = indexHTML.replace(
-    /<(script.*)src="([^"]+)"(.*)><\/script>/g,
+    /<(script[^>]*)src="([^?\r\n"]+)[^"]*"([\s\S]*)><\/script>/g,
     (
         match: string,
         scriptTagEtc: string,
@@ -47,6 +47,9 @@ console.log("Updated index.html with query-string hashes.");
  * returns "/abc/def/ghi/jkl.js"
  */
 function mergeFilePaths(path1: string, path2: string): string {
+    // shortcut for now. may not work in furure?
+    return path.join(path1, path2.replace(process.env.BASE_PATH!, ""));
+
     path1 = path.normalize(path1);
     path2 = path.normalize(path2);
     let path2SoFar: string = "";

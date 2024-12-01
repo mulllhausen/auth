@@ -4,7 +4,7 @@ import { env } from "./src/dotenv";
 export default defineConfig({
     base: env.BASE_PATH,
     server: {
-        port: 3000, // localhost only
+        port: 7071, // localhost only
     },
     build: {
         outDir: "dist",
