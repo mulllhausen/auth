@@ -1,7 +1,8 @@
 # Firebase Auth
 
-Sign up for [Google Firebase](https://console.firebase.google.com) For local
-debugging, use [ngrok](https://ngrok.com).
+Sign up for [Google Firebase](https://console.firebase.google.com).
+
+For local debugging, use [ngrok](https://ngrok.com).
 
 ## Setting up ngrok
 
