@@ -33,7 +33,7 @@ export const env: ProcessEnv = ${JSON.stringify(mergedDotEnvConfig, null, 4)};
 
 const outputFile: string = "./src/dotenv.ts";
 fs.writeFileSync(outputFile, dotenvTsContent, "utf8");
-console.log(`{outputFile} has been generated.`);
+console.log(`${outputFile} has been generated.`);
 
 function loadDotEnvFile(
     dotenvFile: dotenvFiles,
