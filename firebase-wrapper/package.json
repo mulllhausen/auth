@@ -11,9 +11,9 @@
         "generate-dotenv": "npm run node-ts ./scripts/generate-dotenv.ts",
         "postprocess-index-html": "npm run node-ts ./scripts/postprocess-index-html-hashes.ts",
         "ngrok": "./scripts/ngrok.sh",
-        "test": "echo \"Error: no test specified\" && exit 1",
+        "test": "echo \"Error: no tests exist yet\" && exit 1",
         "node-ts": "node --import ./scripts/loader.mjs",
-        "node-ts-dev": "echo in vs-code press F5 && node --inspect-brk --import ./scripts/loader.mjs"
+        "node-ts-dev": "echo press F5 in vs-code && node --inspect-brk --import ./scripts/loader.mjs"
     },
     "engines": {
         "npm": ">=6.14.18",

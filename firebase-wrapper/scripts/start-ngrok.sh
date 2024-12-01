@@ -1,4 +1,4 @@
 #!/bin/bash
 
-tunnel=$(grep 'NGROK_DEV_TUNNEL_NAME[[:space:]]*=[[:space:]]*' .env.development | cut -d'=' -f2 | xargs)
+tunnel="$(./get-1-env.sh NGROK_DEV_TUNNEL_NAME)"
 ngrok start $tunnel
