@@ -1,0 +1,7 @@
+version: "2"
+authtoken: xxxxxxxxxxxx # get from ngrok dashboard. not required in .env
+tunnels:
+    my_laptop: # must match NGROK_DEV_TUNNEL_NAME in .env.development
+        labels:
+            - edge=xxxxxxxxxxxxxxx # get from ngrok dashboard. not required in .env
+        addr: http://localhost:7071 # always localhost. port must match VITE_PORT in .env.development

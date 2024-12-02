@@ -18,3 +18,5 @@ On Windows:
     1. Click `Start a Tunnel`
     1. Click `Start a tunnel from a config file`
     1. Copy-paste the yml into `%HOMEPATH%\AppData\Local\ngrok\ngrok.yml`
+    1. Populate `.env.development` with matching variables for the yml file as
+       per [these instructions](/firebase-wrapper/docs/ngrok.example.yml).

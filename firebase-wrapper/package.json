@@ -2,10 +2,11 @@
     "name": "firebase-wrapper",
     "version": "1.0.0",
     "description": "",
-    "main": "index.js",
+    "main": "dist/assets/index.js",
+    "types": "dist/assets/index.d.ts ... TODO",
     "type": "module",
     "scripts": {
-        "dev": "npm run generate-dotenv && vite",
+        "dev": "npm run generate-dotenv-dev && vite",
         "build": "npm run generate-dotenv tsc --emitDeclarationOnly && vite build && npm run postprocess-index-html",
         "preview": "vite preview",
         "generate-dotenv": "npm run node-ts ./scripts/generate-dotenv.ts",
