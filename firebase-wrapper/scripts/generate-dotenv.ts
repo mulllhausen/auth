@@ -2,10 +2,13 @@ import * as fs from "fs";
 import * as dotenv from "dotenv";
 import * as path from "path";
 
+type AllowedDotEnvTypes = string | number;
+
 enum dotenvFiles {
     base = ".env",
     dev = ".env.development",
 }
+
 const typeFieldPostfix: string = "_TYPE";
 
 const mustBePopulated: boolean = true;
@@ -26,11 +29,11 @@ if (process.env.NODE_ENV === "development") {
     );
 }
 
-const typedDotEnvConfig: Record<string, string | number> =
+const typedDotEnvConfig: Record<string, AllowedDotEnvTypes> =
     getTypedDotEnv(mergedDotEnvConfig);
 
 const dotenvTsContent = `export interface ProcessEnv {
-${dotenv2Types(mergedDotEnvConfig)}
+${dotenv2Types(typedDotEnvConfig)}
 }
 export const env: ProcessEnv = ${JSON.stringify(typedDotEnvConfig, null, 4)};
 `;
@@ -91,22 +94,22 @@ function mergeDotEnvConfigs(
     )!;
 }
 
-function dotenv2Types(parsedDotenvVars: NodeJS.ProcessEnv): string {
+function dotenv2Types(
+    parsedDotenvVars: Record<string, AllowedDotEnvTypes>,
+): string {
     const tab: string = "    ";
     return Object.keys(parsedDotenvVars)
         .filter((key: string) => !key.endsWith(typeFieldPostfix))
-        .map(
-            (key: string) => `${tab}${key}: ${getType(parsedDotenvVars, key)};`,
-        )
+        .map((key: string) => `${tab}${key}: ${typeof parsedDotenvVars[key]};`)
         .join("\n");
 }
 
 function getTypedDotEnv(
     parsedDotenvVars: NodeJS.ProcessEnv,
-): Record<string, string | number> {
+): Record<string, AllowedDotEnvTypes> {
     return Object.keys(parsedDotenvVars)
         .filter((key: string) => !key.endsWith(typeFieldPostfix))
-        .reduce<Record<string, string | number>>((acc, key) => {
+        .reduce<Record<string, AllowedDotEnvTypes>>((acc, key) => {
             const typeAsString: string = getType(parsedDotenvVars, key);
             switch (typeAsString) {
                 case "number":

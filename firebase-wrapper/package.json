@@ -9,6 +9,7 @@
         "build": "npm run generate-dotenv tsc --emitDeclarationOnly && vite build && npm run postprocess-index-html",
         "preview": "vite preview",
         "generate-dotenv": "npm run node-ts ./scripts/generate-dotenv.ts",
+        "generate-dotenv-dev": "npm run node-ts-dev ./scripts/generate-dotenv.ts",
         "postprocess-index-html": "npm run node-ts ./scripts/postprocess-index-html-hashes.ts",
         "ngrok": "./scripts/ngrok.sh",
         "test": "echo \"Error: no tests exist yet\" && exit 1",
