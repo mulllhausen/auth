@@ -6,6 +6,7 @@ enum dotenvFiles {
     base = ".env",
     dev = ".env.development",
 }
+const typeFieldPostfix: string = "_TYPE";
 
 const mustBePopulated: boolean = true;
 const baseDotenvConfig: dotenv.DotenvParseOutput | undefined = loadDotEnvFile(
@@ -25,15 +26,25 @@ if (process.env.NODE_ENV === "development") {
     );
 }
 
+const typedDotEnvConfig: Record<string, string | number> =
+    getTypedDotEnv(mergedDotEnvConfig);
+
 const dotenvTsContent = `export interface ProcessEnv {
 ${dotenv2Types(mergedDotEnvConfig)}
 }
-export const env: ProcessEnv = ${JSON.stringify(mergedDotEnvConfig, null, 4)};
+export const env: ProcessEnv = ${JSON.stringify(typedDotEnvConfig, null, 4)};
 `;
 
 const outputFile: string = "./src/dotenv.ts";
 fs.writeFileSync(outputFile, dotenvTsContent, "utf8");
 console.log(`${outputFile} has been generated.`);
+if (process.env.NODE_ENV === "development") {
+    console.log(
+        `!!!!!
+!!!!! BE CAREFUL NOT TO COMMIT THE DEVELOPMENT VALUES TO GIT!
+!!!!!`,
+    );
+}
 
 function loadDotEnvFile(
     dotenvFile: dotenvFiles,
@@ -83,6 +94,35 @@ function mergeDotEnvConfigs(
 function dotenv2Types(parsedDotenvVars: NodeJS.ProcessEnv): string {
     const tab: string = "    ";
     return Object.keys(parsedDotenvVars)
-        .map((key) => `${tab}${key}: string;`)
+        .filter((key: string) => !key.endsWith(typeFieldPostfix))
+        .map(
+            (key: string) => `${tab}${key}: ${getType(parsedDotenvVars, key)};`,
+        )
         .join("\n");
+}
+
+function getTypedDotEnv(
+    parsedDotenvVars: NodeJS.ProcessEnv,
+): Record<string, string | number> {
+    return Object.keys(parsedDotenvVars)
+        .filter((key: string) => !key.endsWith(typeFieldPostfix))
+        .reduce<Record<string, string | number>>((acc, key) => {
+            const typeAsString: string = getType(parsedDotenvVars, key);
+            switch (typeAsString) {
+                case "number":
+                    acc[key] = Number(parsedDotenvVars[key]);
+                    break;
+                default:
+                    acc[key] = parsedDotenvVars[key]!;
+                    break;
+            }
+            return acc;
+        }, {});
+}
+
+function getType(parsedDotenvVars: NodeJS.ProcessEnv, key: string): string {
+    if (parsedDotenvVars.hasOwnProperty(`${key}${typeFieldPostfix}`)) {
+        return parsedDotenvVars[`${key}${typeFieldPostfix}`]!;
+    }
+    return "string";
 }
