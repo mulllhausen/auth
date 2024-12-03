@@ -26,6 +26,7 @@ export type DefaultAction = null;
 export const defaultAction: DefaultAction = null;
 
 export interface WrapperSettings {
+    logger: Function | null;
     loginButtonCssClass: string;
     authProviderSettings: {
         [key in AuthProviders]: {
@@ -41,6 +42,7 @@ export interface WrapperSettings {
 export class FirebaseAuthService {
     private _window: Window;
     _document: Document;
+    private logger: Function | null;
     private env: ProcessEnv;
     private settings: WrapperSettings;
     private auth!: Auth;
@@ -56,6 +58,7 @@ export class FirebaseAuthService {
         this._document = window.document;
         this.env = env;
         this.settings = settings;
+        this.logger = settings.logger;
 
         const firebaseOptions: FirebaseOptions = {
             apiKey: this.env.FIREBASE_API_KEY,
@@ -71,8 +74,10 @@ export class FirebaseAuthService {
             url: env.PROJECT_DOMAIN,
             handleCodeInApp: true,
         };
+        this.logger?.(`initializing the firebase SDK`);
         this.firebase = initializeApp(firebaseOptions);
         this.auth = getAuth(this.firebase);
+        this.logger?.(`finished initializing firebase SDK`);
         this.SetupEvents();
         this.setupFirebaseListeners();
     }
@@ -90,6 +95,7 @@ export class FirebaseAuthService {
             if (foundProvider) action = foundProvider?.loginButtonClicked;
             else action = this.serviceProviderNotFoundAction;
             tsButton.addEventListener("click", async (e) => {
+                this.logger?.(`login with ${provider} clicked`);
                 if (action === defaultAction) await this.Signin(provider);
                 else await action(this, e);
             });
@@ -126,6 +132,9 @@ export class FirebaseAuthService {
                 await this.emailSignInStep1();
                 break;
             case AuthProviders.Google:
+                this.logger?.(
+                    `redirecting to ${GoogleAuthProvider.PROVIDER_ID}`,
+                );
                 const googleProvider = new GoogleAuthProvider();
                 googleProvider.setCustomParameters({
                     redirect_uri: this.env.BASE_PATH,
@@ -133,9 +142,15 @@ export class FirebaseAuthService {
                 signInWithRedirect(this.auth, googleProvider);
                 break;
             case AuthProviders.Facebook:
+                this.logger?.(
+                    `redirecting to ${FacebookAuthProvider.PROVIDER_ID}`,
+                );
                 signInWithRedirect(this.auth, new FacebookAuthProvider());
                 break;
             default:
+                this.logger?.(
+                    `unsupported service provider was clicked: ${provider}`,
+                );
                 throw new Error(`unsupported provider for sign-in ${provider}`);
         }
     }

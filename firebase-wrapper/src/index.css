@@ -1,0 +1,26 @@
+body {
+    font-family: Arial, sans-serif;
+    font-size: 12px;
+    margin: 0;
+    padding: 10px;
+}
+.log-container {
+    width: 500px;
+    height: 500px;
+    background-color: lightgray;
+    padding-top: 2px;
+}
+.log-item {
+    border-radius: 10px;
+    margin: 2px 2px 0 2px;
+    padding: 7px;
+    background-color: #c6edff;
+}
+span.log-data {
+    background-color: lightgray;
+    display: none;
+}
+span.log-datetime {
+    float: right;
+    font-size: 9px;
+}
