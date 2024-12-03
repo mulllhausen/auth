@@ -2,7 +2,25 @@
 
 Sign up for [Google Firebase](https://console.firebase.google.com).
 
-For local debugging, use [ngrok](https://ngrok.com).
+For local debugging, use [ngrok](https://ngrok.com). The flow is:
+
+1. Start server on localhost with vite (`npm run dev`)
+1. Start ngrok in a new terminal session (`npm run ngrok`)
+1. In your browser, go to ngrok URL `PROJECT_DOMAIN/firebase-wrapper/dist/` (see
+   `.env.development`)
+1. Click one of the login buttons
+1. The firebase wrapper service calls the firebase SDK
+1. The firebase SDK redirects to
+   `FIREBASE_AUTH_DOMAIN/__/auth/handler?apiKey=xxx&appName=[DEFAULT]&authType=signInViaRedirect&redirectUrl=PROJECT_DOMAIN/firebase-wrapper/dist/&v=11.0.2&providerId=google.com&customParameters={"redirect_uri":"/firebase-wrapper/dist/"}&scopes=profile`
+1. Google's firebase server redirects to an oauth service provider (eg.
+   facebook)
+1. Enter username and password unless already logged in
+1. Allow this app to access your service provider details (eg. your profile
+   picture)
+1. The service provider redirects back to
+   `FIREBASE_AUTH_DOMAIN/__/auth/handler?...`
+1. Google's firebase server redirects back to
+   `PROJECT_DOMAIN/firebase-wrapper/dist/`
 
 ## Setting up ngrok
 

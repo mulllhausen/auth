@@ -108,6 +108,7 @@ export class FirebaseAuthService {
     }
 
     private setupFirebaseListeners(): void {
+        // do getRedirectResult() here?
         onAuthStateChanged(this.auth, (user) => {
             if (user) {
                 // User is signed in, see docs for a list of available properties
@@ -125,7 +126,11 @@ export class FirebaseAuthService {
                 await this.emailSignInStep1();
                 break;
             case AuthProviders.Google:
-                signInWithRedirect(this.auth, new GoogleAuthProvider());
+                const googleProvider = new GoogleAuthProvider();
+                googleProvider.setCustomParameters({
+                    redirect_uri: this.env.BASE_PATH,
+                });
+                signInWithRedirect(this.auth, googleProvider);
                 break;
             case AuthProviders.Facebook:
                 signInWithRedirect(this.auth, new FacebookAuthProvider());
