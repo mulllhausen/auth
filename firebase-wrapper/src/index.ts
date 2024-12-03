@@ -10,8 +10,23 @@ import { env } from "./dotenv";
 import { HTMLTemplateManager } from "./html-template-manager";
 import { log } from "console";
 
-const localStorageLogstreamKey = "logstream";
 const htmlTemplateManager = new HTMLTemplateManager(document);
+const localStorageLogstreamKey = "logstream";
+const colors: string[] = [
+    "#c6edff", // blue
+    "#ffd8d8", // red
+    "#d9ffd8", // green
+    "#e9d8ff", // purple
+    "#ffe7d8", // orange
+    "#faffd8", // yellow
+    "#ffd8ff", // pink
+    "#ba9d93", // brown
+];
+const thisSessionColor = getRandomLogstreamColor();
+initLogstream();
+document
+    .querySelector("button#clearLogstream")
+    ?.addEventListener("click", clearLogstream);
 
 const wrapperSettings: WrapperSettings = {
     logger: log2GUI,
@@ -98,22 +113,41 @@ function initLogstream() {
     const savedLogstreamItems = JSON.parse(savedLogstreamJSON) as LogItem[];
     const fromLocalStorage = true;
     for (const logItem of savedLogstreamItems) {
-        log2GUI(logItem.logAction, logItem.logData, fromLocalStorage);
+        log2GUI(
+            logItem.logAction,
+            logItem.logData,
+            logItem.logDateTime,
+            logItem.color,
+            fromLocalStorage,
+        );
     }
+}
+
+function clearLogstream(e: Event) {
+    localStorage.removeItem(localStorageLogstreamKey);
+    document.querySelector("#windowLogContainer")!.innerHTML = "";
 }
 
 function log2GUI(
     logAction: string,
     logData: any,
+    logDateTime: string | null = null,
+    color: string | null = null,
     fromLocalStorage: boolean = false,
 ) {
     const logItem: HTMLElement =
         htmlTemplateManager.cloneTemplateSingle("windowLogItem");
 
+    if (color == null) {
+        color = thisSessionColor;
+    }
+    logItem.style.backgroundColor = color;
     logItem.querySelector(".log-message")!.innerHTML = logAction;
 
-    const logDatetime: string = getDate();
-    logItem.querySelector(".log-datetime")!.innerHTML = logDatetime;
+    if (logDateTime == null) {
+        logDateTime = getDate();
+    }
+    logItem.querySelector(".log-datetime")!.innerHTML = logDateTime;
 
     if (logData != null) {
         logItem.querySelector(".log-data")!.innerHTML = JSON.stringify(
@@ -126,7 +160,12 @@ function log2GUI(
     htmlTemplateManager.prepend(logItem, "windowLogContainer");
 
     if (!fromLocalStorage)
-        saveLogToLocalStorage({ logAction, logData, logDatetime });
+        saveLogToLocalStorage({
+            logAction,
+            logData,
+            color,
+            logDateTime: logDateTime,
+        });
 
     console.log(logAction, logData);
 }
@@ -144,7 +183,8 @@ function getDate(): string {
 interface LogItem {
     logAction: string;
     logData: any;
-    logDatetime: string;
+    color: string;
+    logDateTime: string;
 }
 
 function saveLogToLocalStorage(logItem: LogItem): void {
@@ -164,4 +204,8 @@ function saveLogToLocalStorage(logItem: LogItem): void {
         localStorageLogstreamKey,
         JSON.stringify(savedLogstreamItems),
     );
+}
+
+function getRandomLogstreamColor(): string {
+    return colors[Math.floor(Math.random() * colors.length)];
 }

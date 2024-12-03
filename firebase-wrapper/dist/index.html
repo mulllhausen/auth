@@ -6,8 +6,13 @@
         <script
             type="module"
             crossorigin
-            src="/firebase-wrapper/dist/assets/index.js?hash=Xj4icT"
+            src="/firebase-wrapper/dist/assets/index.js?hash=2M/Tyw"
         ></script>
+        <link
+            rel="stylesheet"
+            crossorigin
+            href="/firebase-wrapper/dist/assets/index.css"
+        />
     </head>
     <body>
         <h1>login using the firebase library</h1>
@@ -20,5 +25,18 @@
         <button class="login" data-service-provider="google">google</button>
         <button class="login" data-service-provider="github">github</button>
         <button class="login" data-service-provider="email">email</button>
+        <br />
+        <br />
+        <span>logstream</span>
+        <button id="clearLogstream">clear</button>
+        <div id="windowLogContainer" class="log-container"></div>
+        <!-- templates -->
+        <template id="windowLogItem">
+            <div class="log-item">
+                <span class="log-message"></span>
+                <span class="log-data"></span>
+                <span class="log-datetime"></span>
+            </div>
+        </template>
     </body>
 </html>
