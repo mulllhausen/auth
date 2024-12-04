@@ -6,24 +6,33 @@ export class HTMLTemplateManager {
         this._document = _document;
     }
 
-    public append(child: HTMLElement, parentId: string) {
-        const parentElement = this.getElementById(parentId);
+    public append(child: HTMLElement, parentCSS: string) {
+        const parentElement = this.querySelector(parentCSS);
         if (!parentElement) {
-            throw new Error(`Parent element with ID '${parentId}' not found.`);
+            throw new Error(
+                `Parent element with CSS selector '${parentCSS}' not found.`,
+            );
         }
         parentElement.appendChild(child);
     }
 
-    public prepend(child: HTMLElement, parentId: string) {
-        const parentElement = this.getElementById(parentId);
+    public prepend(child: HTMLElement, parentCSS: string) {
+        const parentElement: HTMLElement = this.querySelector(parentCSS);
         if (!parentElement) {
-            throw new Error(`Parent element with ID '${parentId}' not found.`);
+            throw new Error(`Parent element with ID '${parentCSS}' not found.`);
         }
-        parentElement.insertBefore(child, parentElement.firstChild);
+        this.prependElement(child, parentElement.firstChild as HTMLElement);
+    }
+
+    public prependElement(
+        childElement: HTMLElement,
+        parentElement: HTMLElement,
+    ) {
+        parentElement.insertBefore(childElement, parentElement.firstChild);
     }
 
     public cloneTemplateSingle(templateId: string): HTMLElement {
-        const templateElement = this.getElementById(
+        const templateElement = this.querySelector(
             templateId,
         ) as HTMLTemplateElement;
 
@@ -46,12 +55,12 @@ export class HTMLTemplateManager {
         return child;
     }
 
-    public getElementById(elementId: string): HTMLElement {
-        if (this.cachedElements.hasOwnProperty(elementId)) {
-            return this.cachedElements[elementId];
+    public querySelector(elementCSS: string): HTMLElement {
+        if (this.cachedElements.hasOwnProperty(elementCSS)) {
+            return this.cachedElements[elementCSS];
         }
-        return (this.cachedElements[elementId] = this._document.getElementById(
-            elementId,
+        return (this.cachedElements[elementCSS] = this._document.querySelector(
+            elementCSS,
         ) as HTMLElement);
     }
 
