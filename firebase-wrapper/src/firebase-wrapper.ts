@@ -115,12 +115,15 @@ export class FirebaseAuthService {
 
     private setupFirebaseListeners(): void {
         // do getRedirectResult() here?
+        const logMessageStart: string = "firebase auth state changed";
         onAuthStateChanged(this.auth, (user) => {
             if (user) {
+                this.logger?.(`${logMessageStart} - signed-in`, user);
                 // User is signed in, see docs for a list of available properties
                 // https://firebase.google.com/docs/reference/js/firebase.User
                 this.settings.signedInCallback(user);
             } else {
+                this.logger?.(`${logMessageStart} - signed-out`);
                 this.settings.signedOutCallback();
             }
         });

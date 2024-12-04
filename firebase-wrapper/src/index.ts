@@ -14,12 +14,13 @@ import { log } from "console";
 const htmlTemplateManager = new HTMLTemplateManager(document);
 const guiLogger = new GUILogger(
     document,
+    localStorage,
     htmlTemplateManager,
     "button#clearLogstream",
     "#windowLogContainer",
     "#windowLogItem",
 );
-guiLogger.initEvents();
+guiLogger.initEvents().initGUIFromLocalStorage();
 
 const wrapperSettings: WrapperSettings = {
     logger: guiLogger.log.bind(guiLogger), // bind preserves `this` within GUILogger

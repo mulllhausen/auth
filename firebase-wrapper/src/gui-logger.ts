@@ -9,6 +9,7 @@ export interface LogItem {
 
 export class GUILogger {
     private _document: Document;
+    private _localStorage: Storage;
     private htmlTemplateManager: HTMLTemplateManager;
     private logContainerCSS: string = "#windowLogContainer";
     private logContainerEl: HTMLElement;
@@ -29,12 +30,15 @@ export class GUILogger {
 
     constructor(
         _document: Document,
+        _localStorage: Storage,
         htmlTemplateManager: HTMLTemplateManager,
         cleaLogStreamButtonCSS: string,
         logContainerCSS: string,
         logItemCSS: string,
     ) {
+        debugger;
         this._document = _document;
+        this._localStorage = _localStorage;
         this.htmlTemplateManager = htmlTemplateManager;
         this.cleaLogStreamButtonCSS = cleaLogStreamButtonCSS;
 
@@ -49,17 +53,18 @@ export class GUILogger {
         this.logItemCSS = logItemCSS;
     }
 
-    public initEvents() {
+    public initEvents(): GUILogger {
         this._document
             .querySelector(this.cleaLogStreamButtonCSS)
             ?.addEventListener("click", this.clearLogstream);
+        return this;
     }
 
-    public initGUIFromLocalStorage() {
-        const savedLogstreamJSON: string | null = localStorage.getItem(
+    public initGUIFromLocalStorage(): GUILogger {
+        const savedLogstreamJSON: string | null = this._localStorage.getItem(
             this.localStorageLogstreamKey,
         );
-        if (savedLogstreamJSON == null) return;
+        if (savedLogstreamJSON == null) return this;
 
         const savedLogstreamItems = JSON.parse(savedLogstreamJSON) as LogItem[];
         const fromLocalStorage = true;
@@ -72,10 +77,11 @@ export class GUILogger {
                 fromLocalStorage,
             );
         }
+        return this;
     }
 
     public clearLogstream(e: Event) {
-        localStorage.removeItem(this.localStorageLogstreamKey);
+        this._localStorage.removeItem(this.localStorageLogstreamKey);
         this.logContainerEl.innerHTML = "";
     }
 
@@ -132,11 +138,11 @@ export class GUILogger {
     }
 
     public saveLogToLocalStorage(logItem: LogItem): void {
-        const savedLogstreamJSON: string | null = localStorage.getItem(
+        const savedLogstreamJSON: string | null = this._localStorage.getItem(
             this.localStorageLogstreamKey,
         );
         if (savedLogstreamJSON == null) {
-            localStorage.setItem(
+            this._localStorage.setItem(
                 this.localStorageLogstreamKey,
                 JSON.stringify([logItem]),
             );
@@ -144,7 +150,7 @@ export class GUILogger {
         }
         const savedLogstreamItems = JSON.parse(savedLogstreamJSON);
         savedLogstreamItems.push(logItem);
-        localStorage.setItem(
+        this._localStorage.setItem(
             this.localStorageLogstreamKey,
             JSON.stringify(savedLogstreamItems),
         );
