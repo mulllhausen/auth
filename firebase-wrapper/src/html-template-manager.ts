@@ -6,7 +6,7 @@ export class HTMLTemplateManager {
         this._document = _document;
     }
 
-    public append(child: HTMLElement, parentCSS: string) {
+    public append(child: HTMLElement, parentCSS: string): void {
         const parentElement = this.querySelector(parentCSS);
         if (!parentElement) {
             throw new Error(
@@ -16,7 +16,7 @@ export class HTMLTemplateManager {
         parentElement.appendChild(child);
     }
 
-    public prepend(child: HTMLElement, parentCSS: string) {
+    public prepend(child: HTMLElement, parentCSS: string): void {
         const parentElement: HTMLElement = this.querySelector(parentCSS);
         if (!parentElement) {
             throw new Error(`Parent element with ID '${parentCSS}' not found.`);
@@ -27,7 +27,7 @@ export class HTMLTemplateManager {
     public prependElement(
         childElement: HTMLElement,
         parentElement: HTMLElement,
-    ) {
+    ): void {
         parentElement.insertBefore(childElement, parentElement.firstChild);
     }
 

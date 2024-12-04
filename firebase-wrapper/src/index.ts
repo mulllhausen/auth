@@ -14,17 +14,18 @@ import { log } from "console";
 const htmlTemplateManager = new HTMLTemplateManager(document);
 const guiLogger = new GUILogger(
     document,
-    localStorage,
+    window,
     htmlTemplateManager,
     "button#clearLogstream",
     "#windowLogContainer",
     "#windowLogItem",
-);
-guiLogger.initEvents().initGUIFromLocalStorage();
+)
+    .initEvents()
+    .initGUIFromLocalStorage();
 
 const wrapperSettings: WrapperSettings = {
     logger: guiLogger.log.bind(guiLogger), // bind preserves `this` within GUILogger
-    loginButtonCssClass: "button.login",
+    loginButtonCSSClass: "button.login",
     signedInCallback: signedInCallback,
     signedOutCallback: signedOutCallback,
     authProviderSettings: {
@@ -32,6 +33,9 @@ const wrapperSettings: WrapperSettings = {
             loginButtonClicked: defaultAction,
         },
         [AuthProviders.Facebook]: {
+            loginButtonClicked: defaultAction,
+        },
+        [AuthProviders.GitHub]: {
             loginButtonClicked: defaultAction,
         },
         [AuthProviders.Email]: {

@@ -1,6 +1,7 @@
 import { initializeApp, FirebaseOptions, FirebaseApp } from "firebase/app";
 import {
     getAuth,
+    getRedirectResult,
     signInWithRedirect,
     FacebookAuthProvider,
     GoogleAuthProvider,
@@ -13,6 +14,7 @@ import {
     signInWithEmailLink,
     onAuthStateChanged,
     AuthProvider,
+    GithubAuthProvider,
 } from "firebase/auth";
 import { ProcessEnv } from "./dotenv";
 
@@ -20,6 +22,7 @@ export enum AuthProviders {
     Email = "email",
     Google = "google",
     Facebook = "facebook",
+    GitHub = "github",
 }
 
 export type DefaultAction = null;
@@ -27,7 +30,7 @@ export const defaultAction: DefaultAction = null;
 
 export interface WrapperSettings {
     logger: Function | null;
-    loginButtonCssClass: string;
+    loginButtonCSSClass: string;
     authProviderSettings: {
         [key in AuthProviders]: {
             loginButtonClicked:
@@ -41,7 +44,7 @@ export interface WrapperSettings {
 
 export class FirebaseAuthService {
     private _window: Window;
-    _document: Document;
+    _document: Document; // public
     private logger: Function | null;
     private env: ProcessEnv;
     private settings: WrapperSettings;
@@ -78,13 +81,13 @@ export class FirebaseAuthService {
         this.firebase = initializeApp(firebaseOptions);
         this.auth = getAuth(this.firebase);
         this.logger?.(`finished initializing firebase SDK`);
-        this.SetupEvents();
         this.setupFirebaseListeners();
+        this.SetupEvents();
     }
 
     private SetupEvents(): void {
         const loginButtons = this._document.querySelectorAll(
-            this.settings.loginButtonCssClass,
+            this.settings.loginButtonCSSClass,
         );
         if (!loginButtons) return;
         for (const button of loginButtons) {
@@ -114,7 +117,50 @@ export class FirebaseAuthService {
     }
 
     private setupFirebaseListeners(): void {
-        // do getRedirectResult() here?
+        getRedirectResult(this.auth)
+            .then((result) => {
+                debugger;
+                if (result == null) return;
+
+                // we only get here once - immediately after login
+                // (stackoverflow.com/a/44468387)
+
+                const credential =
+                    GithubAuthProvider.credentialFromResult(result);
+                if (credential == null) {
+                    this.logger?.(
+                        `credential is null immediately after sign-in`,
+                    );
+                    return;
+                }
+                const githubAccessToken = credential.accessToken;
+                if (githubAccessToken === undefined) {
+                    this.logger?.(
+                        `githubAccessToken is null immediately after sign-in`,
+                    );
+                    return;
+                }
+                this._window.localStorage.setItem(
+                    "githubAccessToken",
+                    githubAccessToken,
+                );
+                const user = result.user;
+                //renderUserData(user, 1);
+                // IdP data available using getAdditionalUserInfo(result)
+                // ...
+            })
+            .catch((error) => {
+                debugger;
+                // Handle Errors here.
+                const errorCode = error.code;
+                const errorMessage = error.message;
+                // The email of the user's account used.
+                const email = error.customData.email;
+                // AuthCredential type that was used.
+                const credential =
+                    GithubAuthProvider.credentialFromError(error);
+                // ...
+            });
         const logMessageStart: string = "firebase auth state changed";
         onAuthStateChanged(this.auth, (user) => {
             if (user) {
@@ -149,6 +195,12 @@ export class FirebaseAuthService {
                     `redirecting to ${FacebookAuthProvider.PROVIDER_ID}`,
                 );
                 signInWithRedirect(this.auth, new FacebookAuthProvider());
+                break;
+            case AuthProviders.GitHub:
+                this.logger?.(
+                    `redirecting to ${GithubAuthProvider.PROVIDER_ID}`,
+                );
+                signInWithRedirect(this.auth, new GithubAuthProvider());
                 break;
             default:
                 this.logger?.(
