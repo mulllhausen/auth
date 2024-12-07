@@ -15,6 +15,7 @@ Local debugging uses [ngrok](https://ngrok.com) and vite. Open a bash terminal
 and run
 
 ```bash
+    $ cd firebase-wrapper
     $ npm run dev
     $ # press F5 a couple of times
 ```
@@ -22,6 +23,7 @@ and run
 Open another terminal and run
 
 ```bash
+    $ cd firebase-wrapper
     $ npm run ngrok
 ```
 
