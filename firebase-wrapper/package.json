@@ -10,14 +10,15 @@
         "build": "npm run download-firebase-static-files && npm run generate-dotenv tsc --emitDeclarationOnly && vite build && npm run postprocess-index-html && npx prettier --write dist/index.html",
         "preview": "vite preview",
         "generate-dotenv": "npm run node-ts ./scripts/generate-dotenv.ts && npm run update-firebase-static-files",
-        "generate-dotenv-dev": "npm run node-ts-dev ./scripts/generate-dotenv.ts && npm run update-firebase-static-files",
+        "generate-dotenv-dev": "npm run node-ts-dev ./scripts/generate-dotenv.ts && npm run update-firebase-static-files-dev",
         "postprocess-index-html": "npm run node-ts ./scripts/postprocess-index-html-hashes.ts",
         "ngrok": "bash scripts/start-ngrok.bash",
         "test": "echo \"Error: no tests exist yet\" && exit 1",
         "node-ts": "node --import ./scripts/loader.mjs",
         "node-ts-dev": "echo press F5 in vs-code && node --inspect-brk --import ./scripts/loader.mjs",
         "download-firebase-static-files": "bash scripts/download-firebase-static-files.bash",
-        "update-firebase-static-files": "bash scripts/update-firebase-static-files.bash"
+        "update-firebase-static-files": "bash scripts/update-firebase-static-files.bash prod",
+        "update-firebase-static-files-dev": "bash scripts/update-firebase-static-files.bash dev"
     },
     "engines": {
         "npm": ">=6.14.18",

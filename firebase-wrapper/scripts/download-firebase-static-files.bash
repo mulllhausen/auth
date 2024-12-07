@@ -11,7 +11,8 @@ if [[ ! -x "$(command -v wget)" ]]; then
     exit 1
 fi
 
-app_id="$("$present_file_path_absolute"/get-1-env.sh FIREBASE_PROJECT_ID)"
+# note: FIREBASE_PROJECT_ID is not expected to change between environments
+app_id="$("$present_file_path_absolute"/get-1-env.bash FIREBASE_PROJECT_ID prod)"
 if [[ -z "$app_id" ]]; then
     echo "Error: Failed to retrieve Firebase project ID." >&2
     exit 1
