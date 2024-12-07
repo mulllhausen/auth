@@ -25,8 +25,14 @@ url_paths=(
     "__/auth/iframe"
     "__/auth/iframe.js"
 )
+total_num_files=${#url_paths[@]}
 
+file_i=1
 for url_path in "${url_paths[@]}"; do
-    echo "downloading: $schema_and_domain/$url_path -> $present_file_path_absolute/../$url_path"
+    echo "downloading file $file_i/$total_num_files"
+    echo
     wget "$schema_and_domain/$url_path" -O "$present_file_path_absolute/../$url_path"
+    echo
+    echo
+    file_i=$((file_i + 1))
 done

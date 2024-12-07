@@ -17,4 +17,6 @@ firebase_init_json=$(
 EOF
 )
 
-echo "$firebase_init_json" >"$present_file_path_absolute/__/firebase/init.json"
+echo "$firebase_init_json" >"$present_file_path_absolute/../__/firebase/init.json"
+
+echo "successfully updated $present_file_path_absolute/../__/firebase/init.json"
