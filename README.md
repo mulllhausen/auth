@@ -1,5 +1,7 @@
 # Firebase Auth
 
+## Signing up
+
 Sign up for [Google Firebase](https://console.firebase.google.com). When you
 create an app in firebase, a corresponding app will appear in
 [Google Cloud Console](https://console.cloud.google.com). Go to
@@ -7,7 +9,23 @@ create an app in firebase, a corresponding app will appear in
 `Web client (auto created by Google Service)` and add
 `https://PROJECT_DOMAIN/__/auth/handler` to the _Authorized redirect URIs_.
 
-For local debugging, use [ngrok](https://ngrok.com). The flow is:
+## Debugging
+
+Local debugging uses [ngrok](https://ngrok.com) and vite. Open a bash terminal
+and run
+
+```bash
+    $ npm run dev
+    $ # press F5 a couple of times
+```
+
+Open another terminal and run
+
+```bash
+    $ npm run ngrok
+```
+
+The flow is:
 
 1. Start server on localhost with vite (`npm run dev`)
 1. Start ngrok in a new terminal session (`npm run ngrok`)
