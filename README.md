@@ -1,6 +1,11 @@
 # Firebase Auth
 
-Sign up for [Google Firebase](https://console.firebase.google.com).
+Sign up for [Google Firebase](https://console.firebase.google.com). When you
+create an app in firebase, a corresponding app will appear in
+[Google Cloud Console](https://console.cloud.google.com). Go to
+`APIs & Services` > `Credentials` > `OAuth 2.0 Client IDs`, click
+`Web client (auto created by Google Service)` and add
+`https://PROJECT_DOMAIN/__/auth/handler` to the _Authorized redirect URIs_.
 
 For local debugging, use [ngrok](https://ngrok.com). The flow is:
 
