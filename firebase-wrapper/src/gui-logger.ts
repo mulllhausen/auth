@@ -3,6 +3,7 @@ import { HTMLTemplateManager } from "./html-template-manager";
 export interface LogItem {
     logAction: string;
     logData: any;
+    imageURL: string | null;
     color: string;
     logDateTime: string;
 }
@@ -70,6 +71,7 @@ export class GUILogger {
             this.log(
                 logItem.logAction,
                 logItem.logData,
+                logItem.imageURL,
                 logItem.logDateTime,
                 logItem.color,
                 fromLocalStorage,
@@ -86,6 +88,7 @@ export class GUILogger {
     public log(
         logAction: string,
         logData: any,
+        imageURL: string | null = null,
         logDateTime: string | null = null,
         color: string | null = null,
         fromLocalStorage: boolean = false,
@@ -105,11 +108,19 @@ export class GUILogger {
         logItem.querySelector(".log-datetime")!.innerHTML = logDateTime;
 
         if (logData != null) {
-            logItem.querySelector(".log-data")!.innerHTML = JSON.stringify(
-                logData,
-                null,
-                4,
-            );
+            const dataElement = logItem.querySelector(
+                ".log-data",
+            ) as HTMLElement;
+            dataElement.innerHTML = JSON.stringify(logData, null, 4);
+            dataElement.style.display = "block";
+        }
+
+        if (imageURL != null) {
+            const thisImage = logItem.querySelector(
+                "img.image",
+            ) as HTMLImageElement;
+            thisImage.src = imageURL;
+            thisImage.style.display = "block";
         }
 
         this.htmlTemplateManager.prependElement(
@@ -121,6 +132,7 @@ export class GUILogger {
             this.saveLogToLocalStorage({
                 logAction,
                 logData,
+                imageURL,
                 color,
                 logDateTime: logDateTime,
             });

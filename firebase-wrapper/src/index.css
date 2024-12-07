@@ -9,6 +9,7 @@ body {
     height: 500px;
     background-color: lightgray;
     padding-top: 2px;
+    overflow: auto; /* only show scrollbars if content overflows */
 }
 .log-item {
     border-radius: 10px;
@@ -16,8 +17,14 @@ body {
     padding: 7px;
     background-color: #c6edff;
 }
-span.log-data {
+pre.log-data {
     background-color: lightgray;
+    max-height: 200px;
+    overflow: auto; /* only show scrollbars if content overflows */
+    display: none;
+}
+.log-item img.image {
+    max-width: 100px;
     display: none;
 }
 span.log-datetime {

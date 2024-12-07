@@ -119,7 +119,6 @@ export class FirebaseAuthService {
     private setupFirebaseListeners(): void {
         getRedirectResult(this.auth)
             .then((result) => {
-                debugger;
                 if (result == null) return;
 
                 // we only get here once - immediately after login
@@ -150,7 +149,6 @@ export class FirebaseAuthService {
                 // ...
             })
             .catch((error) => {
-                debugger;
                 // Handle Errors here.
                 const errorCode = error.code;
                 const errorMessage = error.message;
@@ -164,12 +162,12 @@ export class FirebaseAuthService {
         const logMessageStart: string = "firebase auth state changed";
         onAuthStateChanged(this.auth, (user) => {
             if (user) {
-                this.logger?.(`${logMessageStart} - signed-in`, user);
+                this.logger?.(`${logMessageStart} - user is signed-in`, user);
                 // User is signed in, see docs for a list of available properties
                 // https://firebase.google.com/docs/reference/js/firebase.User
                 this.settings.signedInCallback(user);
             } else {
-                this.logger?.(`${logMessageStart} - signed-out`);
+                this.logger?.(`${logMessageStart} - user is signed-out`);
                 this.settings.signedOutCallback();
             }
         });
