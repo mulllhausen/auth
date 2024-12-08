@@ -26,6 +26,7 @@ const guiLogger = new GUILogger(
 const wrapperSettings: WrapperSettings = {
     logger: guiLogger.log.bind(guiLogger), // bind preserves `this` within GUILogger
     loginButtonCSSClass: "button.login",
+    clearCachedUserButtonCSSClass: "button#clearCachedUser",
     signedInCallback: signedInCallback,
     signedOutCallback: signedOutCallback,
     authProviderSettings: {

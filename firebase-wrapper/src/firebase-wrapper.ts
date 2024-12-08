@@ -14,16 +14,18 @@ import {
     signInWithEmailLink,
     onAuthStateChanged,
     AuthProvider,
+    SignInMethod,
     GithubAuthProvider,
 } from "firebase/auth";
 import { ProcessEnv } from "./dotenv";
 
-export enum AuthProviders {
-    Email = "email",
-    Google = "google",
-    Facebook = "facebook",
-    GitHub = "github",
-}
+export const AuthProviders = {
+    Email: EmailAuthProvider.PROVIDER_ID,
+    Google: GoogleAuthProvider.PROVIDER_ID,
+    Facebook: FacebookAuthProvider.PROVIDER_ID,
+    GitHub: GithubAuthProvider.PROVIDER_ID,
+} as const;
+export type AuthProviders = (typeof AuthProviders)[keyof typeof AuthProviders];
 
 export type DefaultAction = null;
 export const defaultAction: DefaultAction = null;
@@ -31,6 +33,7 @@ export const defaultAction: DefaultAction = null;
 export interface WrapperSettings {
     logger: Function | null;
     loginButtonCSSClass: string;
+    clearCachedUserButtonCSSClass: string;
     authProviderSettings: {
         [key in AuthProviders]: {
             loginButtonClicked:
@@ -55,6 +58,7 @@ export class FirebaseAuthService {
     private emailPassword!: string;
     private emailActionCodeSettings!: ActionCodeSettings;
     localStorageEmailAddressKey = "firebaseEmailAddress";
+    private localStorageCachedUserKey = "cachedUser";
 
     constructor(window: Window, env: ProcessEnv, settings: WrapperSettings) {
         this._window = window;
@@ -86,6 +90,10 @@ export class FirebaseAuthService {
     }
 
     private SetupEvents(): void {
+        this._document
+            .querySelector(this.settings.clearCachedUserButtonCSSClass)
+            ?.addEventListener("click", this.clearUserCache.bind(this));
+
         const loginButtons = this._document.querySelectorAll(
             this.settings.loginButtonCSSClass,
         );
@@ -120,7 +128,7 @@ export class FirebaseAuthService {
         getRedirectResult(this.auth)
             .then((result) => {
                 if (result == null) return;
-
+                debugger;
                 // we only get here once - immediately after login
                 // (stackoverflow.com/a/44468387)
 
@@ -162,7 +170,10 @@ export class FirebaseAuthService {
         const logMessageStart: string = "firebase auth state changed";
         onAuthStateChanged(this.auth, (user) => {
             if (user) {
+                if (this.userAlreadyCached(user)) return;
+                debugger;
                 this.logger?.(`${logMessageStart} - user is signed-in`, user);
+                this.cacheUser(user);
                 // User is signed in, see docs for a list of available properties
                 // https://firebase.google.com/docs/reference/js/firebase.User
                 this.settings.signedInCallback(user);
@@ -174,37 +185,34 @@ export class FirebaseAuthService {
     }
 
     public async Signin(provider: AuthProviders): Promise<void> {
-        switch (provider) {
-            case AuthProviders.Email:
-                await this.emailSignInStep1();
-                break;
+        debugger;
+        if (provider === AuthProviders.Email) {
+            await this.emailSignInStep1();
+            return;
+        } else {
+            let authProvider: AuthProvider;
+            try {
+                authProvider = this.authProviderFactory(provider);
+            } catch (e) {
+                if (e instanceof Error) this.logger?.(e.message);
+                else this.logger?.(`unknown error for ${provider} in Signin()`);
+                return;
+            }
+            this.logger?.(`redirecting to ${provider}`);
+            signInWithRedirect(this.auth, authProvider);
+        }
+    }
+
+    private authProviderFactory(providerId: AuthProviders): AuthProvider {
+        switch (providerId) {
             case AuthProviders.Google:
-                this.logger?.(
-                    `redirecting to ${GoogleAuthProvider.PROVIDER_ID}`,
-                );
-                const googleProvider = new GoogleAuthProvider();
-                googleProvider.setCustomParameters({
-                    redirect_uri: this.env.BASE_PATH,
-                });
-                signInWithRedirect(this.auth, googleProvider);
-                break;
+                return new GoogleAuthProvider();
             case AuthProviders.Facebook:
-                this.logger?.(
-                    `redirecting to ${FacebookAuthProvider.PROVIDER_ID}`,
-                );
-                signInWithRedirect(this.auth, new FacebookAuthProvider());
-                break;
+                return new FacebookAuthProvider();
             case AuthProviders.GitHub:
-                this.logger?.(
-                    `redirecting to ${GithubAuthProvider.PROVIDER_ID}`,
-                );
-                signInWithRedirect(this.auth, new GithubAuthProvider());
-                break;
+                return new GithubAuthProvider();
             default:
-                this.logger?.(
-                    `unsupported service provider was clicked: ${provider}`,
-                );
-                throw new Error(`unsupported provider for sign-in ${provider}`);
+                throw new Error(`unsupported provider ${providerId}`);
         }
     }
 
@@ -275,6 +283,27 @@ export class FirebaseAuthService {
                 // Some error occurred, you can inspect the code: error.code
                 // Common errors could be invalid email and invalid or expired OTPs.
             });
+    }
+
+    private userAlreadyCached(user: User): boolean {
+        debugger;
+        const cachedUser: string | null = this._window.localStorage.getItem(
+            this.localStorageCachedUserKey,
+        );
+        const userJSON: string = JSON.stringify(user);
+        return cachedUser === userJSON;
+    }
+
+    private cacheUser(user: User): void {
+        this._window.localStorage.setItem(
+            this.localStorageCachedUserKey,
+            JSON.stringify(user),
+        );
+    }
+
+    public clearUserCache(): void {
+        debugger;
+        this._window.localStorage.removeItem(this.localStorageCachedUserKey);
     }
 
     serviceProviderNotFoundAction(self: FirebaseAuthService, e: MouseEvent) {
