@@ -1,3 +1,2 @@
 node_modules
-.env.development
-images/padlock.png
+firebase-wrapper/**/__/

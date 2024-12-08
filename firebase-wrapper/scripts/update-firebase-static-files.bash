@@ -5,14 +5,17 @@
 environment="$1"
 
 if [[ "$environment" != "dev" && "$environment" != "prod" ]]; then
-    echo "Usage: $0 <dev|prod>"
+    echo "Usage: $0 <dev|prod>" >&2
     exit 1
 fi
 
 present_filename_absolute=$(realpath "$0")
 present_file_path_absolute=$(dirname "$present_filename_absolute")
 
-api_key="$("$present_file_path_absolute"/get-1-env.bash FIREBASE_API_KEY prod "$environment")"
+rel_base_path="$("$present_file_path_absolute"/get-1-env.bash FIREBASE_STATIC_FILES_PATH "$environment")"
+abs_base_path=$(realpath "$present_file_path_absolute/../../$rel_base_path")
+
+api_key="$("$present_file_path_absolute"/get-1-env.bash FIREBASE_API_KEY "$environment")"
 auth_domain="$("$present_file_path_absolute"/get-1-env.bash FIREBASE_AUTH_DOMAIN "$environment")"
 
 firebase_init_json=$(
@@ -24,6 +27,7 @@ firebase_init_json=$(
 EOF
 )
 
-echo "$firebase_init_json" >"$present_file_path_absolute/../__/firebase/init.json"
-
-echo "successfully updated $present_file_path_absolute/../__/firebase/init.json"
+abs_output_file="$abs_base_path/__/firebase/init.json"
+mkdir -p "$(dirname "$abs_output_file")"
+echo "$firebase_init_json" >"$abs_output_file"
+echo "successfully updated $abs_output_file with $firebase_init_json"
