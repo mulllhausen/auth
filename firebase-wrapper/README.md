@@ -63,3 +63,51 @@ On Windows:
     1. Copy-paste the yml into `%HOMEPATH%\AppData\Local\ngrok\ngrok.yml`
     1. Populate `.env.development` with matching variables for the yml file as
        per [these instructions](/firebase-wrapper/docs/ngrok.example.yml).
+
+## notes
+
+### 3rd party storage issues
+
+Browsers block third party storage access so all of the files under `__/` must
+be hosted on the same domain as the app. I.e. `PROJECT_DOMAIN` and
+`FIREBASE_AUTH_DOMAIN` (as defined in the `.env` files) must be on the same
+domain. If you don't do this then you be unable to get the user object from
+firebase.
+
+You can fix this in a few different ways as detailed in
+[the firebase docs](https://firebase.google.com/docs/auth/web/redirect-best-practices).
+
+While running in a development server it is most convenient to host these files
+yourself -
+[option 4 in the firebase docs](https://firebase.google.com/docs/auth/web/redirect-best-practices#self-host-helper-code).
+
+But unfortunately this does not work for Apple or SAML sign-in.
+
+### `__/firebase/init.json`
+
+The firebase SDK makes calls to
+`https://myapp.firebaseapp.com/__/firebase/init.json`. However this file is
+[deprecated for firebase SDK version 9 and above](https://stackoverflow.com/questions/78163133).
+This means we cannot download it and host it ourselves:
+
+```bash
+$ wget https://myapp.firebaseapp.com/__/firebase/init.json --2024-12-07
+19:34:19-- https://myapp.firebaseapp.com/__/firebase/init.json Resolving
+myapp.firebaseapp.com (myapp.firebaseapp.com)... 199.36.158.100
+Connecting to myapp.firebaseapp.com
+(myapp.firebaseapp.com)|199.36.158.100|:443... connected. HTTP request
+sent, awaiting response... 404 Not Found 2024-12-07 19:34:20 ERROR 404: Not
+Found.
+```
+
+However you can just create the `__/firebase/init.json` file yourself:
+
+```json
+{
+    "apiKey": "AIz...",
+    "authDomain": "your.authdomain.com"
+}
+```
+
+`scripts/update-firebase-static-files.bash` generates this file. Run it from
+`package.json`.
