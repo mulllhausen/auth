@@ -1,9 +1,15 @@
-import { initializeApp, FirebaseOptions, FirebaseApp } from "firebase/app";
+import {
+    initializeApp,
+    FirebaseOptions,
+    FirebaseApp,
+    FirebaseError,
+} from "firebase/app";
 import {
     getAuth,
     getRedirectResult,
     signInWithRedirect,
     FacebookAuthProvider,
+    OAuthCredential,
     GoogleAuthProvider,
     EmailAuthProvider,
     Auth,
@@ -14,10 +20,15 @@ import {
     signInWithEmailLink,
     onAuthStateChanged,
     AuthProvider,
-    SignInMethod,
+    UserCredential,
     GithubAuthProvider,
 } from "firebase/auth";
 import { ProcessEnv } from "./dotenv";
+
+type AuthProviderConstructor =
+    | typeof GoogleAuthProvider
+    | typeof FacebookAuthProvider
+    | typeof GithubAuthProvider;
 
 export const AuthProviders = {
     Email: EmailAuthProvider.PROVIDER_ID,
@@ -30,6 +41,14 @@ export type AuthProviders = (typeof AuthProviders)[keyof typeof AuthProviders];
 export type DefaultAction = null;
 export const defaultAction: DefaultAction = null;
 
+export type UserPlus = User & {
+    stsTokenManager?: {
+        refreshToken?: unknown;
+        expirationTime: number;
+        accessToken?: unknown;
+    };
+};
+
 export interface WrapperSettings {
     logger: Function | null;
     loginButtonCSSClass: string;
@@ -41,7 +60,7 @@ export interface WrapperSettings {
                 | ((self: FirebaseAuthService, e: MouseEvent) => Promise<void>);
         };
     };
-    signedInCallback: (user: User) => void;
+    signedInCallback: (user: UserPlus) => void;
     signedOutCallback: () => void;
 }
 
@@ -59,6 +78,8 @@ export class FirebaseAuthService {
     private emailActionCodeSettings!: ActionCodeSettings;
     localStorageEmailAddressKey = "firebaseEmailAddress";
     private localStorageCachedUserKey = "cachedUser";
+    private hiddenMessage: string =
+        "not stored in localStorage to prevent xss attacks";
 
     constructor(window: Window, env: ProcessEnv, settings: WrapperSettings) {
         this._window = window;
@@ -124,55 +145,67 @@ export class FirebaseAuthService {
         return this;
     }
 
-    private setupFirebaseListeners(): void {
-        getRedirectResult(this.auth)
-            .then((result) => {
-                if (result == null) return;
-                debugger;
-                // we only get here once - immediately after login
-                // (stackoverflow.com/a/44468387)
+    private async setupFirebaseListeners(): Promise<void> {
+        try {
+            const redirectResult: UserCredential | null =
+                await getRedirectResult(this.auth);
+            if (redirectResult == null) return;
 
-                const credential =
-                    GithubAuthProvider.credentialFromResult(result);
-                if (credential == null) {
-                    this.logger?.(
-                        `credential is null immediately after sign-in`,
-                    );
-                    return;
-                }
-                const githubAccessToken = credential.accessToken;
-                if (githubAccessToken === undefined) {
-                    this.logger?.(
-                        `githubAccessToken is null immediately after sign-in`,
-                    );
-                    return;
-                }
-                this._window.localStorage.setItem(
-                    "githubAccessToken",
-                    githubAccessToken,
+            // we only get here once - immediately after login
+            // (stackoverflow.com/a/44468387)
+
+            const providerId = redirectResult.providerId as AuthProviders;
+            const providerClass = this.authProviderFactory(providerId);
+            const credential =
+                providerClass.credentialFromResult(redirectResult);
+            if (credential == null) {
+                this.logger?.(`credential is null immediately after sign-in`);
+                return;
+            }
+            this.logger?.(
+                `credential immediately after sign-in with ${providerId}`,
+                credential,
+                this.safeCredentialResponse(credential),
+            );
+            const accessToken: string | undefined = credential.accessToken;
+            if (accessToken === undefined) {
+                this.logger?.(
+                    `accessToken is null immediately after sign-in with ${providerId}`,
                 );
-                const user = result.user;
-                //renderUserData(user, 1);
-                // IdP data available using getAdditionalUserInfo(result)
-                // ...
-            })
-            .catch((error) => {
-                // Handle Errors here.
-                const errorCode = error.code;
-                const errorMessage = error.message;
-                // The email of the user's account used.
-                const email = error.customData.email;
-                // AuthCredential type that was used.
-                const credential =
-                    GithubAuthProvider.credentialFromError(error);
-                // ...
-            });
+                return;
+            }
+            const user = redirectResult.user;
+            //renderUserData(user, 1);
+            // IdP data available using getAdditionalUserInfo(result)
+        } catch (error) {
+            const firebaseError = error as FirebaseError;
+            // Handle Errors here.
+            const errorCode = firebaseError.code;
+            const errorMessage = firebaseError.message;
+            // The email of the user's account used.
+            const email = firebaseError.customData?.email;
+            // AuthCredential type that was used.
+            debugger;
+            //const credential = GithubAuthProvider.credentialFromError(firebaseError);
+        }
+
         const logMessageStart: string = "firebase auth state changed";
         onAuthStateChanged(this.auth, (user) => {
             if (user) {
-                if (this.userAlreadyCached(user)) return;
-                debugger;
-                this.logger?.(`${logMessageStart} - user is signed-in`, user);
+                if (this.userAlreadyCached(user)) {
+                    this.logger?.(
+                        `${logMessageStart}, but user is already signed-in`,
+                        user,
+                        this.safeUserResponse(user),
+                    );
+                    return;
+                }
+
+                this.logger?.(
+                    `${logMessageStart} - user is signed-in`,
+                    user,
+                    this.safeUserResponse(user),
+                );
                 this.cacheUser(user);
                 // User is signed in, see docs for a list of available properties
                 // https://firebase.google.com/docs/reference/js/firebase.User
@@ -185,14 +218,13 @@ export class FirebaseAuthService {
     }
 
     public async Signin(provider: AuthProviders): Promise<void> {
-        debugger;
         if (provider === AuthProviders.Email) {
             await this.emailSignInStep1();
             return;
         } else {
             let authProvider: AuthProvider;
             try {
-                authProvider = this.authProviderFactory(provider);
+                authProvider = new (this.authProviderFactory(provider))();
             } catch (e) {
                 if (e instanceof Error) this.logger?.(e.message);
                 else this.logger?.(`unknown error for ${provider} in Signin()`);
@@ -203,14 +235,16 @@ export class FirebaseAuthService {
         }
     }
 
-    private authProviderFactory(providerId: AuthProviders): AuthProvider {
+    private authProviderFactory(
+        providerId: AuthProviders,
+    ): AuthProviderConstructor {
         switch (providerId) {
             case AuthProviders.Google:
-                return new GoogleAuthProvider();
+                return GoogleAuthProvider;
             case AuthProviders.Facebook:
-                return new FacebookAuthProvider();
+                return FacebookAuthProvider;
             case AuthProviders.GitHub:
-                return new GithubAuthProvider();
+                return GithubAuthProvider;
             default:
                 throw new Error(`unsupported provider ${providerId}`);
         }
@@ -285,28 +319,72 @@ export class FirebaseAuthService {
             });
     }
 
-    private userAlreadyCached(user: User): boolean {
+    private userAlreadyCached(user: UserPlus): boolean {
         debugger;
         const cachedUser: string | null = this._window.localStorage.getItem(
             this.localStorageCachedUserKey,
         );
-        const userJSON: string = JSON.stringify(user);
+        const userJSON: string = JSON.stringify(
+            this.safeUserResponse(this.idempotentUserResponse(user)),
+        );
         return cachedUser === userJSON;
     }
 
-    private cacheUser(user: User): void {
+    private cacheUser(user: UserPlus): void {
         this._window.localStorage.setItem(
             this.localStorageCachedUserKey,
-            JSON.stringify(user),
+            JSON.stringify(
+                this.safeUserResponse(this.idempotentUserResponse(user)),
+            ),
         );
     }
 
     public clearUserCache(): void {
-        debugger;
         this._window.localStorage.removeItem(this.localStorageCachedUserKey);
     }
 
     serviceProviderNotFoundAction(self: FirebaseAuthService, e: MouseEvent) {
         console.error(`Service provider not found`);
+    }
+
+    /** use this method to zero out any sensitive fields before saving to localStorage,
+     * since localStorage may be vulnerable to xss attacks.
+     */
+    private safeUserResponse(user: UserPlus): UserPlus {
+        // deep copy
+        const safeUser = JSON.parse(JSON.stringify(user)) as UserPlus;
+        if (safeUser.stsTokenManager) {
+            if (safeUser.stsTokenManager.refreshToken) {
+                safeUser.stsTokenManager.refreshToken = this.hiddenMessage;
+            }
+            if (safeUser.stsTokenManager.accessToken) {
+                safeUser.stsTokenManager.accessToken = this.hiddenMessage;
+            }
+        }
+        return safeUser;
+    }
+
+    private idempotentUserResponse(user: UserPlus): UserPlus {
+        // deep copy
+        const userCopy = JSON.parse(JSON.stringify(user)) as UserPlus;
+        if (userCopy.stsTokenManager) {
+            userCopy.stsTokenManager.expirationTime = 0;
+        }
+        return userCopy;
+    }
+
+    private safeCredentialResponse(
+        credential: OAuthCredential,
+    ): OAuthCredential {
+        const safeCredential = JSON.parse(
+            JSON.stringify(credential),
+        ) as OAuthCredential;
+        if (safeCredential.accessToken) {
+            safeCredential.accessToken = this.hiddenMessage;
+        }
+        if (safeCredential.idToken) {
+            safeCredential.idToken = this.hiddenMessage;
+        }
+        return safeCredential;
     }
 }

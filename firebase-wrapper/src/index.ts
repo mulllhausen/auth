@@ -96,7 +96,7 @@ async function handleEmailLogin(
 function signedInCallback(user: User) {
     if (user.photoURL != null && user.photoURL !== "") {
         const userData = null;
-        guiLogger.log("image detected", userData, user.photoURL);
+        guiLogger.log("image detected", userData, userData, user.photoURL);
     }
     console.log("Signed in");
 }
