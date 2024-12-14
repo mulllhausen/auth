@@ -18,6 +18,7 @@ export class GUILogger {
     private logItemCSS: string = "#windowLogItem";
     private cleaLogStreamButtonCSS: string = "button#clearLogstream";
     private localStorageLogstreamKey: string = "logstream";
+    private localStorageColorKey: string = "logstreamColor";
     private colors: string[] = [
         "#c6edff", // blue
         "#ffd8d8", // red
@@ -28,7 +29,7 @@ export class GUILogger {
         "#ffd8ff", // pink
         "#ba9d93", // brown
     ];
-    private currentSessionColor = this.getRandomLogstreamColor();
+    private currentColor: string;
 
     constructor(
         _document: Document,
@@ -42,6 +43,8 @@ export class GUILogger {
         this._window = window;
         this.htmlTemplateManager = htmlTemplateManager;
         this.cleaLogStreamButtonCSS = cleaLogStreamButtonCSS;
+
+        this.currentColor = this.setupRandomLogstreamColor();
 
         this.logContainerCSS = logContainerCSS;
         this.logContainerElement = this._document.querySelector(
@@ -100,7 +103,7 @@ export class GUILogger {
             this.htmlTemplateManager.cloneTemplateSingle(this.logItemCSS);
 
         if (color == null) {
-            color = this.currentSessionColor;
+            color = this.currentColor;
         }
         logItem.style.backgroundColor = color;
         logItem.querySelector(".log-message")!.innerHTML = logAction;
@@ -174,7 +177,20 @@ export class GUILogger {
         );
     }
 
-    private getRandomLogstreamColor(): string {
-        return this.colors[Math.floor(Math.random() * this.colors.length)];
+    private setupRandomLogstreamColor(): string {
+        const previousColor: string | null = this._window.localStorage.getItem(
+            this.localStorageColorKey,
+        );
+        while (true) {
+            const newColor: string =
+                this.colors[Math.floor(Math.random() * this.colors.length)];
+            if (newColor === previousColor) continue;
+
+            this._window.localStorage.setItem(
+                this.localStorageColorKey,
+                newColor,
+            );
+            return newColor;
+        }
     }
 }
