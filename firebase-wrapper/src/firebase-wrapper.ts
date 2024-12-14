@@ -49,6 +49,7 @@ export type UserPlus = User & {
         expirationTime: number;
         accessToken?: unknown;
     };
+    lastLoginAt?: number;
 };
 
 export interface WrapperSettings {
@@ -327,21 +328,42 @@ export class FirebaseAuthService {
 
     private userAlreadyCached(user: UserPlus): boolean {
         debugger;
-        const cachedUser: string | null = this._window.localStorage.getItem(
-            this.localStorageCachedUserKey,
+        const cachedUsersJSON: string | null =
+            this._window.localStorage.getItem(this.localStorageCachedUserKey);
+        if (cachedUsersJSON === null) return false;
+
+        const cachedUsers: Record<string, UserPlus> =
+            JSON.parse(cachedUsersJSON);
+        const serviceProvider = user.providerData[0].providerId;
+        if (!cachedUsers.hasOwnProperty(serviceProvider)) return false;
+
+        const cachedUser = cachedUsers[serviceProvider];
+        const cachedUserJSON = JSON.stringify(
+            this.safeUserResponse(this.idempotentUserResponse(cachedUser)),
         );
         const userJSON: string = JSON.stringify(
             this.safeUserResponse(this.idempotentUserResponse(user)),
         );
-        return cachedUser === userJSON;
+
+        return cachedUserJSON === userJSON;
     }
 
     private cacheUser(user: UserPlus): void {
+        // cache the user under service provider since FIREBASE_LINK_ACCOUNTS=false
+        const serviceProvider = user.providerData[0].providerId;
+        const cachedUserJSON: string | null = this._window.localStorage.getItem(
+            this.localStorageCachedUserKey,
+        );
+        let cachedUser: Record<string, UserPlus> = {};
+        if (cachedUserJSON !== null) {
+            cachedUser = JSON.parse(cachedUserJSON!);
+        }
+        cachedUser[serviceProvider] = this.safeUserResponse(
+            this.idempotentUserResponse(user),
+        );
         this._window.localStorage.setItem(
             this.localStorageCachedUserKey,
-            JSON.stringify(
-                this.safeUserResponse(this.idempotentUserResponse(user)),
-            ),
+            JSON.stringify(cachedUser),
         );
     }
 
@@ -375,6 +397,7 @@ export class FirebaseAuthService {
         const userCopy = JSON.parse(JSON.stringify(user)) as UserPlus;
         if (userCopy.stsTokenManager) {
             userCopy.stsTokenManager.expirationTime = 0;
+            userCopy.lastLoginAt = 0;
         }
         return userCopy;
     }
