@@ -41,6 +41,8 @@ export type AuthProviders = (typeof AuthProviders)[keyof typeof AuthProviders];
 export type DefaultAction = null;
 export const defaultAction: DefaultAction = null;
 
+// a type for undocumented internal properties. these could change without warning
+// in future.
 export type UserPlus = User & {
     stsTokenManager?: {
         refreshToken?: unknown;
@@ -87,6 +89,10 @@ export class FirebaseAuthService {
         this.env = env;
         this.settings = settings;
         this.logger = settings.logger;
+
+        if (this.env.FIREBASE_LINK_ACCOUNTS) {
+            throw new Error("FIREBASE_LINK_ACCOUNTS=true is not supported yet");
+        }
 
         const firebaseOptions: FirebaseOptions = {
             apiKey: this.env.FIREBASE_API_KEY,

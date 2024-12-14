@@ -59,8 +59,8 @@ if (process.env.NODE_ENV === "development") {
 
 // functions
 
-/** the types of the variable are stored on the end of the key after __
- * eg. MY_VAR__NUMBER */
+/** the types of the variable are stored on the end of the .env key.
+ * eg. MY_VAR_NUMBER */
 function getRegexFromDotEnvTypes(allowedDotEnvTypes: string[]): RegExp {
     const typesAsString: string = allowedDotEnvTypes
         .map((typeName: string) => typeName.toUpperCase())
@@ -123,10 +123,10 @@ function getTypedDotEnv(
         const { updatedKey, keyTypeNameUpper } = extractTypeFromKey(key);
         switch (keyTypeNameUpper) {
             case "BOOLEAN":
-                acc[updatedKey] = parsedDotenvVars[key] === "true";
+                acc[updatedKey] = getBoolean(key, parsedDotenvVars[key]);
                 break;
             case "NUMBER":
-                acc[updatedKey] = Number(parsedDotenvVars[key]);
+                acc[updatedKey] = getNumber(key, parsedDotenvVars[key]);
                 break;
             case "STRING":
                 acc[updatedKey] = parsedDotenvVars[key]!;
@@ -154,6 +154,29 @@ function extractTypeFromKey(key: string): {
     const updatedKey = key.replace(regexKeyEmbeddedType, "");
 
     return { updatedKey, keyTypeNameUpper };
+}
+
+function getBoolean(
+    dotEnvKey: string,
+    dotEnvValue: string | undefined,
+): boolean {
+    if (dotEnvValue?.toLowerCase() === "true") return true;
+    if (dotEnvValue?.toLowerCase() === "false") return false;
+    throw new Error(`Value for ${dotEnvKey} must be "true" or "false"`);
+}
+
+function getNumber(dotEnvKey: string, dotEnvValue: string | undefined): number {
+    const errorMessage = `Value for ${dotEnvKey} must be a number`;
+    if (dotEnvValue === undefined) throw new Error(errorMessage);
+    const parsedNumber = Number(dotEnvValue);
+    if (
+        isNaN(parsedNumber) ||
+        parsedNumber === Infinity ||
+        parsedNumber === -Infinity
+    ) {
+        throw new Error(errorMessage);
+    }
+    return parsedNumber;
 }
 
 function dotenv2TsTypes(
