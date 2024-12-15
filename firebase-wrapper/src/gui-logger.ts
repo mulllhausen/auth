@@ -81,6 +81,7 @@ export class GUILogger {
     public clearLogstream(e: Event): void {
         this._window.localStorage.removeItem(this.localStorageLogstreamKey);
         this.logContainerElement.innerHTML = "";
+        this._window.localStorage.removeItem(this.localStorageColorKey);
     }
 
     public log(logItemInput: LogItem): void {

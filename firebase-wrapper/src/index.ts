@@ -57,31 +57,36 @@ async function handleEmailLogin(
     _firebaseService: FirebaseAuthService,
     e: MouseEvent,
 ): Promise<void> {
-    debugger;
-    const emailAddress: string = (
+    // user-flow logic to obtain email and password
+    _firebaseService.EmailAddress = (
         _firebaseService._document.querySelector(
             "input.email",
         ) as HTMLInputElement
     )?.value;
-    if (emailAddress == null || emailAddress.trim() === "") {
-        guiLogger.log({ logMessage: "Email is undefined. Unable to sign in." });
+    if (
+        _firebaseService.EmailAddress == null ||
+        _firebaseService.EmailAddress.trim() === ""
+    ) {
+        guiLogger.log({ logMessage: "No email address - unable to sign in." });
         return;
     }
 
-    const useLinkInsteadOfPassword: boolean = (
-        _firebaseService._document.querySelector(
-            "input.no-password",
-        ) as HTMLInputElement
-    )?.checked;
+    _firebaseService.UseLinkInsteadOfPassword =
+        (
+            _firebaseService._document.querySelector(
+                "input.no-password",
+            ) as HTMLInputElement
+        )?.checked ?? console.log(`Password checkbox not found`);
 
-    const password: string = (
+    _firebaseService.EmailPassword = (
         _firebaseService._document.querySelector(
             "input.password",
         ) as HTMLInputElement
     )?.value;
     if (
-        !useLinkInsteadOfPassword &&
-        (password == null || password.trim() === "")
+        !_firebaseService.UseLinkInsteadOfPassword &&
+        (_firebaseService.EmailPassword == null ||
+            _firebaseService.EmailPassword.trim() === "")
     ) {
         guiLogger.log({
             logMessage: "Password is undefined. Unable to sign in.",
@@ -89,9 +94,8 @@ async function handleEmailLogin(
         return;
     }
 
-    await _firebaseService
-        .SetupForEmailSign(emailAddress, useLinkInsteadOfPassword, password)
-        .Signin(authProviders.Email);
+    // back to the wrapper to handle the sign-in logic
+    await _firebaseService.Signin(authProviders.Email);
 }
 
 function signedInCallback(user: User) {

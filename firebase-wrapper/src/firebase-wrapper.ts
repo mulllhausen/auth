@@ -42,7 +42,8 @@ export type AuthProviders = (typeof authProviders)[keyof typeof authProviders];
 export type DefaultAction = null;
 export const defaultAction: DefaultAction = null;
 
-// a type for undocumented internal properties. these could change without warning
+// a type for undocumented internal properties that are *actually* returned -
+// in addition to the User object. note: these could change without warning
 // in future.
 export type UserPlus = User & {
     stsTokenManager?: {
@@ -76,14 +77,26 @@ export class FirebaseAuthService {
     private settings: WrapperSettings;
     private auth: Auth;
     private firebase: FirebaseApp;
-    private emailAddress!: string;
-    private useLinkInsteadOfPassword!: boolean;
-    private emailPassword!: string;
+    private emailAddress: string | null;
+    UseLinkInsteadOfPassword!: boolean;
+    EmailPassword: string | null = null;
     private emailActionCodeSettings: ActionCodeSettings;
-    localStorageEmailAddressKey = "firebaseEmailAddress";
+    private localStorageEmailAddressKey = "emailAddress";
     private localStorageCachedUserKey = "cachedUser";
     private hiddenMessage: string =
         "not stored in localStorage to prevent xss attacks";
+
+    public set EmailAddress(email: string) {
+        this._window.localStorage.setItem(
+            this.localStorageEmailAddressKey,
+            email,
+        );
+        this.emailAddress = email;
+    }
+
+    public get EmailAddress(): string | null {
+        return this.emailAddress;
+    }
 
     constructor(window: Window, env: ProcessEnv, settings: WrapperSettings) {
         this._window = window;
@@ -106,11 +119,13 @@ export class FirebaseAuthService {
             appId: this.env.FIREBASE_APP_ID,
             measurementId: this.env.FIREBASE_MEASUREMENT_ID,
         };
+        this.emailAddress = this._window.localStorage.getItem(
+            this.localStorageEmailAddressKey,
+        );
         this.emailActionCodeSettings = {
-            url: env.PROJECT_DOMAIN,
+            url: this._window.location.href,
             handleCodeInApp: true,
         };
-        this.logger?.({ logMessage: `initializing the firebase SDK` });
         this.firebase = initializeApp(firebaseOptions);
         this.auth = getAuth(this.firebase);
         this.logger?.({ logMessage: `finished initializing firebase SDK` });
@@ -142,22 +157,15 @@ export class FirebaseAuthService {
         }
     }
 
-    public SetupForEmailSign(
-        emailAddress: string,
-        useLinkInsteadOfPassword: boolean,
-        emailPassword: string,
-    ): FirebaseAuthService {
-        this.emailAddress = emailAddress;
-        this.useLinkInsteadOfPassword = useLinkInsteadOfPassword;
-        this.emailPassword = emailPassword;
-        return this;
-    }
-
     private async setupFirebaseListeners(): Promise<void> {
+        debugger;
         try {
             const redirectResult: UserCredential | null =
                 await getRedirectResult(this.auth);
-            if (redirectResult == null) return;
+            if (redirectResult == null) {
+                this.logger?.({ logMessage: `redirectResult fired - null` });
+                return;
+            }
 
             // we only get here once - immediately after login
             // (stackoverflow.com/a/44468387)
@@ -209,6 +217,7 @@ export class FirebaseAuthService {
                 this.settings.signedOutCallback();
             }
         });
+        await this.CheckIfURLIsASignInWithEmailLink();
     }
 
     private afterUserSignedIn(user: UserPlus): void {
@@ -235,7 +244,7 @@ export class FirebaseAuthService {
 
     public async Signin(provider: AuthProviders): Promise<void> {
         if (provider === authProviders.Email) {
-            if (this.useLinkInsteadOfPassword) {
+            if (this.UseLinkInsteadOfPassword) {
                 await this.handleSendLinkToEmail();
             } else {
                 // TODO: sign in with email and password
@@ -251,6 +260,7 @@ export class FirebaseAuthService {
                 } else {
                     this.logger?.({
                         logMessage: `unknown error for ${provider} in Signin()`,
+                        logData: e,
                     });
                 }
                 return;
@@ -276,29 +286,52 @@ export class FirebaseAuthService {
     }
 
     private async handleSendLinkToEmail(): Promise<void> {
+        if (!this.validateEmailDataBeforeSignIn()) {
+            return;
+        }
         try {
-            const xxx = await sendSignInLinkToEmail(
+            await sendSignInLinkToEmail(
                 this.auth,
-                this.emailAddress,
+                this.emailAddress!,
                 this.emailActionCodeSettings,
             );
-
-            // The link was successfully sent. Inform the user.
-            // Save the email locally so we don't need to ask the user for it again
-            // if they open the link on the same device.
-            this._window.localStorage.setItem(
-                this.localStorageEmailAddressKey,
-                this.emailAddress,
-            );
+            this.logger?.({
+                logMessage: `a sign-in link has been sent to ${this.emailAddress}.`,
+            });
         } catch (error) {
+            this.logger?.({
+                logMessage: "error when sending email link",
+                logData: error,
+            });
             console.error("error when signing in by email", error);
         }
     }
 
-    public async EmailSignInStep2() {
+    private validateEmailDataBeforeSignIn(): boolean {
+        const failMessage: string = "Unable to sign in with email.";
+        if (this.emailAddress == null || this.emailAddress?.trim() === "") {
+            this.logger?.({
+                logMessage: `No email address. ${failMessage}`,
+            });
+            return false;
+        }
+        if (this.UseLinkInsteadOfPassword) return true;
+        if (this.EmailPassword == null || this.EmailPassword.trim() === "") {
+            this.logger?.({
+                logMessage: `Password is undefined. ${failMessage}`,
+            });
+            return false;
+        }
+        return true;
+    }
+
+    private async CheckIfURLIsASignInWithEmailLink() {
         if (!isSignInWithEmailLink(this.auth, this._window.localStorage.href)) {
-            // the current page url was not a sign-in-with-email-link.
-            // no worries. no action needed
+            this.logger?.({
+                logMessage:
+                    `just checked: the current page url is not a ` +
+                    `sign-in-with-email-link`,
+            });
             return;
         }
         let email = this._window.localStorage.getItem(
@@ -316,28 +349,25 @@ export class FirebaseAuthService {
                 this.emailAddress = email.toString();
             }
         }
-        // The client SDK will parse the code from the link for you.
-        signInWithEmailLink(
-            this.auth,
-            this.emailAddress,
-            this._window.location.href,
-        )
-            .then((result) => {
-                // Clear email from storage.
-                window.localStorage.removeItem(
-                    this.localStorageEmailAddressKey,
-                );
-                // You can access the new user via result.user
-                // Additional user info profile not available via:
-                // result.additionalUserInfo.profile == null
-                // You can check if the user is new or existing:
-                // result.additionalUserInfo.isNewUser
-            })
-            .catch((error) => {
-                console.log(error);
-                // Some error occurred, you can inspect the code: error.code
-                // Common errors could be invalid email and invalid or expired OTPs.
-            });
+        try {
+            // The client SDK will parse the code from the link for you.
+            const result: UserCredential = await signInWithEmailLink(
+                this.auth,
+                this.emailAddress!,
+                this._window.location.href,
+            );
+            // Clear email from storage.
+            window.localStorage.removeItem(this.localStorageEmailAddressKey);
+            // You can access the new user via result.user
+            // Additional user info profile not available via:
+            // result.additionalUserInfo.profile == null
+            // You can check if the user is new or existing:
+            // result.additionalUserInfo.isNewUser
+        } catch (error) {
+            console.log(error);
+            // Some error occurred, you can inspect the code: error.code
+            // Common errors could be invalid email and invalid or expired OTPs.
+        }
     }
 
     private userAlreadyCached(user: UserPlus): boolean {
@@ -383,6 +413,7 @@ export class FirebaseAuthService {
 
     public clearUserCache(): void {
         this._window.localStorage.removeItem(this.localStorageCachedUserKey);
+        this._window.localStorage.removeItem(this.localStorageEmailAddressKey);
     }
 
     serviceProviderNotFoundAction(self: FirebaseAuthService, e: MouseEvent) {
