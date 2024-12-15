@@ -24,19 +24,20 @@ import {
     GithubAuthProvider,
 } from "firebase/auth";
 import { ProcessEnv } from "./dotenv";
+import { LogItem } from "./gui-logger";
 
 type AuthProviderConstructor =
     | typeof GoogleAuthProvider
     | typeof FacebookAuthProvider
     | typeof GithubAuthProvider;
 
-export const AuthProviders = {
+export const authProviders = {
     Email: EmailAuthProvider.PROVIDER_ID,
     Google: GoogleAuthProvider.PROVIDER_ID,
     Facebook: FacebookAuthProvider.PROVIDER_ID,
     GitHub: GithubAuthProvider.PROVIDER_ID,
 } as const;
-export type AuthProviders = (typeof AuthProviders)[keyof typeof AuthProviders];
+export type AuthProviders = (typeof authProviders)[keyof typeof authProviders];
 
 export type DefaultAction = null;
 export const defaultAction: DefaultAction = null;
@@ -53,7 +54,7 @@ export type UserPlus = User & {
 };
 
 export interface WrapperSettings {
-    logger: Function | null;
+    logger: (logItemInput: LogItem) => void;
     loginButtonCSSClass: string;
     clearCachedUserButtonCSSClass: string;
     authProviderSettings: {
@@ -69,16 +70,16 @@ export interface WrapperSettings {
 
 export class FirebaseAuthService {
     private _window: Window;
-    _document: Document; // public
-    private logger: Function | null;
+    _document: Document;
+    private logger: (logItem: LogItem) => void;
     private env: ProcessEnv;
     private settings: WrapperSettings;
-    private auth!: Auth;
-    private firebase!: FirebaseApp;
+    private auth: Auth;
+    private firebase: FirebaseApp;
     private emailAddress!: string;
     private useLinkInsteadOfPassword!: boolean;
     private emailPassword!: string;
-    private emailActionCodeSettings!: ActionCodeSettings;
+    private emailActionCodeSettings: ActionCodeSettings;
     localStorageEmailAddressKey = "firebaseEmailAddress";
     private localStorageCachedUserKey = "cachedUser";
     private hiddenMessage: string =
@@ -109,10 +110,10 @@ export class FirebaseAuthService {
             url: env.PROJECT_DOMAIN,
             handleCodeInApp: true,
         };
-        this.logger?.(`initializing the firebase SDK`);
+        this.logger?.({ logMessage: `initializing the firebase SDK` });
         this.firebase = initializeApp(firebaseOptions);
         this.auth = getAuth(this.firebase);
-        this.logger?.(`finished initializing firebase SDK`);
+        this.logger?.({ logMessage: `finished initializing firebase SDK` });
         this.setupFirebaseListeners();
         this.SetupEvents();
     }
@@ -134,7 +135,7 @@ export class FirebaseAuthService {
             if (foundProvider) action = foundProvider?.loginButtonClicked;
             else action = this.serviceProviderNotFoundAction;
             tsButton.addEventListener("click", async (e) => {
-                this.logger?.(`login with ${provider} clicked`);
+                this.logger?.({ logMessage: `login with ${provider} clicked` });
                 if (action === defaultAction) await this.Signin(provider);
                 else await action(this, e);
             });
@@ -166,19 +167,21 @@ export class FirebaseAuthService {
             const credential =
                 providerClass.credentialFromResult(redirectResult);
             if (credential == null) {
-                this.logger?.(`credential is null immediately after sign-in`);
+                this.logger?.({
+                    logMessage: `credential is null immediately after sign-in`,
+                });
                 return;
             }
-            this.logger?.(
-                `credential immediately after sign-in with ${providerId}`,
-                credential,
-                this.safeCredentialResponse(credential),
-            );
+            this.logger?.({
+                logMessage: `credential immediately after sign-in with ${providerId}`,
+                logData: credential,
+                safeLocalStorageData: this.safeCredentialResponse(credential),
+            });
             const accessToken: string | undefined = credential.accessToken;
             if (accessToken === undefined) {
-                this.logger?.(
-                    `accessToken is null immediately after sign-in with ${providerId}`,
-                );
+                this.logger?.({
+                    logMessage: `accessToken is null immediately after sign-in with ${providerId}`,
+                });
                 return;
             }
             const user = redirectResult.user;
@@ -198,46 +201,61 @@ export class FirebaseAuthService {
 
         const logMessageStart: string = "firebase auth state changed";
         onAuthStateChanged(this.auth, (user) => {
-            if (user) {
-                if (this.userAlreadyCached(user)) {
-                    this.logger?.(
-                        `${logMessageStart}, but user is already signed-in`,
-                        user,
-                        this.safeUserResponse(user),
-                    );
-                    return;
-                }
-
-                this.logger?.(
-                    `${logMessageStart} - user is signed-in`,
-                    user,
-                    this.safeUserResponse(user),
-                );
-                this.cacheUser(user);
-                // User is signed in, see docs for a list of available properties
-                // https://firebase.google.com/docs/reference/js/firebase.User
-                this.settings.signedInCallback(user);
-            } else {
-                this.logger?.(`${logMessageStart} - user is signed-out`);
+            if (user) this.afterUserSignedIn(user);
+            else {
+                this.logger?.({
+                    logMessage: `${logMessageStart} - user is signed-out`,
+                });
                 this.settings.signedOutCallback();
             }
         });
     }
 
+    private afterUserSignedIn(user: UserPlus): void {
+        const logMessageStart: string = "firebase auth state changed";
+        if (this.userAlreadyCached(user)) {
+            this.logger?.({
+                logMessage: `${logMessageStart}, but user is already signed-in`,
+                logData: user,
+                safeLocalStorageData: this.safeUserResponse(user),
+            });
+            return;
+        }
+
+        this.logger?.({
+            logMessage: `${logMessageStart} - user is signed-in`,
+            logData: user,
+            safeLocalStorageData: this.safeUserResponse(user),
+        });
+        this.cacheUser(user);
+        // User is signed in, see docs for a list of available properties
+        // https://firebase.google.com/docs/reference/js/firebase.User
+        this.settings.signedInCallback(user);
+    }
+
     public async Signin(provider: AuthProviders): Promise<void> {
-        if (provider === AuthProviders.Email) {
-            await this.emailSignInStep1();
+        if (provider === authProviders.Email) {
+            if (this.useLinkInsteadOfPassword) {
+                await this.handleSendLinkToEmail();
+            } else {
+                // TODO: sign in with email and password
+            }
             return;
         } else {
             let authProvider: AuthProvider;
             try {
                 authProvider = new (this.authProviderFactory(provider))();
             } catch (e) {
-                if (e instanceof Error) this.logger?.(e.message);
-                else this.logger?.(`unknown error for ${provider} in Signin()`);
+                if (e instanceof Error) {
+                    this.logger?.({ logMessage: e.message });
+                } else {
+                    this.logger?.({
+                        logMessage: `unknown error for ${provider} in Signin()`,
+                    });
+                }
                 return;
             }
-            this.logger?.(`redirecting to ${provider}`);
+            this.logger?.({ logMessage: `redirecting to ${provider}` });
             signInWithRedirect(this.auth, authProvider);
         }
     }
@@ -246,38 +264,34 @@ export class FirebaseAuthService {
         providerId: AuthProviders,
     ): AuthProviderConstructor {
         switch (providerId) {
-            case AuthProviders.Google:
+            case authProviders.Google:
                 return GoogleAuthProvider;
-            case AuthProviders.Facebook:
+            case authProviders.Facebook:
                 return FacebookAuthProvider;
-            case AuthProviders.GitHub:
+            case authProviders.GitHub:
                 return GithubAuthProvider;
             default:
                 throw new Error(`unsupported provider ${providerId}`);
         }
     }
 
-    private async emailSignInStep1(): Promise<void> {
-        if (this.useLinkInsteadOfPassword) {
-            sendSignInLinkToEmail(
+    private async handleSendLinkToEmail(): Promise<void> {
+        try {
+            const xxx = await sendSignInLinkToEmail(
                 this.auth,
                 this.emailAddress,
                 this.emailActionCodeSettings,
-            )
-                .then(() => {
-                    // The link was successfully sent. Inform the user.
-                    // Save the email locally so we don't need to ask the user for it again
-                    // if they open the link on the same device.
-                    this._window.localStorage.setItem(
-                        this.localStorageEmailAddressKey,
-                        this.emailAddress,
-                    );
-                })
-                .catch((error) => {
-                    console.error("error when signing in by email", error);
-                });
-        } else {
-            // TODO: sign in with email and password
+            );
+
+            // The link was successfully sent. Inform the user.
+            // Save the email locally so we don't need to ask the user for it again
+            // if they open the link on the same device.
+            this._window.localStorage.setItem(
+                this.localStorageEmailAddressKey,
+                this.emailAddress,
+            );
+        } catch (error) {
+            console.error("error when signing in by email", error);
         }
     }
 

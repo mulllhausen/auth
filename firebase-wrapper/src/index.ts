@@ -1,15 +1,14 @@
-import { GUILogger } from "./gui-logger";
+import { GUILogger, LogItem } from "./gui-logger";
 import "./index.css";
 import { User } from "firebase/auth";
 import {
-    AuthProviders,
+    authProviders,
     FirebaseAuthService,
     WrapperSettings,
     defaultAction,
 } from "./firebase-wrapper";
 import { env } from "./dotenv";
 import { HTMLTemplateManager } from "./html-template-manager";
-import { log } from "console";
 
 const htmlTemplateManager = new HTMLTemplateManager(document);
 const guiLogger = new GUILogger(
@@ -30,16 +29,16 @@ const wrapperSettings: WrapperSettings = {
     signedInCallback: signedInCallback,
     signedOutCallback: signedOutCallback,
     authProviderSettings: {
-        [AuthProviders.Google]: {
+        [authProviders.Google]: {
             loginButtonClicked: defaultAction,
         },
-        [AuthProviders.Facebook]: {
+        [authProviders.Facebook]: {
             loginButtonClicked: defaultAction,
         },
-        [AuthProviders.GitHub]: {
+        [authProviders.GitHub]: {
             loginButtonClicked: defaultAction,
         },
-        [AuthProviders.Email]: {
+        [authProviders.Email]: {
             loginButtonClicked: (self: FirebaseAuthService, e: MouseEvent) =>
                 handleEmailLogin(self, e),
         },
@@ -59,13 +58,13 @@ async function handleEmailLogin(
     e: MouseEvent,
 ): Promise<void> {
     debugger;
-    const email: string = (
+    const emailAddress: string = (
         _firebaseService._document.querySelector(
             "input.email",
         ) as HTMLInputElement
     )?.value;
-    if (email == null || email.trim() === "") {
-        console.error("Email is undefined");
+    if (emailAddress == null || emailAddress.trim() === "") {
+        guiLogger.log({ logMessage: "Email is undefined. Unable to sign in." });
         return;
     }
 
@@ -84,25 +83,32 @@ async function handleEmailLogin(
         !useLinkInsteadOfPassword &&
         (password == null || password.trim() === "")
     ) {
-        console.error("Password is undefined");
+        guiLogger.log({
+            logMessage: "Password is undefined. Unable to sign in.",
+        });
         return;
     }
 
-    _firebaseService
-        .SetupForEmailSign(email, useLinkInsteadOfPassword, password)
-        .Signin(AuthProviders.Email);
+    await _firebaseService
+        .SetupForEmailSign(emailAddress, useLinkInsteadOfPassword, password)
+        .Signin(authProviders.Email);
 }
 
 function signedInCallback(user: User) {
     if (user.photoURL != null && user.photoURL !== "") {
-        const userData = null;
-        guiLogger.log("image detected", userData, userData, user.photoURL);
+        const logItem: LogItem = {
+            logMessage: "image detected",
+            imageURL: user.photoURL,
+        };
+        guiLogger.log(logItem);
     }
     console.log("Signed in");
 }
+
 function signedOutCallback() {
     console.log("Signed out");
 }
+
 function buttonClickCallback() {
     console.log("Signed in");
 }

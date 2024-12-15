@@ -1,12 +1,13 @@
 import { HTMLTemplateManager } from "./html-template-manager";
 
 export interface LogItem {
-    logAction: string;
-    logData: any;
-    safeLocalStorageData: any;
-    imageURL: string | null;
-    color: string;
-    logDateTime: string;
+    logMessage: string;
+    logData?: any;
+    safeLocalStorageData?: any;
+    imageURL?: string | null;
+    logDateTime?: string | null;
+    color?: string | null;
+    fromLocalStorage?: boolean;
 }
 
 export class GUILogger {
@@ -69,18 +70,10 @@ export class GUILogger {
             this._window.localStorage.getItem(this.localStorageLogstreamKey);
         if (savedLogstreamJSON == null) return this;
 
-        const savedLogstreamItems = JSON.parse(savedLogstreamJSON) as LogItem[];
-        const fromLocalStorage = true;
+        const savedLogstreamItems: LogItem[] = JSON.parse(savedLogstreamJSON);
         for (const logItem of savedLogstreamItems) {
-            this.log(
-                logItem.logAction,
-                logItem.logData,
-                logItem.safeLocalStorageData,
-                logItem.imageURL,
-                logItem.logDateTime,
-                logItem.color,
-                fromLocalStorage,
-            );
+            logItem.fromLocalStorage = true;
+            this.log(logItem);
         }
         return this;
     }
@@ -90,63 +83,53 @@ export class GUILogger {
         this.logContainerElement.innerHTML = "";
     }
 
-    public log(
-        logAction: string,
-        logData: any,
-        safeLocalStorageData: any,
-        imageURL: string | null = null,
-        logDateTime: string | null = null,
-        color: string | null = null,
-        fromLocalStorage: boolean = false,
-    ): void {
-        const logItem: HTMLElement =
+    public log(logItemInput: LogItem): void {
+        const logItemElement: HTMLElement =
             this.htmlTemplateManager.cloneTemplateSingle(this.logItemCSS);
 
-        if (color == null) {
-            color = this.currentColor;
+        if (logItemInput.color == null) {
+            logItemInput.color = this.currentColor;
         }
-        logItem.style.backgroundColor = color;
-        logItem.querySelector(".log-message")!.innerHTML = logAction;
+        logItemElement.style.backgroundColor = logItemInput.color;
+        logItemElement.querySelector(".log-message")!.innerHTML =
+            logItemInput.logMessage;
 
-        if (logDateTime == null) {
-            logDateTime = this.getDate();
+        if (logItemInput.logDateTime == null) {
+            logItemInput.logDateTime = this.getDate();
         }
-        logItem.querySelector(".log-datetime")!.innerHTML = logDateTime;
+        logItemElement.querySelector(".log-datetime")!.innerHTML =
+            logItemInput.logDateTime;
 
         const renderData: any =
-            logData != null ? logData : safeLocalStorageData;
+            logItemInput.logData != null
+                ? logItemInput.logData
+                : logItemInput.safeLocalStorageData;
         if (renderData != null) {
-            const dataElement = logItem.querySelector(
+            const dataElement = logItemElement.querySelector(
                 ".log-data",
             ) as HTMLElement;
             dataElement.innerHTML = JSON.stringify(renderData, null, 4);
             dataElement.style.display = "block";
         }
 
-        if (imageURL != null) {
-            const thisImage = logItem.querySelector(
+        if (logItemInput.imageURL != null) {
+            const thisImage = logItemElement.querySelector(
                 "img.image",
             ) as HTMLImageElement;
-            thisImage.src = imageURL;
+            thisImage.src = logItemInput.imageURL;
             thisImage.style.display = "block";
         }
 
         this.htmlTemplateManager.prependElement(
-            logItem,
+            logItemElement,
             this.logContainerElement,
         );
 
-        if (!fromLocalStorage)
-            this.saveLogToLocalStorage({
-                logAction,
-                logData: null, // unsafe - do not save
-                safeLocalStorageData,
-                imageURL,
-                color,
-                logDateTime: logDateTime,
-            });
-
-        console.log(logAction, logData);
+        console.log(logItemInput.logMessage, logItemInput.logData);
+        logItemInput.logData = null; // unsafe - do not save
+        if (!logItemInput.fromLocalStorage) {
+            this.saveLogToLocalStorage(logItemInput);
+        }
     }
 
     private getDate(): string {
