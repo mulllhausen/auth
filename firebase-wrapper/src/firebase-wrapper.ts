@@ -67,6 +67,18 @@ export interface WrapperSettings {
     };
     signedInCallback: (user: UserPlus) => void;
     signedOutCallback: () => void;
+
+    /** email sign-in step 5/9 */
+    reenterEmailAddressCallback: () => void;
+
+    /** email sign-in step 8/9 */
+    clearEmailAfterSignInCallback: (self: FirebaseAuthService) => void;
+}
+enum emailStates {
+    emailNotSent,
+    emailSent,
+    emailLinkOpenedOnDifferentBrowser,
+    emailLinkOpenedOnSameBrowser,
 }
 
 export class FirebaseAuthService {
@@ -85,6 +97,11 @@ export class FirebaseAuthService {
     private localStorageCachedUserKey = "cachedUser";
     private hiddenMessage: string =
         "not stored in localStorage to prevent xss attacks";
+    private _emailState: emailStates | null = null;
+    private backedUpEmailLoginButtonClicked:
+        | DefaultAction
+        | ((self: FirebaseAuthService, e: MouseEvent) => Promise<void>)
+        | null = null;
 
     public set EmailAddress(email: string) {
         this._window.localStorage.setItem(
@@ -96,6 +113,14 @@ export class FirebaseAuthService {
 
     public get EmailAddress(): string | null {
         return this.emailAddress;
+    }
+
+    private set emailState(emailState: emailStates) {
+        this.logger?.({ logMessage: `emailState changed to ${emailState}` });
+        this._emailState = emailState;
+    }
+    private get emailState(): emailStates | null {
+        return this._emailState;
     }
 
     constructor(window: Window, env: ProcessEnv, settings: WrapperSettings) {
@@ -159,6 +184,12 @@ export class FirebaseAuthService {
 
     private async setupFirebaseListeners(): Promise<void> {
         debugger;
+        onAuthStateChanged(this.auth, this.authStateChanged.bind(this));
+        await this.checkIfURLIsASignInWithEmailLink();
+        await this.handleGetRedirectResult();
+    }
+
+    private async handleGetRedirectResult(): Promise<void> {
         try {
             const redirectResult: UserCredential | null =
                 await getRedirectResult(this.auth);
@@ -206,18 +237,17 @@ export class FirebaseAuthService {
             debugger;
             //const credential = GithubAuthProvider.credentialFromError(firebaseError);
         }
+    }
 
-        const logMessageStart: string = "firebase auth state changed";
-        onAuthStateChanged(this.auth, (user) => {
-            if (user) this.afterUserSignedIn(user);
-            else {
-                this.logger?.({
-                    logMessage: `${logMessageStart} - user is signed-out`,
-                });
-                this.settings.signedOutCallback();
-            }
-        });
-        await this.CheckIfURLIsASignInWithEmailLink();
+    private authStateChanged(user: User | null): void {
+        if (user) {
+            this.afterUserSignedIn(user);
+        } else {
+            this.logger?.({
+                logMessage: `firebase auth state changed - user is signed-out`,
+            });
+            this.settings.signedOutCallback();
+        }
     }
 
     private afterUserSignedIn(user: UserPlus): void {
@@ -244,10 +274,21 @@ export class FirebaseAuthService {
 
     public async Signin(provider: AuthProviders): Promise<void> {
         if (provider === authProviders.Email) {
-            if (this.UseLinkInsteadOfPassword) {
-                await this.handleSendLinkToEmail();
-            } else {
-                // TODO: sign in with email and password
+            switch (this.emailState) {
+                case emailStates.emailNotSent:
+                    if (this.UseLinkInsteadOfPassword) {
+                        // email sign-in step 1/9
+                        await this.handleSendLinkToEmail();
+                    } else {
+                        // TODO: sign in with email and password
+                    }
+                    return;
+                case emailStates.emailLinkOpenedOnSameBrowser:
+                    // email sign-in step 7/9
+                    await this.handleSignInWithEmailLink();
+                    break;
+                default:
+                    break;
             }
             return;
         } else {
@@ -285,6 +326,7 @@ export class FirebaseAuthService {
         }
     }
 
+    /** email sign-in step 1/9 */
     private async handleSendLinkToEmail(): Promise<void> {
         if (!this.validateEmailDataBeforeSignIn()) {
             return;
@@ -307,6 +349,7 @@ export class FirebaseAuthService {
         }
     }
 
+    /** email sign-in step 2/9 */
     private validateEmailDataBeforeSignIn(): boolean {
         const failMessage: string = "Unable to sign in with email.";
         if (this.emailAddress == null || this.emailAddress?.trim() === "") {
@@ -325,37 +368,65 @@ export class FirebaseAuthService {
         return true;
     }
 
-    private async CheckIfURLIsASignInWithEmailLink() {
-        if (!isSignInWithEmailLink(this.auth, this._window.localStorage.href)) {
+    /** email sign-in step 3/9 */
+    private async checkIfURLIsASignInWithEmailLink(): Promise<void> {
+        debugger;
+        if (!isSignInWithEmailLink(this.auth, this._window.location.href)) {
             this.logger?.({
                 logMessage:
                     `just checked: the current page url is not a ` +
                     `sign-in-with-email-link`,
             });
+            this.emailState = emailStates.emailNotSent;
             return;
         }
-        let email = this._window.localStorage.getItem(
-            this.localStorageEmailAddressKey,
-        );
-        if (email) {
-            this.emailAddress = email.toString();
+        this.logger?.({
+            logMessage:
+                `just checked: the current page url is a ` +
+                `sign-in-with-email-link`,
+        });
+        if (this.emailAddress != null) {
+            this.logger?.({
+                logMessage: `the user has opened the email link on the same browser.`,
+            });
+            this.emailState = emailStates.emailLinkOpenedOnSameBrowser;
         } else {
-            // User opened the link on a different device. To prevent session fixation
-            // attacks, ask the user to provide the associated email again. For example:
-            email = window.prompt(
-                `Please provide your email address to finalise signing-in to ${this.env.PROJECT_NAME}`,
-            );
-            if (email) {
-                this.emailAddress = email.toString();
-            }
+            this.logger?.({
+                logMessage:
+                    `the user has opened the email link on a different browser. ` +
+                    `<b>to prevent session fixation attacks, you must enter the email ` +
+                    `address again</b>`,
+            });
+            this.emailState = emailStates.emailLinkOpenedOnDifferentBrowser;
+
+            // email sign-in step 4/9
+            this.backupEmailLoginButtonClicked();
+
+            // email sign-in step 5/9
+            this.settings.reenterEmailAddressCallback();
         }
+    }
+
+    /** email sign-in step 4/9 */
+    private backupEmailLoginButtonClicked(): void {
+        this.backedUpEmailLoginButtonClicked =
+            this.settings.authProviderSettings[
+                authProviders.Email
+            ].loginButtonClicked;
+    }
+
+    /** email sign-in step 7/9 */
+    private async handleSignInWithEmailLink(): Promise<void> {
         try {
-            // The client SDK will parse the code from the link for you.
             const result: UserCredential = await signInWithEmailLink(
                 this.auth,
                 this.emailAddress!,
                 this._window.location.href,
             );
+
+            // email sign-in step 8/9
+            this.settings.clearEmailAfterSignInCallback(this);
+
             // Clear email from storage.
             window.localStorage.removeItem(this.localStorageEmailAddressKey);
             // You can access the new user via result.user
@@ -363,6 +434,9 @@ export class FirebaseAuthService {
             // result.additionalUserInfo.profile == null
             // You can check if the user is new or existing:
             // result.additionalUserInfo.isNewUser
+
+            // email sign-in step 9/9
+            this.restoreEmailLoginButtonClicked();
         } catch (error) {
             console.log(error);
             // Some error occurred, you can inspect the code: error.code
@@ -370,8 +444,15 @@ export class FirebaseAuthService {
         }
     }
 
+    /** email sign-in step 9/9 */
+    private restoreEmailLoginButtonClicked(): void {
+        if (this.backedUpEmailLoginButtonClicked === null) return;
+        this.settings.authProviderSettings[
+            authProviders.Email
+        ].loginButtonClicked = this.backedUpEmailLoginButtonClicked;
+    }
+
     private userAlreadyCached(user: UserPlus): boolean {
-        debugger;
         const cachedUsersJSON: string | null =
             this._window.localStorage.getItem(this.localStorageCachedUserKey);
         if (cachedUsersJSON === null) return false;
