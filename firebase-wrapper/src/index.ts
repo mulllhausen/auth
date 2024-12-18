@@ -1,29 +1,29 @@
-import { GUILogger, LogItem } from "./gui-logger";
-import "./index.css";
-import { User } from "firebase/auth";
+import { env } from "./dotenv";
 import {
     authProviders,
-    FirebaseAuthService,
-    WrapperSettings,
     defaultAction,
+    FirebaseAuthService,
+    firebaseDependencies,
+    UserPlus,
+    WrapperSettings,
 } from "./firebase-wrapper";
-import { env } from "./dotenv";
+import { GUILogger, LogItem } from "./gui-logger";
 import { HTMLTemplateManager } from "./html-template-manager";
+import "./index.css";
 
 const htmlTemplateManager = new HTMLTemplateManager(document);
-const guiLogger = new GUILogger(
-    document,
-    window,
+const guiLogger = new GUILogger({
+    _window: window,
     htmlTemplateManager,
-    "button#clearLogstream",
-    "#windowLogContainer",
-    "#windowLogItem",
-)
+    cleaLogStreamButtonCSS: "button#clearLogstream",
+    logContainerCSS: "#windowLogContainer",
+    logItemCSS: "#windowLogItem",
+})
     .initEvents()
     .initGUIFromLocalStorage();
 
 const wrapperSettings: WrapperSettings = {
-    logger: guiLogger.log.bind(guiLogger), // bind preserves `this` within GUILogger
+    logger: guiLogger.log.bind(guiLogger),
     loginButtonCSSClass: "button.login",
     clearCachedUserButtonCSSClass: "button#clearCachedUser",
     signedInCallback: signedInCallback,
@@ -47,11 +47,12 @@ const wrapperSettings: WrapperSettings = {
     clearEmailAfterSignInCallback: clearEmailAfterSignInCallback,
 };
 
-const firebaseAuthService = new FirebaseAuthService(
-    window,
+const firebaseAuthService = new FirebaseAuthService({
+    firebaseDependencies,
+    _window: window,
     env,
-    wrapperSettings,
-);
+    settings: wrapperSettings,
+});
 
 document.addEventListener("DOMContentLoaded", () => {
     populateEmailInput(firebaseAuthService.EmailAddress);
@@ -97,7 +98,7 @@ async function handleEmailLogin(
     await _firebaseService.Signin(authProviders.Email);
 }
 
-function signedInCallback(user: User) {
+function signedInCallback(user: UserPlus) {
     if (user.photoURL != null && user.photoURL !== "") {
         const logItem: LogItem = {
             logMessage: "image detected",
@@ -117,9 +118,9 @@ function buttonClickCallback() {
 }
 
 /** email sign-in step 5/9 */
-function reenterEmailAddressCallback() {
+function reenterEmailAddressCallback(_firebaseService: FirebaseAuthService) {
     // redefine the email login button click event
-    wrapperSettings.authProviderSettings[
+    _firebaseService.Settings.authProviderSettings[
         authProviders.Email
     ].loginButtonClicked = (self: FirebaseAuthService, e: MouseEvent) =>
         emailAddressReentered(self, e);

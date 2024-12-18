@@ -1,58 +1,76 @@
+// #region imports
+
 import {
-    initializeApp,
-    FirebaseOptions,
     FirebaseApp,
     FirebaseError,
+    FirebaseOptions,
+    initializeApp,
 } from "firebase/app";
 import {
+    ActionCodeSettings,
+    Auth,
+    AuthProvider,
+    CompleteFn,
+    EmailAuthProvider,
+    ErrorFn,
+    FacebookAuthProvider,
+    GithubAuthProvider,
+    GoogleAuthProvider,
+    NextOrObserver,
+    OAuthCredential,
+    PopupRedirectResolver,
+    Unsubscribe,
+    User,
+    UserCredential,
     getAuth,
     getRedirectResult,
-    signInWithRedirect,
-    FacebookAuthProvider,
-    OAuthCredential,
-    GoogleAuthProvider,
-    EmailAuthProvider,
-    Auth,
-    User,
-    sendSignInLinkToEmail,
-    ActionCodeSettings,
     isSignInWithEmailLink,
-    signInWithEmailLink,
     onAuthStateChanged,
-    AuthProvider,
-    UserCredential,
-    GithubAuthProvider,
+    sendSignInLinkToEmail,
+    signInWithEmailLink,
+    signInWithRedirect,
 } from "firebase/auth";
 import { ProcessEnv } from "./dotenv";
 import { LogItem } from "./gui-logger";
 
-type AuthProviderConstructor =
-    | typeof GoogleAuthProvider
-    | typeof FacebookAuthProvider
-    | typeof GithubAuthProvider;
+// #endregion
 
-export const authProviders = {
-    Email: EmailAuthProvider.PROVIDER_ID,
-    Google: GoogleAuthProvider.PROVIDER_ID,
-    Facebook: FacebookAuthProvider.PROVIDER_ID,
-    GitHub: GithubAuthProvider.PROVIDER_ID,
-} as const;
-export type AuthProviders = (typeof authProviders)[keyof typeof authProviders];
+// #region interfaces
 
-export type DefaultAction = null;
-export const defaultAction: DefaultAction = null;
+export interface FirebaseDependencies {
+    FacebookAuthProvider: typeof FacebookAuthProvider;
+    GithubAuthProvider: typeof GithubAuthProvider;
+    GoogleAuthProvider: typeof GoogleAuthProvider;
 
-// a type for undocumented internal properties that are *actually* returned -
-// in addition to the User object. note: these could change without warning
-// in future.
-export type UserPlus = User & {
-    stsTokenManager?: {
-        refreshToken?: unknown;
-        expirationTime: number;
-        accessToken?: unknown;
-    };
-    lastLoginAt?: number;
-};
+    getAuth: (app?: FirebaseApp) => Auth;
+    getRedirectResult: (
+        auth: Auth,
+        resolver?: PopupRedirectResolver,
+    ) => Promise<UserCredential | null>;
+    initializeApp: (options: FirebaseOptions, name?: string) => FirebaseApp;
+    isSignInWithEmailLink: (auth: Auth, emailLink: string) => boolean;
+    onAuthStateChanged: (
+        auth: Auth,
+        nextOrObserver: NextOrObserver<User>,
+        error?: ErrorFn,
+        completed?: CompleteFn,
+    ) => Unsubscribe;
+    sendSignInLinkToEmail: (
+        auth: Auth,
+        email: string,
+        actionCodeSettings: ActionCodeSettings,
+    ) => Promise<void>;
+    signInWithEmailLink: (
+        auth: Auth,
+        email: string,
+        emailLink?: string,
+    ) => Promise<UserCredential>;
+    signInWithRedirect: (
+        auth: Auth,
+        provider: AuthProvider,
+        resolver?: PopupRedirectResolver,
+    ) => Promise<never>;
+}
 
 export interface WrapperSettings {
     logger: (logItemInput: LogItem) => void;
@@ -69,40 +87,120 @@ export interface WrapperSettings {
     signedOutCallback: () => void;
 
     /** email sign-in step 5/9 */
-    reenterEmailAddressCallback: () => void;
+    reenterEmailAddressCallback: (self: FirebaseAuthService) => void;
 
     /** email sign-in step 8/9 */
     clearEmailAfterSignInCallback: (self: FirebaseAuthService) => void;
 }
-enum emailStates {
-    emailNotSent,
-    emailSent,
-    emailLinkOpenedOnDifferentBrowser,
-    emailLinkOpenedOnSameBrowser,
+
+// #endregion
+
+// #region types
+
+export type AuthProviders = (typeof authProviders)[keyof typeof authProviders];
+
+export type DefaultAction = null;
+
+// a type for undocumented internal properties that are *actually* returned
+// in addition to the User object. note: these could change without warning
+// in future.
+export type UserPlus = User & {
+    stsTokenManager?: {
+        refreshToken?: unknown;
+        expirationTime: number;
+        accessToken?: unknown;
+    };
+    lastLoginAt?: number;
+};
+
+type AuthProviderConstructor =
+    | typeof GoogleAuthProvider
+    | typeof FacebookAuthProvider
+    | typeof GithubAuthProvider;
+
+type EventListenerMethod = <K extends keyof HTMLElementEventMap>(
+    type: K,
+    listener: (this: HTMLElement, ev: HTMLElementEventMap[K]) => any,
+    options?: boolean | AddEventListenerOptions,
+) => void;
+
+// #endregion
+
+// #region consts
+
+export const firebaseDependencies: FirebaseDependencies = {
+    FacebookAuthProvider,
+    GithubAuthProvider,
+    GoogleAuthProvider,
+    getAuth,
+    getRedirectResult,
+    initializeApp,
+    isSignInWithEmailLink,
+    onAuthStateChanged,
+    sendSignInLinkToEmail,
+    signInWithEmailLink,
+    signInWithRedirect,
+};
+
+export const authProviders = {
+    Email: EmailAuthProvider.PROVIDER_ID,
+    Google: GoogleAuthProvider.PROVIDER_ID,
+    Facebook: FacebookAuthProvider.PROVIDER_ID,
+    GitHub: GithubAuthProvider.PROVIDER_ID,
+} as const;
+
+export const defaultAction: DefaultAction = null;
+
+// #endregion
+
+// #region enums
+
+enum EmailSignInStates {
+    EmailNotSent,
+    EmailSent,
+    EmailLinkOpenedOnDifferentBrowser,
+    EmailLinkOpenedOnSameBrowser,
 }
+enum CRUD {
+    Create,
+    Read,
+    Update,
+    Delete,
+}
+
+// #endregion
 
 export class FirebaseAuthService {
     private _window: Window;
     _document: Document;
+    private firebase: FirebaseDependencies;
+    private settings: WrapperSettings;
     private logger: (logItem: LogItem) => void;
     private env: ProcessEnv;
-    private settings: WrapperSettings;
     private auth: Auth;
-    private firebase: FirebaseApp;
     private emailAddress: string | null;
-    UseLinkInsteadOfPassword!: boolean;
+    UseLinkInsteadOfPassword: boolean = false;
     EmailPassword: string | null = null;
     private emailActionCodeSettings: ActionCodeSettings;
     private localStorageEmailAddressKey = "emailAddress";
     private localStorageCachedUserKey = "cachedUser";
     private hiddenMessage: string =
         "not stored in localStorage to prevent xss attacks";
-    private _emailState: emailStates | null = null;
+    private _emailState: EmailSignInStates | null = null;
     private backedUpEmailLoginButtonClicked:
         | DefaultAction
         | ((self: FirebaseAuthService, e: MouseEvent) => Promise<void>)
         | null = null;
 
+    public set Settings(settings: WrapperSettings) {
+        this.SetupEvents(this.settings, CRUD.Delete);
+        this.settings = settings;
+        this.SetupEvents(this.settings, CRUD.Create);
+    }
+
+    public get EmailAddress(): string | null {
+        return this.emailAddress;
+    }
     public set EmailAddress(email: string) {
         this._window.localStorage.setItem(
             this.localStorageEmailAddressKey,
@@ -111,24 +209,26 @@ export class FirebaseAuthService {
         this.emailAddress = email;
     }
 
-    public get EmailAddress(): string | null {
-        return this.emailAddress;
-    }
-
-    private set emailState(emailState: emailStates) {
-        this.logger?.({ logMessage: `emailState changed to ${emailState}` });
-        this._emailState = emailState;
-    }
-    private get emailState(): emailStates | null {
+    private get emailState(): EmailSignInStates | null {
         return this._emailState;
     }
+    private set emailState(emailState: EmailSignInStates) {
+        this.logger?.({ logMessage: `email state changed to ${emailState}` });
+        this._emailState = emailState;
+    }
 
-    constructor(window: Window, env: ProcessEnv, settings: WrapperSettings) {
-        this._window = window;
-        this._document = window.document;
-        this.env = env;
-        this.settings = settings;
-        this.logger = settings.logger;
+    constructor(input: {
+        firebaseDependencies: FirebaseDependencies;
+        _window: Window;
+        env: ProcessEnv;
+        settings: WrapperSettings;
+    }) {
+        this.firebase = input.firebaseDependencies;
+        this._window = input._window;
+        this._document = this._window.document;
+        this.env = input.env;
+        this.settings = input.settings;
+        this.logger = input.settings.logger;
 
         if (this.env.FIREBASE_LINK_ACCOUNTS) {
             throw new Error("FIREBASE_LINK_ACCOUNTS=true is not supported yet");
@@ -151,40 +251,69 @@ export class FirebaseAuthService {
             url: this._window.location.href,
             handleCodeInApp: true,
         };
-        this.firebase = initializeApp(firebaseOptions);
-        this.auth = getAuth(this.firebase);
+        this.auth = this.firebase.getAuth(
+            this.firebase.initializeApp(firebaseOptions),
+        );
         this.logger?.({ logMessage: `finished initializing firebase SDK` });
         this.setupFirebaseListeners();
-        this.SetupEvents();
+        this.SetupEvents(this.settings, CRUD.Create);
     }
 
-    private SetupEvents(): void {
-        this._document
-            .querySelector(this.settings.clearCachedUserButtonCSSClass)
-            ?.addEventListener("click", this.clearUserCache.bind(this));
-
-        const loginButtons = this._document.querySelectorAll(
-            this.settings.loginButtonCSSClass,
+    private SetupEvents(settings: WrapperSettings, eventAction: CRUD): void {
+        const eventListener = this.getEventListener(eventAction);
+        const clearCacheButton = this._document.querySelector(
+            settings.clearCachedUserButtonCSSClass,
         );
-        if (!loginButtons) return;
+        if (clearCacheButton) {
+            eventListener.call(
+                clearCacheButton,
+                "click",
+                this.clearUserCache.bind(this),
+            );
+        }
+        const loginButtons = this._document.querySelectorAll(
+            settings.loginButtonCSSClass,
+        );
+        if (!loginButtons || loginButtons.length === 0) {
+            return;
+        }
         for (const button of loginButtons) {
-            const tsButton = button as HTMLButtonElement;
-            const provider = tsButton.dataset.serviceProvider as AuthProviders;
-            const foundProvider = this.settings.authProviderSettings[provider];
-            let action;
-            if (foundProvider) action = foundProvider?.loginButtonClicked;
-            else action = this.serviceProviderNotFoundAction;
-            tsButton.addEventListener("click", async (e) => {
+            if (!(button instanceof HTMLButtonElement)) continue;
+            const provider = button.dataset.serviceProvider as AuthProviders;
+            const foundProvider = settings.authProviderSettings[provider];
+            const action =
+                foundProvider?.loginButtonClicked ??
+                this.serviceProviderNotFoundAction;
+
+            eventListener.call(button, "click", async (e) => {
+                const mouseEvent = e as HTMLElementEventMap["click"];
                 this.logger?.({ logMessage: `login with ${provider} clicked` });
-                if (action === defaultAction) await this.Signin(provider);
-                else await action(this, e);
+                await (action === defaultAction
+                    ? this.Signin(provider)
+                    : action(this, mouseEvent));
             });
+        }
+    }
+
+    private getEventListener(action: CRUD): EventListenerMethod {
+        switch (action) {
+            case CRUD.Create:
+                return Element.prototype.addEventListener;
+            case CRUD.Delete:
+                return Element.prototype.removeEventListener;
+            default:
+                throw new Error(
+                    `action ${action} is not allowed in getEventListener()`,
+                );
         }
     }
 
     private async setupFirebaseListeners(): Promise<void> {
         debugger;
-        onAuthStateChanged(this.auth, this.authStateChanged.bind(this));
+        this.firebase.onAuthStateChanged(
+            this.auth,
+            this.authStateChanged.bind(this),
+        );
         await this.checkIfURLIsASignInWithEmailLink();
         await this.handleGetRedirectResult();
     }
@@ -192,7 +321,7 @@ export class FirebaseAuthService {
     private async handleGetRedirectResult(): Promise<void> {
         try {
             const redirectResult: UserCredential | null =
-                await getRedirectResult(this.auth);
+                await this.firebase.getRedirectResult(this.auth);
             if (redirectResult == null) {
                 this.logger?.({ logMessage: `redirectResult fired - null` });
                 return;
@@ -275,7 +404,7 @@ export class FirebaseAuthService {
     public async Signin(provider: AuthProviders): Promise<void> {
         if (provider === authProviders.Email) {
             switch (this.emailState) {
-                case emailStates.emailNotSent:
+                case EmailSignInStates.EmailNotSent:
                     if (this.UseLinkInsteadOfPassword) {
                         // email sign-in step 1/9
                         await this.handleSendLinkToEmail();
@@ -283,7 +412,7 @@ export class FirebaseAuthService {
                         // TODO: sign in with email and password
                     }
                     return;
-                case emailStates.emailLinkOpenedOnSameBrowser:
+                case EmailSignInStates.EmailLinkOpenedOnSameBrowser:
                     // email sign-in step 7/9
                     await this.handleSignInWithEmailLink();
                     break;
@@ -307,7 +436,7 @@ export class FirebaseAuthService {
                 return;
             }
             this.logger?.({ logMessage: `redirecting to ${provider}` });
-            signInWithRedirect(this.auth, authProvider);
+            this.firebase.signInWithRedirect(this.auth, authProvider);
         }
     }
 
@@ -316,11 +445,11 @@ export class FirebaseAuthService {
     ): AuthProviderConstructor {
         switch (providerId) {
             case authProviders.Google:
-                return GoogleAuthProvider;
+                return this.firebase.GoogleAuthProvider;
             case authProviders.Facebook:
-                return FacebookAuthProvider;
+                return this.firebase.FacebookAuthProvider;
             case authProviders.GitHub:
-                return GithubAuthProvider;
+                return this.firebase.GithubAuthProvider;
             default:
                 throw new Error(`unsupported provider ${providerId}`);
         }
@@ -332,7 +461,7 @@ export class FirebaseAuthService {
             return;
         }
         try {
-            await sendSignInLinkToEmail(
+            await this.firebase.sendSignInLinkToEmail(
                 this.auth,
                 this.emailAddress!,
                 this.emailActionCodeSettings,
@@ -371,13 +500,18 @@ export class FirebaseAuthService {
     /** email sign-in step 3/9 */
     private async checkIfURLIsASignInWithEmailLink(): Promise<void> {
         debugger;
-        if (!isSignInWithEmailLink(this.auth, this._window.location.href)) {
+        if (
+            !this.firebase.isSignInWithEmailLink(
+                this.auth,
+                this._window.location.href,
+            )
+        ) {
             this.logger?.({
                 logMessage:
                     `just checked: the current page url is not a ` +
                     `sign-in-with-email-link`,
             });
-            this.emailState = emailStates.emailNotSent;
+            this.emailState = EmailSignInStates.EmailNotSent;
             return;
         }
         this.logger?.({
@@ -389,7 +523,7 @@ export class FirebaseAuthService {
             this.logger?.({
                 logMessage: `the user has opened the email link on the same browser.`,
             });
-            this.emailState = emailStates.emailLinkOpenedOnSameBrowser;
+            this.emailState = EmailSignInStates.EmailLinkOpenedOnSameBrowser;
         } else {
             this.logger?.({
                 logMessage:
@@ -397,13 +531,14 @@ export class FirebaseAuthService {
                     `<b>to prevent session fixation attacks, you must enter the email ` +
                     `address again</b>`,
             });
-            this.emailState = emailStates.emailLinkOpenedOnDifferentBrowser;
+            this.emailState =
+                EmailSignInStates.EmailLinkOpenedOnDifferentBrowser;
 
             // email sign-in step 4/9
             this.backupEmailLoginButtonClicked();
 
             // email sign-in step 5/9
-            this.settings.reenterEmailAddressCallback();
+            this.settings.reenterEmailAddressCallback(this);
         }
     }
 
@@ -418,11 +553,12 @@ export class FirebaseAuthService {
     /** email sign-in step 7/9 */
     private async handleSignInWithEmailLink(): Promise<void> {
         try {
-            const result: UserCredential = await signInWithEmailLink(
-                this.auth,
-                this.emailAddress!,
-                this._window.location.href,
-            );
+            const result: UserCredential =
+                await this.firebase.signInWithEmailLink(
+                    this.auth,
+                    this.emailAddress!,
+                    this._window.location.href,
+                );
 
             // email sign-in step 8/9
             this.settings.clearEmailAfterSignInCallback(this);

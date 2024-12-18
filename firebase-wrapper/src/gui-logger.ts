@@ -32,30 +32,31 @@ export class GUILogger {
     ];
     private currentColor: string;
 
-    constructor(
-        _document: Document,
-        _window: Window,
-        htmlTemplateManager: HTMLTemplateManager,
-        cleaLogStreamButtonCSS: string,
-        logContainerCSS: string,
-        logItemCSS: string,
-    ) {
-        this._document = _document;
-        this._window = window;
-        this.htmlTemplateManager = htmlTemplateManager;
-        this.cleaLogStreamButtonCSS = cleaLogStreamButtonCSS;
+    constructor(input: {
+        _window: Window;
+        htmlTemplateManager: HTMLTemplateManager;
+        cleaLogStreamButtonCSS: string;
+        logContainerCSS: string;
+        logItemCSS: string;
+    }) {
+        this._window = input._window;
+        this._document = input._window.document;
+        this.htmlTemplateManager = input.htmlTemplateManager;
+        this.cleaLogStreamButtonCSS = input.cleaLogStreamButtonCSS;
 
         this.currentColor = this.setupRandomLogstreamColor();
 
-        this.logContainerCSS = logContainerCSS;
+        this.logContainerCSS = input.logContainerCSS;
         this.logContainerElement = this._document.querySelector(
             this.logContainerCSS,
         ) as HTMLElement;
 
         if (this.logContainerElement == null) {
-            throw new Error(`unable to find log container ${logContainerCSS}`);
+            throw new Error(
+                `unable to find log container ${input.logContainerCSS}`,
+            );
         }
-        this.logItemCSS = logItemCSS;
+        this.logItemCSS = input.logItemCSS;
     }
 
     public initEvents(): GUILogger {
