@@ -171,9 +171,6 @@ enum CRUD {
 // #endregion
 
 export class FirebaseAuthService {
-    private _window: Window;
-    _document: Document;
-    private firebase: FirebaseDependencies;
     private settings: WrapperSettings;
     private logger: (logItem: LogItem) => void;
     private env: ProcessEnv;
@@ -202,10 +199,7 @@ export class FirebaseAuthService {
         return this.emailAddress;
     }
     public set EmailAddress(email: string) {
-        this._window.localStorage.setItem(
-            this.localStorageEmailAddressKey,
-            email,
-        );
+        window.localStorage.setItem(this.localStorageEmailAddressKey, email);
         this.emailAddress = email;
     }
 
@@ -217,15 +211,7 @@ export class FirebaseAuthService {
         this._emailState = emailState;
     }
 
-    constructor(input: {
-        firebaseDependencies: FirebaseDependencies;
-        _window: Window;
-        env: ProcessEnv;
-        settings: WrapperSettings;
-    }) {
-        this.firebase = input.firebaseDependencies;
-        this._window = input._window;
-        this._document = this._window.document;
+    constructor(input: { env: ProcessEnv; settings: WrapperSettings }) {
         this.env = input.env;
         this.settings = input.settings;
         this.logger = input.settings.logger;
@@ -244,16 +230,14 @@ export class FirebaseAuthService {
             appId: this.env.FIREBASE_APP_ID,
             measurementId: this.env.FIREBASE_MEASUREMENT_ID,
         };
-        this.emailAddress = this._window.localStorage.getItem(
+        this.emailAddress = window.localStorage.getItem(
             this.localStorageEmailAddressKey,
         );
         this.emailActionCodeSettings = {
-            url: this._window.location.href,
+            url: window.location.href,
             handleCodeInApp: true,
         };
-        this.auth = this.firebase.getAuth(
-            this.firebase.initializeApp(firebaseOptions),
-        );
+        this.auth = getAuth(initializeApp(firebaseOptions));
         this.logger?.({ logMessage: `finished initializing firebase SDK` });
         this.setupFirebaseListeners();
         this.SetupEvents(this.settings, CRUD.Create);
@@ -261,7 +245,7 @@ export class FirebaseAuthService {
 
     private SetupEvents(settings: WrapperSettings, eventAction: CRUD): void {
         const eventListener = this.getEventListener(eventAction);
-        const clearCacheButton = this._document.querySelector(
+        const clearCacheButton = document.querySelector(
             settings.clearCachedUserButtonCSSClass,
         );
         if (clearCacheButton) {
@@ -271,7 +255,7 @@ export class FirebaseAuthService {
                 this.clearUserCache.bind(this),
             );
         }
-        const loginButtons = this._document.querySelectorAll(
+        const loginButtons = document.querySelectorAll(
             settings.loginButtonCSSClass,
         );
         if (!loginButtons || loginButtons.length === 0) {
@@ -309,11 +293,7 @@ export class FirebaseAuthService {
     }
 
     private async setupFirebaseListeners(): Promise<void> {
-        debugger;
-        this.firebase.onAuthStateChanged(
-            this.auth,
-            this.authStateChanged.bind(this),
-        );
+        onAuthStateChanged(this.auth, this.authStateChanged.bind(this));
         await this.checkIfURLIsASignInWithEmailLink();
         await this.handleGetRedirectResult();
     }
@@ -321,7 +301,7 @@ export class FirebaseAuthService {
     private async handleGetRedirectResult(): Promise<void> {
         try {
             const redirectResult: UserCredential | null =
-                await this.firebase.getRedirectResult(this.auth);
+                await getRedirectResult(this.auth);
             if (redirectResult == null) {
                 this.logger?.({ logMessage: `redirectResult fired - null` });
                 return;
@@ -363,7 +343,6 @@ export class FirebaseAuthService {
             // The email of the user's account used.
             const email = firebaseError.customData?.email;
             // AuthCredential type that was used.
-            debugger;
             //const credential = GithubAuthProvider.credentialFromError(firebaseError);
         }
     }
@@ -436,7 +415,7 @@ export class FirebaseAuthService {
                 return;
             }
             this.logger?.({ logMessage: `redirecting to ${provider}` });
-            this.firebase.signInWithRedirect(this.auth, authProvider);
+            signInWithRedirect(this.auth, authProvider);
         }
     }
 
@@ -445,11 +424,11 @@ export class FirebaseAuthService {
     ): AuthProviderConstructor {
         switch (providerId) {
             case authProviders.Google:
-                return this.firebase.GoogleAuthProvider;
+                return GoogleAuthProvider;
             case authProviders.Facebook:
-                return this.firebase.FacebookAuthProvider;
+                return FacebookAuthProvider;
             case authProviders.GitHub:
-                return this.firebase.GithubAuthProvider;
+                return GithubAuthProvider;
             default:
                 throw new Error(`unsupported provider ${providerId}`);
         }
@@ -461,7 +440,7 @@ export class FirebaseAuthService {
             return;
         }
         try {
-            await this.firebase.sendSignInLinkToEmail(
+            await sendSignInLinkToEmail(
                 this.auth,
                 this.emailAddress!,
                 this.emailActionCodeSettings,
@@ -499,13 +478,7 @@ export class FirebaseAuthService {
 
     /** email sign-in step 3/9 */
     private async checkIfURLIsASignInWithEmailLink(): Promise<void> {
-        debugger;
-        if (
-            !this.firebase.isSignInWithEmailLink(
-                this.auth,
-                this._window.location.href,
-            )
-        ) {
+        if (!isSignInWithEmailLink(this.auth, window.location.href)) {
             this.logger?.({
                 logMessage:
                     `just checked: the current page url is not a ` +
@@ -553,12 +526,11 @@ export class FirebaseAuthService {
     /** email sign-in step 7/9 */
     private async handleSignInWithEmailLink(): Promise<void> {
         try {
-            const result: UserCredential =
-                await this.firebase.signInWithEmailLink(
-                    this.auth,
-                    this.emailAddress!,
-                    this._window.location.href,
-                );
+            const result: UserCredential = await signInWithEmailLink(
+                this.auth,
+                this.emailAddress!,
+                window.location.href,
+            );
 
             // email sign-in step 8/9
             this.settings.clearEmailAfterSignInCallback(this);
@@ -589,8 +561,9 @@ export class FirebaseAuthService {
     }
 
     private userAlreadyCached(user: UserPlus): boolean {
-        const cachedUsersJSON: string | null =
-            this._window.localStorage.getItem(this.localStorageCachedUserKey);
+        const cachedUsersJSON: string | null = window.localStorage.getItem(
+            this.localStorageCachedUserKey,
+        );
         if (cachedUsersJSON === null) return false;
 
         const cachedUsers: Record<string, UserPlus> =
@@ -612,7 +585,7 @@ export class FirebaseAuthService {
     private cacheUser(user: UserPlus): void {
         // cache the user under service provider since FIREBASE_LINK_ACCOUNTS=false
         const serviceProvider = user.providerData[0].providerId;
-        const cachedUserJSON: string | null = this._window.localStorage.getItem(
+        const cachedUserJSON: string | null = window.localStorage.getItem(
             this.localStorageCachedUserKey,
         );
         let cachedUser: Record<string, UserPlus> = {};
@@ -622,15 +595,15 @@ export class FirebaseAuthService {
         cachedUser[serviceProvider] = this.safeUserResponse(
             this.idempotentUserResponse(user),
         );
-        this._window.localStorage.setItem(
+        window.localStorage.setItem(
             this.localStorageCachedUserKey,
             JSON.stringify(cachedUser),
         );
     }
 
     public clearUserCache(): void {
-        this._window.localStorage.removeItem(this.localStorageCachedUserKey);
-        this._window.localStorage.removeItem(this.localStorageEmailAddressKey);
+        window.localStorage.removeItem(this.localStorageCachedUserKey);
+        window.localStorage.removeItem(this.localStorageEmailAddressKey);
     }
 
     serviceProviderNotFoundAction(self: FirebaseAuthService, e: MouseEvent) {

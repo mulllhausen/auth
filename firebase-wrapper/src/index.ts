@@ -3,7 +3,6 @@ import {
     authProviders,
     defaultAction,
     FirebaseAuthService,
-    firebaseDependencies,
     UserPlus,
     WrapperSettings,
 } from "./firebase-wrapper";
@@ -48,8 +47,6 @@ const wrapperSettings: WrapperSettings = {
 };
 
 const firebaseAuthService = new FirebaseAuthService({
-    firebaseDependencies,
-    _window: window,
     env,
     settings: wrapperSettings,
 });
@@ -76,22 +73,15 @@ async function handleEmailLogin(
 ): Promise<void> {
     // user-flow logic to obtain email and password
     _firebaseService.EmailAddress = (
-        _firebaseService._document.querySelector(
-            "input.email",
-        ) as HTMLInputElement
+        document.querySelector("input.email") as HTMLInputElement
     )?.value;
 
     _firebaseService.UseLinkInsteadOfPassword =
-        (
-            _firebaseService._document.querySelector(
-                "input.no-password",
-            ) as HTMLInputElement
-        )?.checked ?? console.error(`Password checkbox not found`);
+        (document.querySelector("input.no-password") as HTMLInputElement)
+            ?.checked ?? console.error(`Password checkbox not found`);
 
     _firebaseService.EmailPassword = (
-        _firebaseService._document.querySelector(
-            "input.password",
-        ) as HTMLInputElement
+        document.querySelector("input.password") as HTMLInputElement
     )?.value;
 
     // back to the wrapper to handle the sign-in logic
@@ -132,9 +122,7 @@ async function emailAddressReentered(
     e: MouseEvent,
 ): Promise<void> {
     _firebaseService.EmailAddress = (
-        _firebaseService._document.querySelector(
-            "input.email",
-        ) as HTMLInputElement
+        document.querySelector("input.email") as HTMLInputElement
     )?.value;
     await _firebaseService.Signin(authProviders.Email);
 }
@@ -143,7 +131,7 @@ async function emailAddressReentered(
 function clearEmailAfterSignInCallback(
     _firebaseService: FirebaseAuthService,
 ): void {
-    const emailInput = _firebaseService._document.querySelector(
+    const emailInput = document.querySelector(
         "input.email",
     ) as HTMLInputElement;
     emailInput.value = "";
