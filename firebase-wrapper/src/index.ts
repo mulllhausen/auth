@@ -55,7 +55,7 @@ document.addEventListener("DOMContentLoaded", () => {
     populateEmailInput(firebaseAuthService.EmailAddress);
 });
 
-// functions
+// callback functions
 
 function populateEmailInput(emailAddress: string | null): void {
     const emailInput = document.querySelector(
@@ -71,7 +71,7 @@ async function handleEmailLogin(
     _firebaseService: FirebaseAuthService,
     e: MouseEvent,
 ): Promise<void> {
-    // user-flow logic to obtain email and password
+    // user-flow logic to get email and password
     _firebaseService.EmailAddress = (
         document.querySelector("input.email") as HTMLInputElement
     )?.value;

@@ -155,7 +155,7 @@ export const defaultAction: DefaultAction = null;
 
 // #region enums
 
-enum EmailSignInStates {
+export enum EmailSignInStates {
     EmailNotSent,
     EmailSent,
     EmailLinkOpenedOnDifferentBrowser,
@@ -203,10 +203,10 @@ export class FirebaseAuthService {
         this.emailAddress = email;
     }
 
-    private get emailState(): EmailSignInStates | null {
+    public get EmailState(): EmailSignInStates | null {
         return this._emailState;
     }
-    private set emailState(emailState: EmailSignInStates) {
+    private set EmailState(emailState: EmailSignInStates) {
         this.logger?.({ logMessage: `email state changed to ${emailState}` });
         this._emailState = emailState;
     }
@@ -383,7 +383,7 @@ export class FirebaseAuthService {
 
     public async Signin(provider: AuthProviders): Promise<void> {
         if (provider === authProviders.Email) {
-            switch (this.emailState) {
+            switch (this.EmailState) {
                 case EmailSignInStates.EmailNotSent:
                     if (this.UseLinkInsteadOfPassword) {
                         // email sign-in step 1/9
@@ -447,6 +447,7 @@ export class FirebaseAuthService {
                 this.emailAddress!,
                 this.emailActionCodeSettings,
             );
+            this.EmailState = EmailSignInStates.EmailSent;
             this.logger?.({
                 logMessage: `a sign-in link has been sent to ${this.emailAddress}.`,
             });
@@ -486,7 +487,7 @@ export class FirebaseAuthService {
                     `just checked: the current page url is not a ` +
                     `sign-in-with-email-link`,
             });
-            this.emailState = EmailSignInStates.EmailNotSent;
+            this.EmailState = EmailSignInStates.EmailNotSent;
             return;
         }
         this.logger?.({
@@ -498,7 +499,7 @@ export class FirebaseAuthService {
             this.logger?.({
                 logMessage: `the user has opened the email link on the same browser.`,
             });
-            this.emailState = EmailSignInStates.EmailLinkOpenedOnSameBrowser;
+            this.EmailState = EmailSignInStates.EmailLinkOpenedOnSameBrowser;
         } else {
             this.logger?.({
                 logMessage:
@@ -506,7 +507,7 @@ export class FirebaseAuthService {
                     `<b>to prevent session fixation attacks, you must enter the email ` +
                     `address again</b>`,
             });
-            this.emailState =
+            this.EmailState =
                 EmailSignInStates.EmailLinkOpenedOnDifferentBrowser;
 
             // email sign-in step 4/9
