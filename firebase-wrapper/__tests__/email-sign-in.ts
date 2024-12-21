@@ -1,5 +1,6 @@
-import { describe, expect, it } from "@jest/globals";
+import { beforeEach, describe, expect, it, jest } from "@jest/globals";
 import { sendSignInLinkToEmail } from "firebase/auth";
+import { isSignInWithEmailLink } from "../__mocks__/firebase/auth";
 import { defaultHappyPath } from "../manual-mocks/default";
 import { setupFirebaseAuthService } from "../manual-mocks/firebase-wrapper";
 import { clickButtonByQuerySelector, setupGUIMock } from "../manual-mocks/gui";
@@ -11,13 +12,15 @@ import {
 } from "../src/firebase-wrapper";
 
 describe(`${FirebaseAuthService.name} - email sign-in`, () => {
-    let firebaseAuthService: FirebaseAuthService;
+    beforeEach(() => {
+        jest.clearAllMocks(); // Clears the call count for all mocked functions
+    });
 
     describe("happy path", () => {
         it("the initial state is correct", async () => {
             // arrange
             setupGUIMock({ ...some, ...defaultHappyPath });
-            firebaseAuthService = setupFirebaseAuthService({
+            const firebaseAuthService = setupFirebaseAuthService({
                 ...some,
                 ...defaultHappyPath,
             });
@@ -31,7 +34,7 @@ describe(`${FirebaseAuthService.name} - email sign-in`, () => {
         it("clicking the email sign-in button loads the email address", async () => {
             // arrange
             setupGUIMock({ ...some, ...defaultHappyPath });
-            firebaseAuthService = setupFirebaseAuthService({
+            const firebaseAuthService = setupFirebaseAuthService({
                 ...some,
                 ...defaultHappyPath,
             });
@@ -47,6 +50,11 @@ describe(`${FirebaseAuthService.name} - email sign-in`, () => {
                 EmailSignInStates.EmailNotSent,
             );
             expect(firebaseAuthService.EmailAddress).toBe(expectedEmailAddress);
+            expect(
+                localStorage.getItem(
+                    defaultHappyPath.localStorageEmailAddressKey,
+                ),
+            ).toBe(expectedEmailAddress);
         });
 
         it("sign-in with email link sends email", async () => {
@@ -58,7 +66,7 @@ describe(`${FirebaseAuthService.name} - email sign-in`, () => {
                 inputNoPasswordCheckboxIsChecked:
                     expectedinputNoPasswordCheckboxIsChecked,
             });
-            firebaseAuthService = setupFirebaseAuthService({
+            const firebaseAuthService = setupFirebaseAuthService({
                 ...some,
                 ...defaultHappyPath,
             });
@@ -72,6 +80,11 @@ describe(`${FirebaseAuthService.name} - email sign-in`, () => {
 
             // assert
             expect(firebaseAuthService.EmailAddress).toBe(expectedEmailAddress);
+            expect(
+                localStorage.getItem(
+                    defaultHappyPath.localStorageEmailAddressKey,
+                ),
+            ).toBe(expectedEmailAddress);
             expect(firebaseAuthService.UseLinkInsteadOfPassword).toBe(
                 expectedinputNoPasswordCheckboxIsChecked,
             );
@@ -81,7 +94,34 @@ describe(`${FirebaseAuthService.name} - email sign-in`, () => {
             );
         });
 
-        it("following the email link redirects to the firebase server", async () => {});
+        it("following the email link using the same browser redirects to the firebase server", async () => {
+            // arrange
+            const expectedEmailAddress = some.mockEmailAddress;
+            isSignInWithEmailLink.mockImplementation(() => true);
+            localStorage.setItem(
+                defaultHappyPath.localStorageEmailAddressKey,
+                expectedEmailAddress,
+            );
+            setupGUIMock({ ...some, ...defaultHappyPath });
+
+            // act
+            const firebaseAuthService = setupFirebaseAuthService({
+                ...some,
+                ...defaultHappyPath,
+            });
+
+            // assert
+            expect(firebaseAuthService.EmailAddress).toBe(expectedEmailAddress);
+            expect(
+                localStorage.getItem(
+                    defaultHappyPath.localStorageEmailAddressKey,
+                ),
+            ).toBe(expectedEmailAddress);
+            expect(isSignInWithEmailLink).toHaveBeenCalledTimes(1);
+            expect(firebaseAuthService.EmailState).toBe(
+                EmailSignInStates.EmailLinkOpenedOnSameBrowser,
+            );
+        });
 
         it("the response back from the firebase server asserts the user is signed-in", async () => {});
     });

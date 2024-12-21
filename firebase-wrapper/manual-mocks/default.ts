@@ -11,4 +11,6 @@ export const defaultHappyPath = {
     facebookButtonQuerySelector: `button[data-service-provider="${authProviders.Facebook}"]`,
     googleButtonQuerySelector: `button[data-service-provider="${authProviders.Google}"]`,
     githubButtonQuerySelector: `button[data-service-provider="${authProviders.GitHub}"]`,
+    localStorageEmailAddressKey: "emailAddress",
+    localStorageCachedUserKey: "cachedUser",
 };

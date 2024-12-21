@@ -383,23 +383,7 @@ export class FirebaseAuthService {
 
     public async Signin(provider: AuthProviders): Promise<void> {
         if (provider === authProviders.Email) {
-            switch (this.EmailState) {
-                case EmailSignInStates.EmailNotSent:
-                    if (this.UseLinkInsteadOfPassword) {
-                        // email sign-in step 1/9
-                        await this.handleSendLinkToEmail();
-                    } else {
-                        // TODO: sign in with email and password
-                    }
-                    return;
-                case EmailSignInStates.EmailLinkOpenedOnSameBrowser:
-                    // email sign-in step 7/9
-                    await this.handleSignInWithEmailLink();
-                    break;
-                default:
-                    break;
-            }
-            return;
+            return await this.emailSignInStateMachine();
         } else {
             let authProvider: AuthProvider;
             try {
@@ -432,6 +416,27 @@ export class FirebaseAuthService {
                 return GithubAuthProvider;
             default:
                 throw new Error(`unsupported provider ${providerId}`);
+        }
+    }
+
+    private async emailSignInStateMachine(): Promise<void> {
+        switch (this.EmailState) {
+            case EmailSignInStates.EmailNotSent:
+                if (this.UseLinkInsteadOfPassword) {
+                    // email sign-in step 1/9
+                    await this.handleSendLinkToEmail();
+                } else {
+                    throw new Error(
+                        "sign in with email and password not implemented yet",
+                    );
+                }
+                return;
+            case EmailSignInStates.EmailLinkOpenedOnSameBrowser:
+                // email sign-in step 7/9
+                await this.handleSignInWithEmailLink();
+                break;
+            default:
+                break;
         }
     }
 
