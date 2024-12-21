@@ -1,11 +1,13 @@
 import { jest } from "@jest/globals";
 
-type returnType = jest.Mock<(key: string) => HTMLElement[] | null>;
+export type DocumentQuerySelectorAllMockReturnType = jest.Mock<
+    (key: string) => HTMLElement[] | null
+>;
 
 export const setupDocumentQuerySelectorAllMock = (
     documentQueryMappings: Record<string, HTMLElement[] | null>,
-): returnType => {
-    const querySelectorMock: returnType = jest.fn(
+): DocumentQuerySelectorAllMockReturnType => {
+    const querySelectorMock: DocumentQuerySelectorAllMockReturnType = jest.fn(
         (key: string) => documentQueryMappings[key] ?? null,
     );
 

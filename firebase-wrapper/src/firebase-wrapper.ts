@@ -237,7 +237,8 @@ export class FirebaseAuthService {
             url: window.location.href,
             handleCodeInApp: true,
         };
-        this.auth = getAuth(initializeApp(firebaseOptions));
+        const app = initializeApp(firebaseOptions);
+        this.auth = getAuth(app);
         this.logger?.({ logMessage: `finished initializing firebase SDK` });
         this.setupFirebaseListeners();
         this.SetupEvents(this.settings, CRUD.Create);
@@ -440,6 +441,7 @@ export class FirebaseAuthService {
             return;
         }
         try {
+            debugger;
             await sendSignInLinkToEmail(
                 this.auth,
                 this.emailAddress!,
