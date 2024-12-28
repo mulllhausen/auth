@@ -6,9 +6,11 @@ import {
     UserPlus,
     WrapperSettings,
 } from "./firebase-wrapper";
+import { emailSignInActions, emailSignInStates } from "./fsm-email";
 import { GUILogger, LogItem } from "./gui-logger";
 import { HTMLTemplateManager } from "./html-template-manager";
 import "./index.css";
+import { SVGService } from "./svg-service";
 
 const htmlTemplateManager = new HTMLTemplateManager(document);
 const guiLogger = new GUILogger({
@@ -25,8 +27,8 @@ const wrapperSettings: WrapperSettings = {
     logger: guiLogger.log.bind(guiLogger),
     loginButtonCSSClass: "button.login",
     clearCachedUserButtonCSSClass: "button#clearCachedUser",
-    signedInCallback: signedInCallback,
-    signedOutCallback: signedOutCallback,
+    signedInCallback,
+    signedOutCallback,
     authProviderSettings: {
         [authProviders.Google]: {
             loginButtonClicked: defaultAction,
@@ -42,14 +44,18 @@ const wrapperSettings: WrapperSettings = {
                 handleEmailLogin(self, e),
         },
     },
-    reenterEmailAddressCallback: reenterEmailAddressCallback,
-    clearEmailAfterSignInCallback: clearEmailAfterSignInCallback,
+    reenterEmailAddressCallback,
+    clearEmailAfterSignInCallback,
+    emailStateChangedCallback,
+    emailActionCallback,
 };
 
 const firebaseAuthService = new FirebaseAuthService({
     env,
     settings: wrapperSettings,
 });
+
+const emailFSMSVGService = new SVGService("email svg class");
 
 document.addEventListener("DOMContentLoaded", () => {
     populateEmailInput(firebaseAuthService.EmailAddress);
@@ -130,9 +136,70 @@ async function emailAddressReentered(
 /** email sign-in step 8/9 */
 function clearEmailAfterSignInCallback(
     _firebaseService: FirebaseAuthService,
-): void {
+): boolean {
     const emailInput = document.querySelector(
         "input.email",
     ) as HTMLInputElement;
     emailInput.value = "";
+    return true;
+}
+
+function emailStateChangedCallback(
+    newEmailState: keyof typeof emailSignInStates,
+    //action: keyof typeof emailSignInActions | null,
+): void {
+    emailFSMSVGService.SetElementsInactive(".state-box"); // clear all
+    switch (newEmailState) {
+        case emailSignInStates.Idle:
+            emailFSMSVGService.SetElementsActive(".state-box.idle");
+            break;
+        case emailSignInStates.WaitingForUserToClickLinkInEmail:
+            emailFSMSVGService.SetElementsActive(
+                ".state-box.waiting-for-user-to-click-link-in-email",
+            );
+            break;
+        case emailSignInStates.BadEmailAddress:
+            emailFSMSVGService.SetElementsActive(
+                ".state-box.bad-email-address",
+            );
+            break;
+    }
+
+    // <path class="state-box authorising-via-firebase"
+    // <path class="state-box idle"
+    // <path class="state-box email-submitted-to-firebase"
+    // <path class="state-box sign-in-link-opened-on-same-browser"
+    // <path class="state-box sign-in-link-opened-on-different-browser"
+    // <path class="state-box signed-in"
+    // <path class="state-box waiting-for-email-address-in-gui"
+    // <path class="state-box bad-email-address"
+    // <path class="state-box waiting-for-user-to-click-link-in-email"
+}
+
+function emailActionCallback(action: keyof typeof emailSignInActions): void {
+    emailFSMSVGService.SetElementsInactive(".arrow"); // clear all
+    switch (action) {
+        case emailSignInActions.DifferentEmailAddressEntered:
+            emailFSMSVGService.SetElementsActive(
+                ".arrow.different-email-address",
+            );
+            break;
+        case emailSignInActions.UserInputsEmailAddressAndClicksSignInButton:
+            emailFSMSVGService.SetElementsActive(
+                ".arrow.user-changes-email-address-and" +
+                    "-clicks-sign-in-with-email-button",
+            );
+            break;
+    }
+    // class="arrow user-inputs-email"
+    // class="arrow user-clicks-link-in-email1"
+    // class="arrow user-clicks-link-in-email2"
+    // class="arrow automatically-submit-to-firebase"
+    // class="arrow request-email-address-from-user-again"
+    // class="arrow firebase-returns-an-error"
+    // class="arrow user-changes-email-address-and-clicks-sign-in-with-email-button"
+    // class="arrow ok-response1"
+    // class="arrow ok-response2"
+    // class="arrow same-email-address"
+    // class="arrow different-email-address"
 }

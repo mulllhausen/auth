@@ -1,6 +1,9 @@
 import { beforeEach, describe, expect, it, jest } from "@jest/globals";
 import { sendSignInLinkToEmail } from "firebase/auth";
-import { isSignInWithEmailLink } from "../__mocks__/firebase/auth";
+import {
+    isSignInWithEmailLink,
+    signInWithEmailLink,
+} from "../__mocks__/firebase/auth";
 import { defaultHappyPath } from "../manual-mocks/default";
 import { setupFirebaseAuthService } from "../manual-mocks/firebase-wrapper";
 import { clickButtonByQuerySelector, setupGUIMock } from "../manual-mocks/gui";
@@ -90,18 +93,23 @@ describe(`${FirebaseAuthService.name} - email sign-in`, () => {
             );
             expect(sendSignInLinkToEmail).toHaveBeenCalledTimes(1);
             expect(firebaseAuthService.EmailState).toBe(
-                EmailSignInStates.EmailSent,
+                EmailSignInStates.WaitingForUserToFollowEmailLink,
             );
         });
 
-        it("following the email link using the same browser redirects to the firebase server", async () => {
+        it("following the email link using the same browser signs the user in", async () => {
             // arrange
             const expectedEmailAddress = some.mockEmailAddress;
+
+            // normally this would check the URL and only return true if it originated from the email
             isSignInWithEmailLink.mockImplementation(() => true);
+
+            // on the same browser the email address is available from local storage
             localStorage.setItem(
                 defaultHappyPath.localStorageEmailAddressKey,
                 expectedEmailAddress,
             );
+
             setupGUIMock({ ...some, ...defaultHappyPath });
 
             // act
@@ -121,6 +129,7 @@ describe(`${FirebaseAuthService.name} - email sign-in`, () => {
             expect(firebaseAuthService.EmailState).toBe(
                 EmailSignInStates.EmailLinkOpenedOnSameBrowser,
             );
+            expect(signInWithEmailLink).toHaveBeenCalledTimes(1);
         });
 
         it("the response back from the firebase server asserts the user is signed-in", async () => {});
