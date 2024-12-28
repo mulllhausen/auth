@@ -6,13 +6,20 @@ import {
     UserPlus,
     WrapperSettings,
 } from "./firebase-wrapper";
-import { emailSignInActions, emailSignInStates } from "./fsm-email";
+import {
+    emailSignInActions,
+    EmailSignInState,
+    emailSignInStates,
+} from "./fsm-email";
 import { GUILogger, LogItem } from "./gui-logger";
 import { HTMLTemplateManager } from "./html-template-manager";
 import "./index.css";
 import { SVGService } from "./svg-service";
 
+const emailFSMSVGService = new SVGService("#emailLinkFSMChart");
+
 const htmlTemplateManager = new HTMLTemplateManager(document);
+
 const guiLogger = new GUILogger({
     _window: window,
     htmlTemplateManager,
@@ -54,8 +61,6 @@ const firebaseAuthService = new FirebaseAuthService({
     env,
     settings: wrapperSettings,
 });
-
-const emailFSMSVGService = new SVGService("email svg class");
 
 document.addEventListener("DOMContentLoaded", () => {
     populateEmailInput(firebaseAuthService.EmailAddress);
@@ -176,7 +181,11 @@ function emailStateChangedCallback(
     // <path class="state-box waiting-for-user-to-click-link-in-email"
 }
 
-function emailActionCallback(action: keyof typeof emailSignInActions): void {
+function emailActionCallback(
+    oldState: EmailSignInState, //keyof typeof emailSignInStates,
+    action: keyof typeof emailSignInActions,
+    newState: EmailSignInState, //keyof typeof emailSignInStates,
+): void {
     emailFSMSVGService.SetElementsInactive(".arrow"); // clear all
     switch (action) {
         case emailSignInActions.DifferentEmailAddressEntered:
@@ -185,10 +194,7 @@ function emailActionCallback(action: keyof typeof emailSignInActions): void {
             );
             break;
         case emailSignInActions.UserInputsEmailAddressAndClicksSignInButton:
-            emailFSMSVGService.SetElementsActive(
-                ".arrow.user-changes-email-address-and" +
-                    "-clicks-sign-in-with-email-button",
-            );
+            emailFSMSVGService.SetElementsActive(".arrow.user-inputs-email");
             break;
     }
     // class="arrow user-inputs-email"
@@ -203,3 +209,8 @@ function emailActionCallback(action: keyof typeof emailSignInActions): void {
     // class="arrow same-email-address"
     // class="arrow different-email-address"
 }
+
+// to be able to update the actions in the svg we need to know
+// the previous state and the new state as well as the action that took us there.
+// the new state requires logic to be determined from the current state and the action.
+// an action will always result in a state-update

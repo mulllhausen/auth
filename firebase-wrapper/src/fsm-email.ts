@@ -2,7 +2,7 @@
 // event handlers live inside FirebaseAuthService.
 // FirebaseAuthService calls the state machine which contains logic.
 
-import { sendSignInLinkToEmail } from "firebase/auth";
+import { isSignInWithEmailLink, sendSignInLinkToEmail } from "firebase/auth";
 import { FirebaseAuthService } from "./firebase-wrapper";
 import { LogItem } from "./gui-logger";
 
@@ -19,9 +19,9 @@ export abstract class EmailSignInState {
     //     this.logger = logger;
     // }
 
-    public abstract UserInputsEmailAddressAndClicksSignInButton(): Promise<void>;
-    public abstract DifferentEmailAddressEntered(): void;
-    public abstract CheckIfURLIsASignInWithEmailLink(): void;
+    public abstract UserInputsEmailAddressAndClicksSignInButton(): Promise<EmailSignInState>;
+    public abstract DifferentEmailAddressEntered(): EmailSignInState;
+    public abstract CheckIfURLIsASignInWithEmailLink(): EmailSignInState;
 
     // class="arrow user-inputs-email"
     // class="arrow user-clicks-link-in-email1"
@@ -35,7 +35,7 @@ export abstract class EmailSignInState {
     // class="arrow same-email-address"
     // class="arrow different-email-address"
 
-    protected ValidateEmailDataBeforeSignIn(): boolean {
+    protected validateEmailDataBeforeSignIn(): boolean {
         const failMessage: string = "Unable to sign in with email.";
         if (
             this.firebaseAuthService.emailAddress == null ||
@@ -60,51 +60,89 @@ export abstract class EmailSignInState {
         }
         return true;
     }
+
+    protected urlIsASignInWithEmailLink(): boolean {
+        const urlIsASignInWithEmailLink: boolean = isSignInWithEmailLink(
+            this.firebaseAuthService.Auth,
+            window.location.href,
+        );
+        const not = urlIsASignInWithEmailLink ? "" : "not";
+        this.logger?.({
+            logMessage:
+                `just checked: the current page url is ${not} a ` +
+                `sign-in-with-email-link`,
+        });
+        return urlIsASignInWithEmailLink;
+    }
+
+    protected continuingOnSameBrowser(): boolean {
+        const sameBrowser: boolean =
+            this.firebaseAuthService.emailAddress != null;
+        const sameOrDifferent = sameBrowser ? "the same" : "a different";
+        this.logger?.({
+            logMessage: `the user has opened the email link on ${sameOrDifferent} browser.`,
+        });
+        return sameBrowser;
+    }
 }
 
 export class EmailSignInIdle extends EmailSignInState {
-    public async UserInputsEmailAddressAndClicksSignInButton(): Promise<void> {
+    public async UserInputsEmailAddressAndClicksSignInButton(): Promise<EmailSignInState> {
+        debugger;
         const currentMethod: EmailSignInStateMethodNames =
             emailSignInActions.UserInputsEmailAddressAndClicksSignInButton;
 
-        if (!this.ValidateEmailDataBeforeSignIn()) {
-            return; // remain in the idle state
+        if (!this.validateEmailDataBeforeSignIn()) {
+            return new EmailSignInIdle(); // remain in the idle state
         }
         try {
-            debugger;
             await sendSignInLinkToEmail(
                 this.firebaseAuthService.Auth,
                 this.firebaseAuthService.emailAddress!,
                 this.firebaseAuthService.EmailActionCodeSettings,
             );
-            this.firebaseAuthService.SetEmailState(
-                WaitingForUserToClickLinkInEmail,
-            );
+            // this.firebaseAuthService.SetEmailState(
+            //     EmailSignInWaitingForUserToClickLinkInEmail,
+            // );
             this.logger?.({
                 logMessage:
                     `a sign-in link has been sent to ` +
                     `${this.firebaseAuthService.EmailAddress}.`,
             });
+            return new EmailSignInWaitingForUserToClickLinkInEmail();
         } catch (error) {
-            this.firebaseAuthService.SetEmailState(
-                WaitingForUserToClickLinkInEmail,
-            );
+            // this.firebaseAuthService.SetEmailState(
+            //     EmailSignInWaitingForUserToClickLinkInEmail,
+            // );
             this.logger?.({
                 logMessage: "error when sending email link",
                 logData: error,
             });
             console.error("error when signing in by email", error);
+            return new EmailSignInWaitingForUserToClickLinkInEmail();
         }
     }
-    public DifferentEmailAddressEntered(): void {
+
+    public DifferentEmailAddressEntered(): EmailSignInState {
+        debugger;
         const currentMethod: EmailSignInStateMethodNames =
             emailSignInActions.DifferentEmailAddressEntered;
     }
-    public CheckIfURLIsASignInWithEmailLink(): void {}
+    public CheckIfURLIsASignInWithEmailLink(): EmailSignInState {
+        debugger;
+        if (!this.urlIsASignInWithEmailLink()) {
+            return;
+        }
+        this.firebaseAuthService.SetEmailState(
+            this.continuingOnSameBrowser()
+                ? EmailSignInSignInLinkOpenedOnSameBrowser
+                : EmailSignInSignInLinkOpenedOnDifferentBrowser,
+        );
+    }
 }
 
-export class WaitingForUserToClickLinkInEmail extends EmailSignInState {
-    public async UserInputsEmailAddressAndClicksSignInButton(): Promise<void> {
+export class EmailSignInWaitingForUserToClickLinkInEmail extends EmailSignInState {
+    public async UserInputsEmailAddressAndClicksSignInButton(): Promise<EmailSignInState> {
         const currentMethod: EmailSignInStateMethodNames =
             emailSignInActions.UserInputsEmailAddressAndClicksSignInButton;
 
@@ -115,11 +153,11 @@ export class WaitingForUserToClickLinkInEmail extends EmailSignInState {
             logMessage: "waiting for user to click link in email.",
         });
     }
-    public DifferentEmailAddressEntered(): void {}
-    public CheckIfURLIsASignInWithEmailLink(): void {}
+    public DifferentEmailAddressEntered(): EmailSignInState {}
+    public CheckIfURLIsASignInWithEmailLink(): EmailSignInState {}
 }
 
-export class BadEmailAddress extends EmailSignInState {
+export class EmailSignInBadEmailAddress extends EmailSignInState {
     public async UserInputsEmailAddressAndClicksSignInButton(): Promise<void> {
         this.firebaseAuthService.SetEmailState(EmailSignInIdle);
         this.logger?.({
@@ -130,11 +168,40 @@ export class BadEmailAddress extends EmailSignInState {
     public CheckIfURLIsASignInWithEmailLink(): void {}
 }
 
-export const emailSignInStates = {
-    Idle: EmailSignInIdle.name,
-    WaitingForUserToClickLinkInEmail: WaitingForUserToClickLinkInEmail.name,
-    BadEmailAddress: BadEmailAddress.name,
-} as const;
+export class EmailSignInSignInLinkOpenedOnSameBrowser extends EmailSignInState {
+    public override async UserInputsEmailAddressAndClicksSignInButton(): Promise<EmailSignInState> {}
+    public override DifferentEmailAddressEntered(): EmailSignInState {}
+    public override CheckIfURLIsASignInWithEmailLink(): EmailSignInState {}
+}
+export class EmailSignInSignInLinkOpenedOnDifferentBrowser extends EmailSignInState {
+    public override async UserInputsEmailAddressAndClicksSignInButton(): Promise<EmailSignInState> {}
+    public override DifferentEmailAddressEntered(): EmailSignInState {}
+    public override CheckIfURLIsASignInWithEmailLink(): EmailSignInState {}
+}
+export class EmailSignInWaitingForEmailAddressInGUI extends EmailSignInState {
+    public override async UserInputsEmailAddressAndClicksSignInButton(): Promise<EmailSignInState> {}
+    public override DifferentEmailAddressEntered(): EmailSignInState {}
+    public override CheckIfURLIsASignInWithEmailLink(): EmailSignInState {}
+}
+export class EmailSignInAuthorisingViaFirebase extends EmailSignInState {
+    public override async UserInputsEmailAddressAndClicksSignInButton(): Promise<EmailSignInState> {}
+    public override DifferentEmailAddressEntered(): EmailSignInState {}
+    public override CheckIfURLIsASignInWithEmailLink(): EmailSignInState {}
+}
+export class EmailSignedIn extends EmailSignInState {
+    public override async UserInputsEmailAddressAndClicksSignInButton(): Promise<EmailSignInState> {}
+    public override DifferentEmailAddressEntered(): EmailSignInState {}
+    public override CheckIfURLIsASignInWithEmailLink(): EmailSignInState {}
+}
+
+//#region consts
+
+// export const emailSignInStates = {
+//     Idle: EmailSignInIdle.name,
+//     WaitingForUserToClickLinkInEmail:
+//         EmailSignInWaitingForUserToClickLinkInEmail.name,
+//     BadEmailAddress: EmailSignInBadEmailAddress.name,
+// } as const;
 
 type MethodNames<T> = {
     [K in keyof T]: T[K] extends (...args: any[]) => void ? K : never;
@@ -151,3 +218,5 @@ export const emailSignInActions: Record<
     DifferentEmailAddressEntered: "DifferentEmailAddressEntered",
     CheckIfURLIsASignInWithEmailLink: "CheckIfURLIsASignInWithEmailLink",
 };
+
+//#endregion

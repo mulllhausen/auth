@@ -1,9 +1,11 @@
 export class SVGService {
     private svg: SVGSVGElement;
 
-    constructor(svgID: string) {
-        const element = document.getElementById(svgID) as HTMLObjectElement;
-        this.svg = element.contentDocument?.getElementsByTagName("svg")[0]!;
+    constructor(svgQuerySelector: string) {
+        const element = document.querySelector(
+            svgQuerySelector,
+        ) as HTMLObjectElement;
+        this.svg = element.contentDocument?.querySelector("svg")!;
     }
 
     public SetElementsActive(querySelector: string): void {

@@ -4,7 +4,12 @@ body {
     margin: 0;
     padding: 10px;
 }
+.graphics-containers {
+    display: flex;
+    width: 100vw;
+}
 .log-container {
+    order: 1;
     width: 500px;
     height: 500px;
     background-color: lightgray;
@@ -30,4 +35,12 @@ pre.log-data {
 span.log-datetime {
     float: right;
     font-size: 9px;
+}
+.fsm-chart {
+    display: inline-block;
+    order: 2;
+    border: 1px solid black;
+    width: 50%;
+    max-width: 50%;
+    height: auto;
 }

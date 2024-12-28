@@ -35,7 +35,6 @@ import {
     emailSignInActions,
     EmailSignInIdle,
     EmailSignInState,
-    emailSignInStates,
 } from "./fsm-email";
 import { LogItem } from "./gui-logger";
 
@@ -80,11 +79,15 @@ export interface FirebaseDependencies {
 
 export interface WrapperSettings {
     logger: (logItemInput: LogItem) => void;
-    emailStateChangedCallback: (
-        newState: keyof typeof emailSignInStates, //,
-        //    action: keyof typeof emailSignInActions | null,
+    // emailStateChangedCallback: (
+    //     newState: keyof typeof emailSignInStates, //,
+    //     //    action: keyof typeof emailSignInActions | null,
+    // ) => void;
+    emailActionCallback: (
+        oldState: EmailSignInState, //keyof typeof emailSignInStates,
+        action: keyof typeof emailSignInActions,
+        newState: EmailSignInState, //keyof typeof emailSignInStates,
     ) => void;
-    emailActionCallback: (action: keyof typeof emailSignInActions) => void;
     loginButtonCSSClass: string;
     clearCachedUserButtonCSSClass: string;
     authProviderSettings: {
@@ -196,12 +199,14 @@ export class FirebaseAuthService {
     private hiddenMessage: string =
         "not stored in localStorage to prevent xss attacks";
     private emailState!: EmailSignInState;
-    private emailStateChangedCallback: (
-        newState: keyof typeof emailSignInStates, //,
-        //action: keyof typeof emailSignInActions | null,
-    ) => void;
+    // private emailStateChangedCallback: (
+    //     newState: keyof typeof emailSignInStates, //,
+    //     //action: keyof typeof emailSignInActions | null,
+    // ) => void;
     private emailActionCallback: (
+        oldState: EmailSignInState, //keyof typeof emailSignInStates,
         action: keyof typeof emailSignInActions,
+        newState: EmailSignInState, //keyof typeof emailSignInStates,
     ) => void;
     private backedUpEmailLoginButtonClicked:
         | DefaultAction
@@ -251,9 +256,10 @@ export class FirebaseAuthService {
     public SetEmailState<T extends EmailSignInState>(
         stateClass: new () => T,
     ): void {
-        this.emailStateChangedCallback?.(
-            stateClass.name as keyof typeof emailSignInStates,
-        );
+        debugger;
+        // this.emailStateChangedCallback?.(
+        //     stateClass.name as keyof typeof emailSignInStates,
+        // );
         this.logger?.({
             logMessage: `email state changed to ${stateClass.name}`,
         });
@@ -262,20 +268,29 @@ export class FirebaseAuthService {
         this.emailState.logger = this.logger;
     }
 
-    public CallEmailAction(action: keyof typeof emailSignInActions): void {
-        this.emailActionCallback?.(action);
+    public async CallEmailAction(
+        action: keyof typeof emailSignInActions,
+    ): Promise<void> {
+        debugger;
+        const oldState = this.emailState;
         const methodName = emailSignInActions[action];
-        (this.emailState[methodName] as Function)();
+        const methodResult = (this.emailState[methodName] as Function).call(
+            this.emailState,
+        );
+        const newState =
+            methodResult instanceof Promise ? await methodResult : methodResult;
+        this.emailActionCallback?.(oldState, action, newState);
+        this.SetEmailState(newState);
     }
 
     constructor(input: { env: ProcessEnv; settings: WrapperSettings }) {
         this.env = input.env;
         this.settings = input.settings;
         this.logger = input.settings.logger;
-        this.SetEmailState(EmailSignInIdle);
-        this.emailStateChangedCallback =
-            input.settings.emailStateChangedCallback;
+        // this.emailStateChangedCallback =
+        //     input.settings.emailStateChangedCallback;
         this.emailActionCallback = input.settings.emailActionCallback;
+        this.SetEmailState(EmailSignInIdle);
         if (this.env.FIREBASE_LINK_ACCOUNTS) {
             throw new Error("FIREBASE_LINK_ACCOUNTS=true is not supported yet");
         }
@@ -445,7 +460,10 @@ export class FirebaseAuthService {
 
     public async Signin(provider: AuthProviders): Promise<void> {
         if (provider === authProviders.Email) {
-            return this.emailState.UserInputsEmailAddressAndClicksSignInButton();
+            this.CallEmailAction(
+                emailSignInActions.UserInputsEmailAddressAndClicksSignInButton,
+            );
+            return; // this.emailState.UserInputsEmailAddressAndClicksSignInButton();
             //return await this.emailSignInStateMachine();
         } else {
             let authProvider: AuthProvider;
