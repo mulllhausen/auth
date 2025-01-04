@@ -31,12 +31,12 @@ import {
     UserCredential,
 } from "firebase/auth";
 import { ProcessEnv } from "./dotenv";
+import { LogItem } from "./gui-logger";
 import {
     emailSignInActions,
-    EmailSignInIdle,
+    EmailSignInFSM,
     EmailSignInState,
-} from "./fsm-email";
-import { LogItem } from "./gui-logger";
+} from "./state-machine-email";
 
 // #endregion
 
@@ -79,14 +79,14 @@ export interface FirebaseDependencies {
 
 export interface WrapperSettings {
     logger: (logItemInput: LogItem) => void;
+    //emailStateChangedCallback: (newState: EmailSignInState) => void;
     // emailStateChangedCallback: (
-    //     newState: keyof typeof emailSignInStates, //,
-    //     //    action: keyof typeof emailSignInActions | null,
+    //     newState: keyof typeof emailSignInStates,
     // ) => void;
     emailActionCallback: (
-        oldState: EmailSignInState, //keyof typeof emailSignInStates,
-        action: keyof typeof emailSignInActions,
-        newState: EmailSignInState, //keyof typeof emailSignInStates,
+        oldState: /*typeof*/ EmailSignInState | null,
+        action: keyof typeof emailSignInActions | null,
+        newState: /*typeof*/ EmailSignInState,
     ) => void;
     loginButtonCSSClass: string;
     clearCachedUserButtonCSSClass: string;
@@ -190,23 +190,27 @@ export class FirebaseAuthService {
     private logger: (logItem: LogItem) => void;
     private env: ProcessEnv;
     public Auth: Auth;
-    public emailAddress: string | null;
+    private emailAddress!: string | null;
     public UseLinkInsteadOfPassword: boolean = false;
     public EmailPassword: string | null = null;
     public EmailActionCodeSettings: ActionCodeSettings;
+    private localStorageEmailState = "emailState";
     private localStorageEmailAddressKey = "emailAddress";
     private localStorageCachedUserKey = "cachedUser";
     private hiddenMessage: string =
         "not stored in localStorage to prevent xss attacks";
-    private emailState!: EmailSignInState;
+
+    // init but may be overriden in constructor
+    private emailState: EmailSignInState = new EmailSignInFSM.Idle();
+
+    //private emailStateChangedCallback: (newState: EmailSignInState) => void;
     // private emailStateChangedCallback: (
-    //     newState: keyof typeof emailSignInStates, //,
-    //     //action: keyof typeof emailSignInActions | null,
+    //     newState: keyof typeof emailSignInStates,
     // ) => void;
     private emailActionCallback: (
-        oldState: EmailSignInState, //keyof typeof emailSignInStates,
-        action: keyof typeof emailSignInActions,
-        newState: EmailSignInState, //keyof typeof emailSignInStates,
+        oldState: EmailSignInState | null,
+        action: keyof typeof emailSignInActions | null,
+        newState: EmailSignInState,
     ) => void;
     private backedUpEmailLoginButtonClicked:
         | DefaultAction
@@ -230,67 +234,15 @@ export class FirebaseAuthService {
         this.emailAddress = emailAddress;
     }
 
-    // public get EmailState(): EmailSignInStates | null {
-    //     return this.emailState;
-    // }
-    // private set EmailState(emailState: EmailSignInStates) {
-    //     this.Logger?.({ logMessage: `email state changed to ${emailState}` });
-    //     this.emailState = emailState;
-    // }
-    // public SetEmailState<T extends EmailSignInState>(
-    //     stateClass: new (
-    //         firebaseAuthService: FirebaseAuthService,
-    //         logger: (logItem: LogItem) => void,
-    //     ) => T,
-    //     //action: keyof typeof emailSignInActions | null,
-    // ): void {
-    //     this.emailStateChangedCallback?.(
-    //         stateClass.name as keyof typeof emailSignInStates,
-    //         //action,
-    //     );
-    //     this.logger?.({
-    //         logMessage: `email state changed to ${stateClass.name}`,
-    //     });
-    //     this.emailState = new stateClass(this, this.logger);
-    // }
-    public SetEmailState<T extends EmailSignInState>(
-        stateClass: new () => T,
-    ): void {
-        debugger;
-        // this.emailStateChangedCallback?.(
-        //     stateClass.name as keyof typeof emailSignInStates,
-        // );
-        this.logger?.({
-            logMessage: `email state changed to ${stateClass.name}`,
-        });
-        this.emailState = new stateClass();
-        this.emailState.firebaseAuthService = this;
-        this.emailState.logger = this.logger;
-    }
-
-    public async CallEmailAction(
-        action: keyof typeof emailSignInActions,
-    ): Promise<void> {
-        debugger;
-        const oldState = this.emailState;
-        const methodName = emailSignInActions[action];
-        const methodResult = (this.emailState[methodName] as Function).call(
-            this.emailState,
-        );
-        const newState =
-            methodResult instanceof Promise ? await methodResult : methodResult;
-        this.emailActionCallback?.(oldState, action, newState);
-        this.SetEmailState(newState);
-    }
-
     constructor(input: { env: ProcessEnv; settings: WrapperSettings }) {
         this.env = input.env;
         this.settings = input.settings;
         this.logger = input.settings.logger;
-        // this.emailStateChangedCallback =
-        //     input.settings.emailStateChangedCallback;
+        //this.emailStateChangedCallback = input.settings.emailStateChangedCallback;
         this.emailActionCallback = input.settings.emailActionCallback;
-        this.SetEmailState(EmailSignInIdle);
+        this.restoreEmailStateFromLocalStorage();
+        //this.setEmailState(EmailSignInFSM.Idle);
+
         if (this.env.FIREBASE_LINK_ACCOUNTS) {
             throw new Error("FIREBASE_LINK_ACCOUNTS=true is not supported yet");
         }
@@ -460,7 +412,7 @@ export class FirebaseAuthService {
 
     public async Signin(provider: AuthProviders): Promise<void> {
         if (provider === authProviders.Email) {
-            this.CallEmailAction(
+            this.callEmailAction(
                 emailSignInActions.UserInputsEmailAddressAndClicksSignInButton,
             );
             return; // this.emailState.UserInputsEmailAddressAndClicksSignInButton();
@@ -497,6 +449,80 @@ export class FirebaseAuthService {
                 return GithubAuthProvider;
             default:
                 throw new Error(`unsupported provider ${providerId}`);
+        }
+    }
+
+    private async callEmailAction(
+        futureAction: keyof typeof emailSignInActions,
+        args?: any,
+    ): Promise<void> {
+        debugger;
+        if (this.emailState === null) {
+            return;
+        }
+        const oldState = this.emailState;
+        const methodName = emailSignInActions[futureAction];
+        const methodResult: typeof EmailSignInState = (
+            this.emailState[methodName] as Function
+        ).call(this.emailState);
+        const newState =
+            methodResult instanceof Promise ? await methodResult : methodResult;
+        this.emailActionCallback?.(oldState, futureAction, newState);
+        this.setEmailState(newState);
+    }
+
+    private restoreEmailStateFromLocalStorage() {
+        const emailStateJSON: string | null = window.localStorage.getItem(
+            this.localStorageEmailState,
+        );
+        if (emailStateJSON === null) {
+            return;
+        }
+        const emailStateJSONParsed = JSON.parse(emailStateJSON);
+        const emailStateClass =
+            EmailSignInFSM.NameToClassMap[emailStateJSONParsed.typeName];
+        this.setEmailState(emailStateClass);
+    }
+
+    /** the only thing that should call this method is callEmailAction().
+     * i.e. a state change should only result from an action (transition). */
+    // but what about initialisation?
+    private async setEmailState<T extends EmailSignInState>(
+        stateClass: new () => T,
+    ): Promise<void> {
+        debugger;
+        this.emailState = new stateClass();
+        this.emailState.firebaseAuthService = this;
+        this.emailState.logger = this.logger;
+
+        const emailStateName: string = this.emailState.constructor.name;
+        window.localStorage.setItem(
+            this.localStorageEmailState,
+            JSON.stringify({ typeName: emailStateName, data: this.emailState }),
+        );
+        this.logger?.({
+            logMessage: `email state changed to ${emailStateName}`,
+        });
+        // const oldState = null;
+        // const futureAction = null;
+        // this.emailActionCallback?.(oldState, futureAction, this.emailState);
+        //this.emailStateChangedCallback?.(this.emailState);
+        await this.emailState.Initialise();
+    }
+
+    public async SendSignInLinkToEmail(): Promise<void> {
+        try {
+            await sendSignInLinkToEmail(
+                this.Auth,
+                this.EmailAddress!,
+                this.EmailActionCodeSettings,
+            );
+            this.callEmailAction(emailSignInActions.FirebaseOKResponse);
+        } catch (error) {
+            this.callEmailAction(
+                emailSignInActions.FirebaseErrorResponse,
+                error,
+            );
         }
     }
 

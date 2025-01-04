@@ -6,14 +6,14 @@ import {
     UserPlus,
     WrapperSettings,
 } from "./firebase-wrapper";
-import {
-    emailSignInActions,
-    EmailSignInState,
-    emailSignInStates,
-} from "./fsm-email";
 import { GUILogger, LogItem } from "./gui-logger";
 import { HTMLTemplateManager } from "./html-template-manager";
 import "./index.css";
+import {
+    emailSignInActions,
+    EmailSignInFSM,
+    EmailSignInState,
+} from "./state-machine-email";
 import { SVGService } from "./svg-service";
 
 const emailFSMSVGService = new SVGService("#emailLinkFSMChart");
@@ -53,7 +53,7 @@ const wrapperSettings: WrapperSettings = {
     },
     reenterEmailAddressCallback,
     clearEmailAfterSignInCallback,
-    emailStateChangedCallback,
+    //emailStateChangedCallback,
     emailActionCallback,
 };
 
@@ -149,54 +149,113 @@ function clearEmailAfterSignInCallback(
     return true;
 }
 
+enum stateStatus {
+    success = "success",
+    failure = "failure",
+}
+
 function emailStateChangedCallback(
-    newEmailState: keyof typeof emailSignInStates,
-    //action: keyof typeof emailSignInActions | null,
+    newEmailState: typeof EmailSignInState,
+    emailStateStatus: stateStatus,
 ): void {
-    emailFSMSVGService.SetElementsInactive(".state-box"); // clear all
-    switch (newEmailState) {
-        case emailSignInStates.Idle:
-            emailFSMSVGService.SetElementsActive(".state-box.idle");
-            break;
-        case emailSignInStates.WaitingForUserToClickLinkInEmail:
-            emailFSMSVGService.SetElementsActive(
-                ".state-box.waiting-for-user-to-click-link-in-email",
-            );
-            break;
-        case emailSignInStates.BadEmailAddress:
-            emailFSMSVGService.SetElementsActive(
-                ".state-box.bad-email-address",
-            );
-            break;
+    debugger;
+    // clear all
+    emailFSMSVGService.UnsetElementStatus(".state-box", stateStatus.failure);
+    emailFSMSVGService.UnsetElementStatus(".state-box", stateStatus.success);
+
+    const emailStateToCSSClassMappings: Record<string, string> = {
+        [EmailSignInFSM.Idle.name]: "idle",
+        [EmailSignInFSM.SubmittingEmailToFirebase.name]:
+            "email-submitted-to-firebase",
+        [EmailSignInFSM.WaitingForUserToClickLinkInEmail.name]:
+            "waiting-for-user-to-click-link-in-email",
+        [EmailSignInFSM.BadEmailAddress.name]: "bad-email-address",
+        [EmailSignInFSM.LinkOpenedOnDifferentBrowser.name]:
+            "waiting-for-email-address-in-gui",
+        [EmailSignInFSM.LinkOpenedOnSameBrowser.name]:
+            "waiting-for-email-address-in-gui",
+        [EmailSignInFSM.WaitingForEmailAddressInGUI.name]:
+            "waiting-for-email-address-in-gui",
+        [EmailSignInFSM.AuthorisingViaFirebase.name]:
+            "authorising-via-firebase",
+        [EmailSignInFSM.SignedIn.name]: "signed-in",
+    };
+    const newEmailStateStr: string = newEmailState.name;
+    if (!emailStateToCSSClassMappings.hasOwnProperty(newEmailStateStr)) {
+        throw new Error(
+            `emailStateChangedCallback: ${newEmailStateStr} ` +
+                `not found in emailStateToCSSClassMappings`,
+        );
     }
 
-    // <path class="state-box authorising-via-firebase"
-    // <path class="state-box idle"
-    // <path class="state-box email-submitted-to-firebase"
-    // <path class="state-box sign-in-link-opened-on-same-browser"
-    // <path class="state-box sign-in-link-opened-on-different-browser"
-    // <path class="state-box signed-in"
-    // <path class="state-box waiting-for-email-address-in-gui"
-    // <path class="state-box bad-email-address"
-    // <path class="state-box waiting-for-user-to-click-link-in-email"
+    const emailStateCSSClass: string =
+        emailStateToCSSClassMappings[newEmailStateStr];
+
+    emailFSMSVGService.SetElementStatus(
+        `.state-box.${emailStateCSSClass}`,
+        emailStateStatus,
+    );
 }
 
 function emailActionCallback(
-    oldState: EmailSignInState, //keyof typeof emailSignInStates,
-    action: keyof typeof emailSignInActions,
-    newState: EmailSignInState, //keyof typeof emailSignInStates,
+    oldEmailState: typeof EmailSignInState | null,
+    action: keyof typeof emailSignInActions | null,
+    newEmailState: typeof EmailSignInState,
 ): void {
-    emailFSMSVGService.SetElementsInactive(".arrow"); // clear all
-    switch (action) {
-        case emailSignInActions.DifferentEmailAddressEntered:
-            emailFSMSVGService.SetElementsActive(
-                ".arrow.different-email-address",
-            );
-            break;
-        case emailSignInActions.UserInputsEmailAddressAndClicksSignInButton:
-            emailFSMSVGService.SetElementsActive(".arrow.user-inputs-email");
-            break;
+    // when successful, the new state will always be different to the old state
+    const emailStateStatus =
+        oldEmailState === newEmailState
+            ? stateStatus.failure
+            : stateStatus.success;
+
+    emailStateChangedCallback(newEmailState, emailStateStatus);
+
+    // clear all
+    emailFSMSVGService.UnsetElementStatus(".arrow", stateStatus.failure);
+    emailFSMSVGService.UnsetElementStatus(".arrow", stateStatus.success);
+
+    if (action === null || oldEmailState === null) {
+        return;
     }
+
+    const emailStateToCSSClassMappings: Record<string, string> = {
+        [EmailSignInFSM.Idle.name +
+        emailSignInActions.UserInputsEmailAddressAndClicksSignInButton]:
+            "user-inputs-email",
+        [EmailSignInFSM.SubmittingEmailToFirebase.name +
+        emailSignInActions.DifferentEmailAddressEntered]:
+            "different-email-address",
+        [EmailSignInFSM.WaitingForUserToClickLinkInEmail.name +
+        emailSignInActions.CheckIfURLIsASignInWithEmailLink]: "ok-response1",
+        [EmailSignInFSM.BadEmailAddress.name +
+        emailSignInActions.FirebaseOKResponse]:
+            "user-changes-email-address-and-clicks-sign-in-with-email-button",
+        [EmailSignInFSM.LinkOpenedOnDifferentBrowser.name +
+        emailSignInActions.FirebaseErrorResponse]:
+            "request-email-address-from-user-again",
+        [EmailSignInFSM.LinkOpenedOnDifferentBrowser.name +
+        emailSignInActions.validateEmailDataBeforeSignIn]: "off",
+        [EmailSignInFSM.LinkOpenedOnDifferentBrowser.name +
+        emailSignInActions.urlIsASignInWithEmailLink]: "off",
+        [EmailSignInFSM.LinkOpenedOnDifferentBrowser.name +
+        emailSignInActions.continuingOnSameBrowser]: "off",
+    };
+    //const emailActionStr: string = `${oldEmailState.constructor.name}${action}`;
+    const emailActionStr: string = `${oldEmailState.name}${action}`;
+    if (!emailStateToCSSClassMappings.hasOwnProperty(emailActionStr)) {
+        throw new Error(
+            `emailActionCallback: ${emailActionStr} ` +
+                `not found in emailStateToCSSClassMappings`,
+        );
+    }
+
+    const emailStateCSSClass: string =
+        emailStateToCSSClassMappings[emailActionStr];
+
+    emailFSMSVGService.SetElementStatus(
+        `.arrow.${emailStateCSSClass}`,
+        emailStateStatus,
+    );
     // class="arrow user-inputs-email"
     // class="arrow user-clicks-link-in-email1"
     // class="arrow user-clicks-link-in-email2"

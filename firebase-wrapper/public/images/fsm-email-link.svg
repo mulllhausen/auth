@@ -6,11 +6,16 @@
   <defs>
     <style class="style-fonts">
       .state-box {fill:none;}
-      .state-box.active {fill:red;}
+      .state-box.failure {fill:red;}
+      .state-box.success {fill:green;}
+
       text.arrow {fill:black;}
-      text.arrow.active {fill:red;}
+      text.arrow.failure {fill:red;}
+      text.arrow.success {fill:green;}
+
       path.arrow {stroke:black;}
-      path.arrow.active {stroke:red;}
+      path.arrow.failure {stroke:red;}
+      path.arrow.success {stroke:green;}
     </style>
 
   </defs>
