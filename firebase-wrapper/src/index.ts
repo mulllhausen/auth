@@ -155,7 +155,7 @@ enum stateStatus {
 }
 
 function emailStateChangedCallback(
-    newEmailState: typeof EmailSignInState,
+    newEmailState: EmailSignInState,
     emailStateStatus: stateStatus,
 ): void {
     debugger;
@@ -180,7 +180,7 @@ function emailStateChangedCallback(
             "authorising-via-firebase",
         [EmailSignInFSM.SignedIn.name]: "signed-in",
     };
-    const newEmailStateStr: string = newEmailState.name;
+    const newEmailStateStr: string = newEmailState.Name;
     if (!emailStateToCSSClassMappings.hasOwnProperty(newEmailStateStr)) {
         throw new Error(
             `emailStateChangedCallback: ${newEmailStateStr} ` +
@@ -198,13 +198,13 @@ function emailStateChangedCallback(
 }
 
 function emailActionCallback(
-    oldEmailState: typeof EmailSignInState | null,
+    oldEmailState: EmailSignInState | null,
     action: keyof typeof emailSignInActions | null,
-    newEmailState: typeof EmailSignInState,
+    newEmailState: EmailSignInState,
 ): void {
     // when successful, the new state will always be different to the old state
     const emailStateStatus =
-        oldEmailState === newEmailState
+        oldEmailState?.Name === newEmailState.Name
             ? stateStatus.failure
             : stateStatus.success;
 
@@ -240,8 +240,7 @@ function emailActionCallback(
         [EmailSignInFSM.LinkOpenedOnDifferentBrowser.name +
         emailSignInActions.continuingOnSameBrowser]: "off",
     };
-    //const emailActionStr: string = `${oldEmailState.constructor.name}${action}`;
-    const emailActionStr: string = `${oldEmailState.name}${action}`;
+    const emailActionStr: string = `${oldEmailState.constructor.name}${action}`;
     if (!emailStateToCSSClassMappings.hasOwnProperty(emailActionStr)) {
         throw new Error(
             `emailActionCallback: ${emailActionStr} ` +

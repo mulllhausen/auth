@@ -240,7 +240,7 @@ export class FirebaseAuthService {
         this.logger = input.settings.logger;
         //this.emailStateChangedCallback = input.settings.emailStateChangedCallback;
         this.emailActionCallback = input.settings.emailActionCallback;
-        this.restoreEmailStateFromLocalStorage();
+        this.initEmailState();
         //this.setEmailState(EmailSignInFSM.Idle);
 
         if (this.env.FIREBASE_LINK_ACCOUNTS) {
@@ -452,6 +452,27 @@ export class FirebaseAuthService {
         }
     }
 
+    private initEmailState(): void {
+        if (this.restoreEmailStateFromLocalStorage()) {
+            return;
+        }
+        this.setEmailState(EmailSignInFSM.Idle);
+    }
+
+    private restoreEmailStateFromLocalStorage(): boolean {
+        const emailStateJSON: string | null = window.localStorage.getItem(
+            this.localStorageEmailState,
+        );
+        if (emailStateJSON === null) {
+            return false;
+        }
+        const emailStateJSONParsed = JSON.parse(emailStateJSON);
+        const emailStateClass =
+            EmailSignInFSM.NameToClassMap[emailStateJSONParsed.typeName];
+        this.setEmailState(emailStateClass);
+        return true;
+    }
+
     private async callEmailAction(
         futureAction: keyof typeof emailSignInActions,
         args?: any,
@@ -465,23 +486,11 @@ export class FirebaseAuthService {
         const methodResult: typeof EmailSignInState = (
             this.emailState[methodName] as Function
         ).call(this.emailState);
-        const newState =
-            methodResult instanceof Promise ? await methodResult : methodResult;
+        const newState = (
+            methodResult instanceof Promise ? await methodResult : methodResult
+        ) as EmailSignInState;
         this.emailActionCallback?.(oldState, futureAction, newState);
         this.setEmailState(newState);
-    }
-
-    private restoreEmailStateFromLocalStorage() {
-        const emailStateJSON: string | null = window.localStorage.getItem(
-            this.localStorageEmailState,
-        );
-        if (emailStateJSON === null) {
-            return;
-        }
-        const emailStateJSONParsed = JSON.parse(emailStateJSON);
-        const emailStateClass =
-            EmailSignInFSM.NameToClassMap[emailStateJSONParsed.typeName];
-        this.setEmailState(emailStateClass);
     }
 
     /** the only thing that should call this method is callEmailAction().
@@ -498,7 +507,10 @@ export class FirebaseAuthService {
         const emailStateName: string = this.emailState.constructor.name;
         window.localStorage.setItem(
             this.localStorageEmailState,
-            JSON.stringify({ typeName: emailStateName, data: this.emailState }),
+            JSON.stringify({
+                typeName: emailStateName,
+                data: this.emailState.backupData,
+            }),
         );
         this.logger?.({
             logMessage: `email state changed to ${emailStateName}`,

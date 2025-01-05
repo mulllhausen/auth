@@ -10,8 +10,12 @@ import { LogItem } from "./gui-logger";
 
 export abstract class EmailSignInState {
     /** a reference back to the context */
-    public firebaseAuthService!: FirebaseAuthService; // readonly
+    public firebaseAuthService!: FirebaseAuthService; // treat as readonly
     public logger: ((logItem: LogItem) => void) | null = null;
+    public get Name(): string {
+        return this.constructor.name;
+    }
+    public backupData: Record<string, any> | null = null;
 
     // constructor(
     //     firebaseAuthService: FirebaseAuthService,
@@ -253,6 +257,7 @@ export const emailSignInActions: Record<
     EmailSignInStateMethodNames
 > = {
     Initialise: "Initialise",
+
     UserInputsEmailAddressAndClicksSignInButton:
         "UserInputsEmailAddressAndClicksSignInButton",
     DifferentEmailAddressEntered: "DifferentEmailAddressEntered",
