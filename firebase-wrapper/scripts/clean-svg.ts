@@ -29,6 +29,8 @@ let cleanedSvg: string = svgData.replace(
 
 // delete all font-family="Nunito, Segoe UI Emoji"
 cleanedSvg = cleanedSvg.replace(/ ?font-family=".*" ?/g, " ");
+cleanedSvg = cleanedSvg.replace(/white-space: pre;/g, "");
+cleanedSvg = cleanedSvg.replace(/style=""/g, "");
 
 const svgDom = new JSDOM(cleanedSvg);
 const document: Document = svgDom.window.document;
