@@ -1,12 +1,12 @@
-// TODO: spend some time fixing up ts-node once everything is working
-import dotenv from "dotenv"; // hack to make node load the fs module
 import fs from "fs";
 import { JSDOM } from "jsdom";
 
-dotenv.config(); // unused. needed for the hack
-
 const inputFile: string = "./public/images/fsm-email-link2.svg";
 const outputFile: string = "./public/images/fsm-email-link2-cleaned.svg";
+const duplicateClasses: Map<string, string[]> = new Map([
+    ["arrow", []],
+    ["state-box", []],
+]);
 
 const svgData: string = fs.readFileSync(inputFile, "utf8");
 
@@ -66,8 +66,10 @@ function handleStateBox(
     // update the previous group with a class that contains the text from the curremnt group
     if (index < 1) return;
 
-    const textKebabCase: string = getTextWithoutTagsKebabCase(group);
-
+    const textKebabCase: string = getUniqueClass(
+        getTextWithoutTagsKebabCase(group),
+        "state-box",
+    );
     // update the path that contains the background color only
     const className = `state-box ${textKebabCase}`;
     const previousGroup: SVGGElement = groups[index - 1];
@@ -82,11 +84,18 @@ function handleStateBox(
 }
 
 function handleArrow(group: SVGGElement): void {
-    const textKebabCase: string = getTextWithoutTagsKebabCase(group);
+    const textKebabCase: string = getUniqueClass(
+        getTextWithoutTagsKebabCase(group),
+        "arrow",
+    );
     const className = `arrow ${textKebabCase}`;
     const paths: NodeListOf<SVGPathElement> = group.querySelectorAll("path");
-    for (const path of paths) {
-        path.setAttribute("class", className);
+    for (const pathEl of paths) {
+        pathEl.setAttribute("class", className);
+    }
+    const texts: NodeListOf<SVGTextElement> = group.querySelectorAll("text");
+    for (const textEl of texts) {
+        textEl.setAttribute("class", className);
     }
 }
 
@@ -99,5 +108,20 @@ function getTextWithoutTagsKebabCase(group: SVGGElement): string {
         .trim()
         .toLowerCase()
         .replace(/\s+/g, " ")
-        .replace(/\s/g, "-");
+        .replace(/\s/g, "-")
+        .replace("&amp;", "and")
+        .replace("&", "and");
+}
+
+function getUniqueClass(className: string, elementType: string): string {
+    const classList = duplicateClasses.get(elementType);
+    for (let i = 0; i < 100; i++) {
+        const appendage = i === 0 ? "" : `-${i}`;
+        const newClassName = `${className}${appendage}`;
+        if (!classList?.includes(newClassName)) {
+            classList?.push(newClassName);
+            return newClassName;
+        }
+    }
+    return className;
 }
