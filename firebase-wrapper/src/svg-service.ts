@@ -8,27 +8,27 @@ export class SVGService {
         this.svg = element.contentDocument?.querySelector("svg")!;
     }
 
-    public SetElementsActive(querySelector: string): void {
+    public SetElementStatus(querySelector: string, status: string): void {
         const elements: NodeListOf<Element> =
             this.svg.querySelectorAll(querySelector);
 
         for (const element of elements) {
-            if (element.classList.contains("active")) {
+            if (element.classList.contains(status)) {
                 continue;
             }
-            element.classList.add("active");
+            element.classList.add(status);
         }
     }
 
-    public SetElementsInactive(querySelector: string): void {
+    public UnsetElementStatus(querySelector: string, status: string): void {
         const elements: NodeListOf<Element> =
             this.svg.querySelectorAll(querySelector);
 
         for (const element of elements) {
-            if (!element.classList.contains("active")) {
+            if (!element.classList.contains(status)) {
                 continue;
             }
-            element.classList.remove("active");
+            element.classList.remove(status);
         }
     }
 }
