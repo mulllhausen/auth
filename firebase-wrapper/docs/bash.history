@@ -4,6 +4,10 @@ v20.10.0
 $ npm -v
 10.2.3
 
+# since this is windows
+$ winget search wget
+$ winget install JernejSimoncic.Wget
+
 # set up package.json
 $ npm init -y
 Wrote to .../auth/firebase-wrapper/package.json:
