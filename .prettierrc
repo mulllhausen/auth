@@ -2,6 +2,21 @@
     "tabWidth": 4,
     "useTabs": false,
     "printWidth": 80,
+    "semi": true,
+    "endOfLine": "lf",
     "proseWrap": "always",
-    "plugins": ["prettier-plugin-organize-imports"]
+    "plugins": [
+        "prettier-plugin-organize-imports"
+    ],
+    "overrides": [
+        {
+            "files": [
+                "*.json",
+                "*.jsonc"
+            ],
+            "options": {
+                "tabWidth": 4
+            }
+        }
+    ]
 }

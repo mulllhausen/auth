@@ -1,0 +1,10 @@
+currently am generating the svg for use in the gui
+not sure if its good but it seems to be generating ok
+i have a feeling it needs fixing because some of the arrow
+texts are duplicated and there is no way for the gui to reference them
+problem is i don't have an easy way to test the svg is working.
+maybe i should make it so i can click on the elements to test them.
+it seems like i'm deviating from the goal, but i do need to test this.
+
+ok then. new requirement: a querystring flag to put the svg in test mode:
+?svg-test=1

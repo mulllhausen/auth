@@ -3,11 +3,12 @@ import { JSDOM } from "jsdom";
 
 // 1. create the finite state machine flowchart in excalidraw.
 // 2. export it as svg.
-// 3. use this script to clean the svg file, add css classes.
+// 3. use this script to clean the svg file, add css classes and
+//    generate typescript types.
 // the gui can then interact with it.
 
-const inputSVGFile: string = "./public/images/fsm-email-link.svg";
-const outputSVGFile: string = "./public/images/fsm-email-link-cleaned.svg";
+const inputSVGFile: string = "./public/images/fsm-email-link3.svg";
+const outputSVGFile: string = "./public/images/fsm-email-link3-cleaned.svg";
 const outputSVGTypesFile: string = "./src/svg-types.ts";
 const TAB = "    ";
 
