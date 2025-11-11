@@ -12,7 +12,7 @@
         "generate-dotenv": "npm run node-ts ./scripts/generate-dotenv.ts && npm run update-firebase-static-files",
         "generate-dotenv-dev": "npm run node-ts-dev ./scripts/generate-dotenv.ts && npm run update-firebase-static-files-dev",
         "postprocess-index-html": "npm run node-ts ./scripts/postprocess-index-html-hashes.ts",
-        "clean-svg": "npm run node-ts ./scripts/clean-svg.ts",
+        "process-svg": "npm run node-ts ./scripts/process-svg.ts",
         "ngrok": "bash scripts/start-ngrok.bash",
         "test": "jest --runInBand",
         "test-debug": "npm run node-ts-dev node_modules/jest/bin/jest.js --runInBand ",

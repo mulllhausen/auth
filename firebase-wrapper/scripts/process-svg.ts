@@ -1,5 +1,6 @@
 import fs from "fs";
 import { JSDOM } from "jsdom";
+import prettier from "prettier";
 
 // 1. create the finite state machine flowchart in excalidraw.
 // 2. export it as svg.
@@ -7,10 +8,14 @@ import { JSDOM } from "jsdom";
 //    generate typescript types.
 // the gui can then interact with it.
 
-const inputSVGFile: string = "./public/images/fsm-email-link3.svg";
-const outputSVGFile: string = "./public/images/fsm-email-link3-cleaned.svg";
-const outputSVGTypesFile: string = "./src/svg-types.ts";
-const TAB = "    ";
+const INPUT_SVG_FILE: string = "./public/images/fsm-email-link3.svg";
+const OUTPUT_SVG_FILE: string = "./public/images/fsm-email-link3-cleaned.svg";
+const OUTPUT_SVG_TYPES_FILE: string = "./src/svg-types.ts";
+
+const enum SVGClasses {
+    Arrow = "arrow",
+    StateBox = "state-box",
+}
 
 // init
 const duplicateClasses: Map<string, string[]> = new Map([
@@ -18,12 +23,22 @@ const duplicateClasses: Map<string, string[]> = new Map([
     ["state-box", []],
 ]);
 
-const svgData: string = fs.readFileSync(inputSVGFile, "utf8");
-const numCharacters: number = svgData.length;
+(async () => {
+    await cleanSVG(INPUT_SVG_FILE, OUTPUT_SVG_FILE);
+    await generateTypeEnums(OUTPUT_SVG_TYPES_FILE);
+})();
 
-let cleanedSvg: string = svgData.replace(
-    /<style[\s\S]*<\/style>/,
-    `<style>
+// functions
+
+async function cleanSVG(
+    inputSVGFile: string,
+    outputSVGFile: string,
+): Promise<void> {
+    const svgData: string = fs.readFileSync(inputSVGFile, "utf8");
+
+    let cleanedSvg: string = svgData.replace(
+        /<style[\s\S]*<\/style>/,
+        `<style>
 .state-box {fill:none;}
 .state-box.failure {fill:red;}
 .state-box.success {fill:green;}
@@ -40,37 +55,40 @@ path.arrow.failure {stroke:red;}
 path.arrow.success {stroke:green;}
 * {font-family:Arial;}
     </style>`,
-);
+    );
 
-cleanedSvg = cleanedSvg.replace(/white-space: pre;/g, "");
-cleanedSvg = cleanedSvg.replace(/style=""/g, "");
+    cleanedSvg = cleanedSvg.replace(/white-space: pre;/g, "");
+    cleanedSvg = cleanedSvg.replace(/style=""/g, "");
 
-// note: don't delete mask="url(#mask-vpggnQDtsvPvEl4MILJxK)" within <g>
-// these are used to add whitespace to the arrow text
-//cleanedSvg = cleanedSvg.replace(/mask="url\(.*?\)"/g, " ");
+    // note: don't delete mask="url(#mask-vpggnQDtsvPvEl4MILJxK)" within <g>
+    // these are used to add whitespace to the arrow text
+    //cleanedSvg = cleanedSvg.replace(/mask="url\(.*?\)"/g, " ");
 
-const svgDom = new JSDOM(cleanedSvg);
-const document: Document = svgDom.window.document;
-const groups: NodeListOf<SVGGElement> = document.querySelectorAll("g");
+    const svgDom = new JSDOM(cleanedSvg);
+    const document: Document = svgDom.window.document;
+    const groups: NodeListOf<SVGGElement> = document.querySelectorAll("g");
 
-if (!groups) {
-    throw new Error("No groups found");
+    if (!groups) {
+        throw new Error("No groups found");
+    }
+    const numGroups = groups.length;
+    groups.forEach((group: SVGGElement, index: number) => {
+        const isStateBox: boolean = isFontSize(28, group);
+        const isStateTransitionArrow: boolean =
+            !isStateBox && isFontSize(20, group);
+
+        if (isStateBox) handleStateBox(group, index, groups);
+        if (isStateTransitionArrow) handleArrow(group);
+    });
+
+    const svgOutput = svgDom.window.document.querySelector("svg");
+    const prettierOptions = await prettier.resolveConfig(process.cwd());
+    const prettySVG: string = await prettier.format(svgOutput!.outerHTML, {
+        ...prettierOptions,
+        parser: "html",
+    });
+    fs.writeFileSync(outputSVGFile, prettySVG, "utf-8");
 }
-const numGroups = groups.length;
-groups.forEach((group: SVGGElement, index: number) => {
-    const isStateBox: boolean = isFontSize(28, group);
-    const isStateTransitionArrow: boolean =
-        !isStateBox && isFontSize(20, group);
-
-    if (isStateBox) handleStateBox(group, index, groups);
-    if (isStateTransitionArrow) handleArrow(group);
-});
-
-const svgOutput = svgDom.window.document.querySelector("svg");
-fs.writeFileSync(outputSVGFile, svgOutput!.outerHTML, "utf-8");
-generateTypeEnums();
-
-// functions
 
 function isFontSize(size: number, svgGroup: SVGGElement): boolean {
     return svgGroup.outerHTML.includes(`font-size="${size}px"`);
@@ -81,8 +99,8 @@ function handleStateBox(
     index: number,
     groups: NodeListOf<SVGGElement>,
 ): void {
-    // with excalidraw the box group comes first then the text inside the box comes next
-    // update the previous group with a class that contains the text from the curremnt group
+    // with excalidraw the box group comes first then the text inside the box comes next.
+    // update the previous group with a class that contains the text from the current group.
     if (index < 1) return;
 
     const textKebabCase: string = getUniqueClass(
@@ -139,34 +157,42 @@ function getTextWithoutTagsKebabCase(group: SVGGElement): string {
 function getUniqueClass(className: string, elementType: string): string {
     const classList = duplicateClasses.get(elementType);
     for (let i = 0; i < 100; i++) {
-        const appendage = i === 0 ? "" : `-${i}`;
-        const newClassName = `${className}${appendage}`;
-        if (!classList?.includes(newClassName)) {
-            classList?.push(newClassName);
-            return newClassName;
-        }
+        const newClassName: string = `${className}-${i}`;
+        const classNameAlreadyExists: boolean =
+            classList?.includes(newClassName) ?? false;
+
+        if (classNameAlreadyExists) continue;
+
+        classList?.push(newClassName);
+        return newClassName;
     }
     return className;
 }
 
-function generateTypeEnums(): void {
+async function generateTypeEnums(outputSVGTypesFile: string): Promise<void> {
     const arrowClasses = duplicateClasses.get("arrow") ?? [];
     const stateBoxClasses = duplicateClasses.get("state-box") ?? [];
-    const output = `// file auto-generated by scripts/clean-svg.ts
+    const enumTS = `// file auto-generated by scripts/clean-svg.ts
 
 ${generateEnum("ArrowClass", arrowClasses)}
 ${generateEnum("StateBoxClass", stateBoxClasses)}
 `;
-    fs.writeFileSync(outputSVGTypesFile, output, "utf-8");
+    const prettierOptions = await prettier.resolveConfig(process.cwd());
+    const prettyTS: string = await prettier.format(enumTS, {
+        ...prettierOptions,
+        parser: "typescript",
+    });
+    fs.writeFileSync(outputSVGTypesFile, prettyTS, "utf-8");
 }
 
 function generateEnum(enumName: string, classNames: string[]): string {
     const enumEntries = classNames
         .map(
             (classInKebabCase) =>
-                `${TAB}${kebabToPascalCase(classInKebabCase)} ` +
+                kebabToPascalCase(classInKebabCase) +
                 `= "${classInKebabCase}",`,
         )
+        .sort((className1, className2) => className1.localeCompare(className2))
         .join("\n");
     return `export enum ${enumName} {\n${enumEntries}\n}\n`;
 }
