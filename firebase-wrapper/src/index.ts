@@ -14,7 +14,8 @@ import {
     EmailSignInFSM,
     EmailSignInState,
 } from "./state-machine-email";
-import { SVGService } from "./svg-service";
+import { ArrowCSSClass, StateBoxCSSClass } from "./svg-auto-types";
+import { SVGService, SVGStateStatus } from "./svg-service";
 
 const emailFSMSVGService = new SVGService("#emailLinkFSMChart");
 
@@ -64,6 +65,21 @@ const firebaseAuthService = new FirebaseAuthService({
 
 document.addEventListener("DOMContentLoaded", () => {
     populateEmailInput(firebaseAuthService.EmailAddress);
+    document
+        .querySelector("button#enableAllSVGElements")
+        ?.addEventListener("click", () => {
+            debugger;
+            for (const enumKey in StateBoxCSSClass) {
+                const enumValue =
+                    StateBoxCSSClass[enumKey as keyof typeof StateBoxCSSClass];
+                emailFSMSVGService.SetStatus(enumValue, SVGStateStatus.Success);
+            }
+            for (const enumKey in ArrowCSSClass) {
+                const enumValue =
+                    ArrowCSSClass[enumKey as keyof typeof ArrowCSSClass];
+                emailFSMSVGService.SetStatus(enumValue, SVGStateStatus.Success);
+            }
+        });
 });
 
 // callback functions
@@ -149,36 +165,40 @@ function clearEmailAfterSignInCallback(
     return true;
 }
 
-enum stateStatus {
-    success = "success",
-    failure = "failure",
-}
-
 function emailStateChangedCallback(
     newEmailState: EmailSignInState,
-    emailStateStatus: stateStatus,
+    emailStateStatus: SVGStateStatus,
 ): void {
     debugger;
     // clear all
-    emailFSMSVGService.UnsetElementStatus(".state-box", stateStatus.failure);
-    emailFSMSVGService.UnsetElementStatus(".state-box", stateStatus.success);
+    emailFSMSVGService.UnsetElementStatus(".state-box", SVGStateStatus.Failure);
+    emailFSMSVGService.UnsetElementStatus(".state-box", SVGStateStatus.Success);
 
     const emailStateToCSSClassMappings: Record<string, string> = {
-        [EmailSignInFSM.Idle.name]: "idle",
+        [EmailSignInFSM.Idle.name]: StateBoxCSSClass.Idle0,
+
         [EmailSignInFSM.SubmittingEmailToFirebase.name]:
-            "email-submitted-to-firebase",
+            StateBoxCSSClass.EmailSubmittedToFirebase0,
+
         [EmailSignInFSM.WaitingForUserToClickLinkInEmail.name]:
-            "waiting-for-user-to-click-link-in-email",
-        [EmailSignInFSM.BadEmailAddress.name]: "bad-email-address",
+            StateBoxCSSClass.WaitingForUserToClickLinkInEmail0,
+
+        [EmailSignInFSM.BadEmailAddress.name]:
+            StateBoxCSSClass.BadEmailAddress0,
+
         [EmailSignInFSM.LinkOpenedOnDifferentBrowser.name]:
-            "waiting-for-email-address-in-gui",
+            StateBoxCSSClass.SignInLinkOpenedOnDifferentBrowser0,
+
         [EmailSignInFSM.LinkOpenedOnSameBrowser.name]:
-            "waiting-for-email-address-in-gui",
+            StateBoxCSSClass.SignInLinkOpenedOnSameBrowser0,
+
         [EmailSignInFSM.WaitingForEmailAddressInGUI.name]:
-            "waiting-for-email-address-in-gui",
+            StateBoxCSSClass.WaitingForEmailAddressInGui0,
+
         [EmailSignInFSM.AuthorisingViaFirebase.name]:
-            "authorising-via-firebase",
-        [EmailSignInFSM.SignedIn.name]: "signed-in",
+            StateBoxCSSClass.AuthorisingViaFirebase0,
+
+        [EmailSignInFSM.SignedIn.name]: StateBoxCSSClass.SignedIn0,
     };
     const newEmailStateStr: string = newEmailState.Name;
     if (!emailStateToCSSClassMappings.hasOwnProperty(newEmailStateStr)) {
@@ -205,14 +225,14 @@ function emailActionCallback(
     // when successful, the new state will always be different to the old state
     const emailStateStatus =
         oldEmailState?.Name === newEmailState.Name
-            ? stateStatus.failure
-            : stateStatus.success;
+            ? SVGStateStatus.Failure
+            : SVGStateStatus.Success;
 
     emailStateChangedCallback(newEmailState, emailStateStatus);
 
     // clear all
-    emailFSMSVGService.UnsetElementStatus(".arrow", stateStatus.failure);
-    emailFSMSVGService.UnsetElementStatus(".arrow", stateStatus.success);
+    emailFSMSVGService.UnsetElementStatus(".arrow", SVGStateStatus.Failure);
+    emailFSMSVGService.UnsetElementStatus(".arrow", SVGStateStatus.Success);
 
     if (action === null || oldEmailState === null) {
         return;
