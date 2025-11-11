@@ -15,7 +15,7 @@ import {
     EmailSignInState,
 } from "./state-machine-email";
 import { ArrowCSSClass, StateBoxCSSClass } from "./svg-auto-types";
-import { SVGService, SVGStateStatus } from "./svg-service";
+import { SVGCSSClassCategory, SVGService, SVGStateStatus } from "./svg-service";
 
 const emailFSMSVGService = new SVGService("#emailLinkFSMChart");
 
@@ -67,17 +67,32 @@ document.addEventListener("DOMContentLoaded", () => {
     populateEmailInput(firebaseAuthService.EmailAddress);
     document
         .querySelector("button#enableAllSVGElements")
-        ?.addEventListener("click", () => {
-            debugger;
-            for (const enumKey in StateBoxCSSClass) {
-                const enumValue =
-                    StateBoxCSSClass[enumKey as keyof typeof StateBoxCSSClass];
-                emailFSMSVGService.SetStatus(enumValue, SVGStateStatus.Success);
-            }
-            for (const enumKey in ArrowCSSClass) {
-                const enumValue =
-                    ArrowCSSClass[enumKey as keyof typeof ArrowCSSClass];
-                emailFSMSVGService.SetStatus(enumValue, SVGStateStatus.Success);
+        ?.addEventListener("click", (event_: Event) => {
+            const buttonEl = event_.target as HTMLButtonElement;
+            let buttonState = buttonEl.dataset.state;
+            const setStatus: SVGStateStatus = SVGStateStatus.Failure;
+            switch (buttonState) {
+                case "unset":
+                    emailFSMSVGService.SetAllStatuses(
+                        StateBoxCSSClass,
+                        setStatus,
+                    );
+                    emailFSMSVGService.SetAllStatuses(ArrowCSSClass, setStatus);
+                    buttonEl.innerText = "disable all SVG elements";
+                    buttonEl.dataset.state = "set";
+                    break;
+                case "set":
+                    emailFSMSVGService.UnsetStatus(
+                        SVGCSSClassCategory.StateBox,
+                        setStatus,
+                    );
+                    emailFSMSVGService.UnsetStatus(
+                        SVGCSSClassCategory.Arrow,
+                        setStatus,
+                    );
+                    buttonEl.innerText = "enable all SVG elements";
+                    buttonEl.dataset.state = "unset";
+                    break;
             }
         });
 });

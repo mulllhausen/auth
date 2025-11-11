@@ -27,6 +27,17 @@ export class SVGService {
         );
     }
 
+    public SetAllStatuses(
+        svgCSSClassType: typeof StateBoxCSSClass | typeof ArrowCSSClass,
+        status: SVGStateStatus,
+    ): void {
+        for (const enumKey in svgCSSClassType) {
+            const enumValue =
+                svgCSSClassType[enumKey as keyof typeof svgCSSClassType];
+            this.SetStatus(enumValue, status);
+        }
+    }
+
     public SetStatus(
         cssClass: StateBoxCSSClass | ArrowCSSClass,
         status: SVGStateStatus,
@@ -41,8 +52,11 @@ export class SVGService {
         this.SetElementStatus(querySelector, status);
     }
 
-    public UnsetStatus(className: StateBoxCSSClass | ArrowCSSClass): void {
-        this.UnsetElementStatus(className, status);
+    public UnsetStatus(
+        cssClass: SVGCSSClassCategory,
+        status: SVGStateStatus,
+    ): void {
+        this.UnsetElementStatus(`.${cssClass}`, status);
     }
 
     public SetElementStatus(querySelector: string, status: string): void {
