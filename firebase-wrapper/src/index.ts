@@ -10,14 +10,17 @@ import { GUILogger, LogItem } from "./gui-logger";
 import { HTMLTemplateManager } from "./html-template-manager";
 import "./index.css";
 import {
-    emailSignInActions,
-    EmailSignInFSM,
-    EmailSignInState,
-} from "./state-machine-email";
-import { ArrowCSSClass, StateBoxCSSClass } from "./svg-auto-types";
-import { SVGCSSClassCategory, SVGService, SVGStateStatus } from "./svg-service";
+    emailStateToCSSArrowClassMappings,
+    emailStateToCSSBoxClassMappings,
+} from "./mappers/email";
+import { emailSignInActions, EmailSignInState } from "./state-machine-email";
+import {
+    EmailSVGArrowCSSClass,
+    EmailSVGStateBoxCSSClass,
+} from "./svg-auto-types";
+import { SVGEmailFlowService, SVGStateStatus } from "./svg-email-flow-service";
 
-const emailFSMSVGService = new SVGService("#emailLinkFSMChart");
+const emailFSMSVGService = new SVGEmailFlowService("#emailLinkFSMChart");
 
 const htmlTemplateManager = new HTMLTemplateManager(document);
 
@@ -73,23 +76,12 @@ document.addEventListener("DOMContentLoaded", () => {
             const setStatus: SVGStateStatus = SVGStateStatus.Failure;
             switch (buttonState) {
                 case "unset":
-                    emailFSMSVGService.SetAllStatuses(
-                        StateBoxCSSClass,
-                        setStatus,
-                    );
-                    emailFSMSVGService.SetAllStatuses(ArrowCSSClass, setStatus);
+                    emailFSMSVGService.SetAll();
                     buttonEl.innerText = "disable all SVG elements";
                     buttonEl.dataset.state = "set";
                     break;
                 case "set":
-                    emailFSMSVGService.UnsetStatus(
-                        SVGCSSClassCategory.StateBox,
-                        setStatus,
-                    );
-                    emailFSMSVGService.UnsetStatus(
-                        SVGCSSClassCategory.Arrow,
-                        setStatus,
-                    );
+                    emailFSMSVGService.UnsetAll();
                     buttonEl.innerText = "enable all SVG elements";
                     buttonEl.dataset.state = "unset";
                     break;
@@ -185,51 +177,18 @@ function emailStateChangedCallback(
     emailStateStatus: SVGStateStatus,
 ): void {
     debugger;
-    // clear all
-    emailFSMSVGService.UnsetElementStatus(".state-box", SVGStateStatus.Failure);
-    emailFSMSVGService.UnsetElementStatus(".state-box", SVGStateStatus.Success);
+    emailFSMSVGService.UnsetAllByType(EmailSVGStateBoxCSSClass);
 
-    const emailStateToCSSClassMappings: Record<string, string> = {
-        [EmailSignInFSM.Idle.name]: StateBoxCSSClass.Idle0,
-
-        [EmailSignInFSM.SubmittingEmailToFirebase.name]:
-            StateBoxCSSClass.EmailSubmittedToFirebase0,
-
-        [EmailSignInFSM.WaitingForUserToClickLinkInEmail.name]:
-            StateBoxCSSClass.WaitingForUserToClickLinkInEmail0,
-
-        [EmailSignInFSM.BadEmailAddress.name]:
-            StateBoxCSSClass.BadEmailAddress0,
-
-        [EmailSignInFSM.LinkOpenedOnDifferentBrowser.name]:
-            StateBoxCSSClass.SignInLinkOpenedOnDifferentBrowser0,
-
-        [EmailSignInFSM.LinkOpenedOnSameBrowser.name]:
-            StateBoxCSSClass.SignInLinkOpenedOnSameBrowser0,
-
-        [EmailSignInFSM.WaitingForEmailAddressInGUI.name]:
-            StateBoxCSSClass.WaitingForEmailAddressInGui0,
-
-        [EmailSignInFSM.AuthorisingViaFirebase.name]:
-            StateBoxCSSClass.AuthorisingViaFirebase0,
-
-        [EmailSignInFSM.SignedIn.name]: StateBoxCSSClass.SignedIn0,
-    };
     const newEmailStateStr: string = newEmailState.Name;
-    if (!emailStateToCSSClassMappings.hasOwnProperty(newEmailStateStr)) {
+    if (!emailStateToCSSBoxClassMappings.hasOwnProperty(newEmailStateStr)) {
         throw new Error(
             `emailStateChangedCallback: ${newEmailStateStr} ` +
                 `not found in emailStateToCSSClassMappings`,
         );
     }
-
-    const emailStateCSSClass: string =
-        emailStateToCSSClassMappings[newEmailStateStr];
-
-    emailFSMSVGService.SetElementStatus(
-        `.state-box.${emailStateCSSClass}`,
-        emailStateStatus,
-    );
+    const emailStateCSSClass =
+        emailStateToCSSBoxClassMappings[newEmailStateStr];
+    emailFSMSVGService.SetElementStatus(emailStateCSSClass, emailStateStatus);
 }
 
 function emailActionCallback(
@@ -245,51 +204,23 @@ function emailActionCallback(
 
     emailStateChangedCallback(newEmailState, emailStateStatus);
 
-    // clear all
-    emailFSMSVGService.UnsetElementStatus(".arrow", SVGStateStatus.Failure);
-    emailFSMSVGService.UnsetElementStatus(".arrow", SVGStateStatus.Success);
+    emailFSMSVGService.UnsetAllByType(EmailSVGArrowCSSClass);
 
     if (action === null || oldEmailState === null) {
         return;
     }
 
-    const emailStateToCSSClassMappings: Record<string, string> = {
-        [EmailSignInFSM.Idle.name +
-        emailSignInActions.UserInputsEmailAddressAndClicksSignInButton]:
-            "user-inputs-email",
-        [EmailSignInFSM.SubmittingEmailToFirebase.name +
-        emailSignInActions.DifferentEmailAddressEntered]:
-            "different-email-address",
-        [EmailSignInFSM.WaitingForUserToClickLinkInEmail.name +
-        emailSignInActions.CheckIfURLIsASignInWithEmailLink]: "ok-response1",
-        [EmailSignInFSM.BadEmailAddress.name +
-        emailSignInActions.FirebaseOKResponse]:
-            "user-changes-email-address-and-clicks-sign-in-with-email-button",
-        [EmailSignInFSM.LinkOpenedOnDifferentBrowser.name +
-        emailSignInActions.FirebaseErrorResponse]:
-            "request-email-address-from-user-again",
-        [EmailSignInFSM.LinkOpenedOnDifferentBrowser.name +
-        emailSignInActions.validateEmailDataBeforeSignIn]: "off",
-        [EmailSignInFSM.LinkOpenedOnDifferentBrowser.name +
-        emailSignInActions.urlIsASignInWithEmailLink]: "off",
-        [EmailSignInFSM.LinkOpenedOnDifferentBrowser.name +
-        emailSignInActions.continuingOnSameBrowser]: "off",
-    };
     const emailActionStr: string = `${oldEmailState.constructor.name}${action}`;
-    if (!emailStateToCSSClassMappings.hasOwnProperty(emailActionStr)) {
+    if (!emailStateToCSSArrowClassMappings.hasOwnProperty(emailActionStr)) {
         throw new Error(
             `emailActionCallback: ${emailActionStr} ` +
                 `not found in emailStateToCSSClassMappings`,
         );
     }
+    const emailStateCSSClass =
+        emailStateToCSSArrowClassMappings[emailActionStr];
 
-    const emailStateCSSClass: string =
-        emailStateToCSSClassMappings[emailActionStr];
-
-    emailFSMSVGService.SetElementStatus(
-        `.arrow.${emailStateCSSClass}`,
-        emailStateStatus,
-    );
+    emailFSMSVGService.SetElementStatus(emailStateCSSClass, emailStateStatus);
     // class="arrow user-inputs-email"
     // class="arrow user-clicks-link-in-email1"
     // class="arrow user-clicks-link-in-email2"
