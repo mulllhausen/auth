@@ -1,6 +1,6 @@
 import type {
     TEmailSVGCSSClass,
-    TEmailSVGCSSClassValues,
+    TEmailSVGCSSClassKeys,
 } from "./svg-email-flowchart-auto-types";
 import {
     EmailSVGArrowCSSClass,
@@ -16,9 +16,12 @@ import {
     SVGStateStatus,
 } from "./svg-flowchart-service";
 
-const EmailSVGHierarchy: {
-    [K in TSVGCSSClassCategoryValues]: TEmailSVGCSSClass;
-} = {
+type TEmailSVGHierarchy = {
+    [SVGCSSClassCategory.Arrow]: typeof EmailSVGArrowCSSClass;
+    [SVGCSSClassCategory.StateBox]: typeof EmailSVGStateBoxCSSClass;
+};
+
+const EmailSVGHierarchy: TEmailSVGHierarchy = {
     [SVGCSSClassCategory.Arrow]: EmailSVGArrowCSSClass,
     [SVGCSSClassCategory.StateBox]: EmailSVGStateBoxCSSClass,
 } as const;
@@ -33,13 +36,16 @@ export class SVGEmailFlowChartService extends SVGFlowChartService {
     }
 
     public SetElementStatus(
-        singleSVGElement: TEmailSVGCSSClassValues,
+        singleSVGElement: TEmailSVGCSSClassKeys,
         status: TSVGStateStatusValues,
     ): void {
-        this.AddCSSClassBySelector(
-            `.${this.getCategory(singleSVGElement)}.${singleSVGElement}`,
-            status,
-        );
+        const categoryValue = this.getCategory(singleSVGElement); // "state-box"
+        const obj = EmailSVGHierarchy[categoryValue] as Record<
+            typeof singleSVGElement,
+            string
+        >;
+        const cssClass = obj[singleSVGElement];
+        this.AddCSSClassBySelector(`.${categoryValue}.${cssClass}`, status);
     }
 
     private SetAllElementsInCategory(
@@ -47,26 +53,23 @@ export class SVGEmailFlowChartService extends SVGFlowChartService {
         status: TSVGStateStatusValues,
     ) {
         for (const objKey in emailSVGCSSClassObj) {
-            this.SetElementStatus(objKey as TEmailSVGCSSClassValues, status);
+            this.SetElementStatus(objKey as TEmailSVGCSSClassKeys, status);
         }
     }
 
-    private getCategory(
-        elementCSSClassKey: TEmailSVGCSSClassValues,
+    private getCategory<K extends TEmailSVGCSSClassKeys>(
+        elementCSSClassKey: K,
     ): TSVGCSSClassCategoryValues {
         for (const category of Object.keys(
             EmailSVGHierarchy,
         ) as TSVGCSSClassCategoryValues[]) {
-            const cssClassObject: TEmailSVGCSSClass =
-                EmailSVGHierarchy[category];
-
+            const cssClassObject = EmailSVGHierarchy[category];
             if (elementCSSClassKey in cssClassObject) {
-                //if (Object.keys(cssClassObject).includes(elementCSSClassKey)) {
                 return category;
             }
         }
         throw new Error(
-            `could not find a category for CSS class "${elementCSSClassKey}"`,
+            `Could not find category for css class key "${elementCSSClassKey}"`,
         );
     }
 }
