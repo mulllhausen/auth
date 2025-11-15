@@ -1,4 +1,4 @@
-import { SVGService } from "./svg-service";
+import { SVGService } from "./svg-service.ts";
 
 export type TSVGStateStatusValues =
     (typeof SVGStateStatus)[keyof typeof SVGStateStatus];
