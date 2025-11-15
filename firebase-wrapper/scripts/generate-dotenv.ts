@@ -1,11 +1,13 @@
-import * as fs from "fs";
 import * as dotenv from "dotenv";
+import * as fs from "fs";
 import * as path from "path";
 
-enum dotenvFiles {
-    base = ".env",
-    dev = ".env.development",
-}
+type TdotenvFiles = (typeof dotenvFiles)[keyof typeof dotenvFiles];
+
+const dotenvFiles = {
+    base: ".env",
+    dev: ".env.development",
+} as const;
 
 const allowedDotEnvTypes = [String, Number, Boolean] as const;
 const defaultDotEnvTypeUpper: string = "STRING";
@@ -70,7 +72,7 @@ function getRegexFromDotEnvTypes(allowedDotEnvTypes: string[]): RegExp {
 }
 
 function loadDotEnvFile(
-    dotenvFile: dotenvFiles,
+    dotenvFile: TdotenvFiles,
     mustBePopulated: boolean = false,
 ): dotenv.DotenvParseOutput | undefined {
     const dotEnvFilePath: string = path.resolve(process.cwd(), dotenvFile);

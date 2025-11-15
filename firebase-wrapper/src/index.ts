@@ -14,16 +14,14 @@ import {
     emailStateToCSSBoxClassMappings,
 } from "./mappers/email";
 import { emailSignInActions, EmailSignInState } from "./state-machine-email";
+import { SVGEmailFlowChartService } from "./svg-email-flowchart-service";
 import {
-    EmailSVGArrowCSSClass,
-    EmailSVGStateBoxCSSClass,
-} from "./svg-email-flowchart-auto-types";
-import {
-    SVGEmailFlowService,
+    SVGCSSClassCategory,
     SVGStateStatus,
-} from "./svg-email-flowchart-service";
+    TSVGStateStatusValues,
+} from "./svg-flowchart-service";
 
-const emailFSMSVGService = new SVGEmailFlowService("#emailLinkFSMChart");
+const emailFSMSVGService = new SVGEmailFlowChartService("#emailLinkFSMChart");
 
 const htmlTemplateManager = new HTMLTemplateManager(document);
 
@@ -74,12 +72,14 @@ document.addEventListener("DOMContentLoaded", () => {
     document
         .querySelector("button#enableAllSVGElements")
         ?.addEventListener("click", (event_: Event) => {
+            debugger;
             const buttonEl = event_.target as HTMLButtonElement;
             let buttonState = buttonEl.dataset.state;
-            const setStatus: SVGStateStatus = SVGStateStatus.Failure;
             switch (buttonState) {
                 case "unset":
-                    emailFSMSVGService.SetAllIndividually();
+                    emailFSMSVGService.SetAllIndividually(
+                        SVGStateStatus.Failure,
+                    );
                     buttonEl.innerText = "disable all SVG elements";
                     buttonEl.dataset.state = "set";
                     break;
@@ -177,10 +177,10 @@ function clearEmailAfterSignInCallback(
 
 function emailStateChangedCallback(
     newEmailState: EmailSignInState,
-    emailStateStatus: SVGStateStatus,
+    emailStateStatus: TSVGStateStatusValues,
 ): void {
     debugger;
-    emailFSMSVGService.UnsetAllByType(EmailSVGStateBoxCSSClass);
+    emailFSMSVGService.UnsetCategory(SVGCSSClassCategory.StateBox);
 
     const newEmailStateStr: string = newEmailState.Name;
     if (!emailStateToCSSBoxClassMappings.hasOwnProperty(newEmailStateStr)) {
@@ -207,7 +207,7 @@ function emailActionCallback(
 
     emailStateChangedCallback(newEmailState, emailStateStatus);
 
-    emailFSMSVGService.UnsetAllByType(EmailSVGArrowCSSClass);
+    emailFSMSVGService.UnsetCategory(SVGCSSClassCategory.Arrow);
 
     if (action === null || oldEmailState === null) {
         return;
