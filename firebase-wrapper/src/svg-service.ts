@@ -1,4 +1,4 @@
-/** not domain specific */
+/** this class is not domain specific. it knows nothing about flowcharts - only svgs.*/
 export class SVGService {
     private svg: SVGSVGElement;
 
@@ -9,27 +9,33 @@ export class SVGService {
         this.svg = element.contentDocument?.querySelector("svg")!;
     }
 
-    public SetElementStatus(querySelector: string, status: string): void {
+    public AddCSSClassBySelector(
+        querySelector: string,
+        cssClass: string,
+    ): void {
         const elements: NodeListOf<Element> =
             this.svg.querySelectorAll(querySelector);
 
         for (const element of elements) {
-            if (element.classList.contains(status)) {
+            if (element.classList.contains(cssClass)) {
                 continue;
             }
-            element.classList.add(status);
+            element.classList.add(cssClass);
         }
     }
 
-    public UnsetElementStatus(querySelector: string, status: string): void {
+    public RemoveCSSClassBySelector(
+        querySelector: string,
+        cssClass: string,
+    ): void {
         const elements: NodeListOf<Element> =
             this.svg.querySelectorAll(querySelector);
 
         for (const element of elements) {
-            if (!element.classList.contains(status)) {
+            if (!element.classList.contains(cssClass)) {
                 continue;
             }
-            element.classList.remove(status);
+            element.classList.remove(cssClass);
         }
     }
 }

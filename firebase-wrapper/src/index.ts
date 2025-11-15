@@ -17,8 +17,11 @@ import { emailSignInActions, EmailSignInState } from "./state-machine-email";
 import {
     EmailSVGArrowCSSClass,
     EmailSVGStateBoxCSSClass,
-} from "./svg-auto-types";
-import { SVGEmailFlowService, SVGStateStatus } from "./svg-email-flow-service";
+} from "./svg-email-flowchart-auto-types";
+import {
+    SVGEmailFlowService,
+    SVGStateStatus,
+} from "./svg-email-flowchart-service";
 
 const emailFSMSVGService = new SVGEmailFlowService("#emailLinkFSMChart");
 
@@ -76,7 +79,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const setStatus: SVGStateStatus = SVGStateStatus.Failure;
             switch (buttonState) {
                 case "unset":
-                    emailFSMSVGService.SetAll();
+                    emailFSMSVGService.SetAllIndividually();
                     buttonEl.innerText = "disable all SVG elements";
                     buttonEl.dataset.state = "set";
                     break;

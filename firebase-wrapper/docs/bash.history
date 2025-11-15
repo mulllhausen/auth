@@ -1,8 +1,13 @@
+# install nvm for windows https://github.com/coreybutler/nvm-windows
+# then:
+$ nvm install 23
+$ nvm use 23
+
 $ node -v
-v20.10.0
+v23.11.1
 
 $ npm -v
-10.2.3
+10.9.2
 
 # since this is windows
 $ winget search wget

@@ -2,7 +2,7 @@ import { emailSignInActions, EmailSignInFSM } from "../state-machine-email";
 import {
     EmailSVGArrowCSSClass,
     EmailSVGStateBoxCSSClass,
-} from "../svg-auto-types";
+} from "../svg-email-flowchart-auto-types";
 
 export const emailStateToCSSBoxClassMappings: Record<
     string,
