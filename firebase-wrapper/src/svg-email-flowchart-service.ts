@@ -1,20 +1,16 @@
-import type {
-    TEmailSVGCSSClass,
-    TEmailSVGCSSClassKeys,
-} from "./svg-email-flowchart-auto-types";
 import {
     EmailSVGArrowCSSClass,
     EmailSVGStateBoxCSSClass,
 } from "./svg-email-flowchart-auto-types";
-import type {
-    TSVGCSSClassCategoryValues,
-    TSVGStateStatusValues,
-} from "./svg-flowchart-service";
+import type { TSVGStateStatusValues } from "./svg-flowchart-service";
 import {
     SVGCSSClassCategory,
     SVGFlowChartService,
     SVGStateStatus,
 } from "./svg-flowchart-service";
+
+// convention: if a var has `css` in the name then it is a css class at runtime.
+// eg. "state-box"
 
 type TEmailSVGHierarchy = {
     [SVGCSSClassCategory.Arrow]: typeof EmailSVGArrowCSSClass;
@@ -26,6 +22,18 @@ const EmailSVGHierarchy: TEmailSVGHierarchy = {
     [SVGCSSClassCategory.StateBox]: EmailSVGStateBoxCSSClass,
 } as const;
 
+type TEmailSVGCSSClassCategory = keyof typeof EmailSVGHierarchy;
+
+type EmailSVGClassesByCategory = {
+    [TCat in TEmailSVGCSSClassCategory]: (typeof EmailSVGHierarchy)[TCat];
+};
+
+type EmailSVGClassKey<TCat extends TEmailSVGCSSClassCategory> =
+    keyof EmailSVGClassesByCategory[TCat];
+
+type EmailSVGClassValue<TCat extends TEmailSVGCSSClassCategory> =
+    EmailSVGClassesByCategory[TCat][EmailSVGClassKey<TCat>];
+
 export class SVGEmailFlowChartService extends SVGFlowChartService {
     /** for testing */
     public SetAllIndividually(
@@ -35,41 +43,43 @@ export class SVGEmailFlowChartService extends SVGFlowChartService {
         this.SetAllElementsInCategory(EmailSVGArrowCSSClass, status);
     }
 
-    public SetElementStatus(
-        singleSVGElement: TEmailSVGCSSClassKeys,
+    public SetElementStatus<TCat extends TEmailSVGCSSClassCategory>(
+        key: EmailSVGClassKey<TCat>,
         status: TSVGStateStatusValues,
     ): void {
-        const categoryValue = this.getCategory(singleSVGElement); // "state-box"
-        const obj = EmailSVGHierarchy[categoryValue] as Record<
-            typeof singleSVGElement,
-            string
-        >;
-        const cssClass = obj[singleSVGElement];
-        this.AddCSSClassBySelector(`.${categoryValue}.${cssClass}`, status);
+        const data = this.getElementData(key);
+        this.AddCSSClassBySelector(
+            `.${data.cssCategory}.${data.cssClass}`,
+            status,
+        );
     }
 
-    private SetAllElementsInCategory(
-        emailSVGCSSClassObj: TEmailSVGCSSClass,
+    private SetAllElementsInCategory<TCat extends TEmailSVGCSSClassCategory>(
+        categoryObj: EmailSVGClassesByCategory[TCat],
         status: TSVGStateStatusValues,
-    ) {
-        for (const objKey in emailSVGCSSClassObj) {
-            this.SetElementStatus(objKey as TEmailSVGCSSClassKeys, status);
+    ): void {
+        for (const key in categoryObj) {
+            this.SetElementStatus<TCat>(key, status);
         }
     }
 
-    private getCategory<K extends TEmailSVGCSSClassKeys>(
-        elementCSSClassKey: K,
-    ): TSVGCSSClassCategoryValues {
-        for (const category of Object.keys(
-            EmailSVGHierarchy,
-        ) as TSVGCSSClassCategoryValues[]) {
-            const cssClassObject = EmailSVGHierarchy[category];
-            if (elementCSSClassKey in cssClassObject) {
-                return category;
+    private getElementData<TCat extends TEmailSVGCSSClassCategory>(
+        svgClassKey: EmailSVGClassKey<TCat>,
+    ): {
+        cssCategory: TCat;
+        cssClass: EmailSVGClassValue<TCat>;
+    } {
+        for (const category of Object.keys(EmailSVGHierarchy) as TCat[]) {
+            const emailSVGCSSClassObj = EmailSVGHierarchy[category];
+
+            if (svgClassKey in emailSVGCSSClassObj) {
+                return {
+                    cssCategory: category,
+                    cssClass: emailSVGCSSClassObj[svgClassKey],
+                };
             }
         }
-        throw new Error(
-            `Could not find category for css class key "${elementCSSClassKey}"`,
-        );
+
+        throw new Error(`css key not found: ${String(svgClassKey)}`);
     }
 }
