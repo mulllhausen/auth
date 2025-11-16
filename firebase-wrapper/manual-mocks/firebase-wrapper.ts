@@ -1,10 +1,10 @@
 import { mock } from "jest-mock-extended";
 import { env } from "../src/dotenv";
+import type { TWrapperSettings } from "../src/firebase-wrapper";
 import {
     authProviders,
     defaultAction,
     FirebaseAuthService,
-    WrapperSettings,
 } from "../src/firebase-wrapper";
 
 // note: returns a concrete instance of FirebaseAuthService, not a mock
@@ -17,7 +17,7 @@ export const setupFirebaseAuthService = (params: {
     mockUseLinkInsteadOfPassword: boolean;
     mockEmailPassword: string;
 }): FirebaseAuthService => {
-    const wrapperSettings = mock<WrapperSettings>();
+    const wrapperSettings = mock<TWrapperSettings>();
     wrapperSettings.loginButtonCSSClass = "button.login";
     wrapperSettings.clearCachedUserButtonCSSClass = "button#clearCachedUser";
 

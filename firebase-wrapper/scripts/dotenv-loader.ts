@@ -1,8 +1,8 @@
 import dotenv from "dotenv";
 
-interface ProcessEnv {
+type TProcessEnv = {
     [key: string]: string | undefined;
-}
+};
 
 // get cli args
 const args: string[] = process.argv.slice(2); // skip "node" and script name
@@ -14,7 +14,7 @@ if (args.length === 0) {
 dotenv.config();
 
 const envVariableName: string = args[0];
-const env: ProcessEnv = process.env;
+const env: TProcessEnv = process.env;
 
 const envValue: string | undefined = env[envVariableName];
 

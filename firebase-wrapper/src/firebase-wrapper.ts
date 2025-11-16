@@ -30,7 +30,7 @@ import {
     User,
     UserCredential,
 } from "firebase/auth";
-import { ProcessEnv } from "./dotenv";
+import type { TProcessEnv } from "./dotenv";
 import { LogItem } from "./gui-logger";
 import {
     emailSignInActions,
@@ -40,9 +40,39 @@ import {
 
 // #endregion
 
-// #region interfaces
+//#region consts and types
 
-export interface FirebaseDependencies {
+export const firebaseDependencies: TFirebaseDependencies = {
+    FacebookAuthProvider,
+    GithubAuthProvider,
+    GoogleAuthProvider,
+    getAuth,
+    getRedirectResult,
+    initializeApp,
+    isSignInWithEmailLink,
+    onAuthStateChanged,
+    sendSignInLinkToEmail,
+    signInWithEmailLink,
+    signInWithRedirect,
+};
+
+export const authProviders = {
+    Email: EmailAuthProvider.PROVIDER_ID,
+    Google: GoogleAuthProvider.PROVIDER_ID,
+    Facebook: FacebookAuthProvider.PROVIDER_ID,
+    GitHub: GithubAuthProvider.PROVIDER_ID,
+} as const;
+
+export const defaultAction: TDefaultAction = null;
+
+export const CRUD: Record<string, string> = {
+    Create: "Create",
+    Read: "Read",
+    Update: "Update",
+    Delete: "Delete",
+};
+
+export type TFirebaseDependencies = {
     FacebookAuthProvider: typeof FacebookAuthProvider;
     GithubAuthProvider: typeof GithubAuthProvider;
     GoogleAuthProvider: typeof GoogleAuthProvider;
@@ -75,9 +105,9 @@ export interface FirebaseDependencies {
         provider: AuthProvider,
         resolver?: PopupRedirectResolver,
     ) => Promise<never>;
-}
+};
 
-export interface WrapperSettings {
+export type TWrapperSettings = {
     logger: (logItemInput: LogItem) => void;
     //emailStateChangedCallback: (newState: EmailSignInState) => void;
     // emailStateChangedCallback: (
@@ -91,13 +121,13 @@ export interface WrapperSettings {
     loginButtonCSSClass: string;
     clearCachedUserButtonCSSClass: string;
     authProviderSettings: {
-        [key in AuthProviders]: {
+        [TKey in TAuthProviders]: {
             loginButtonClicked:
-                | DefaultAction
+                | TDefaultAction
                 | ((self: FirebaseAuthService, e: MouseEvent) => Promise<void>);
         };
     };
-    signedInCallback: (user: UserPlus) => void;
+    signedInCallback: (user: TUserPlus) => void;
     signedOutCallback: () => void;
 
     /** email sign-in step 5/9 */
@@ -105,20 +135,16 @@ export interface WrapperSettings {
 
     /** email sign-in step 8/9 */
     clearEmailAfterSignInCallback: (self: FirebaseAuthService) => boolean;
-}
+};
 
-// #endregion
+export type TAuthProviders = (typeof authProviders)[keyof typeof authProviders];
 
-// #region types
-
-export type AuthProviders = (typeof authProviders)[keyof typeof authProviders];
-
-export type DefaultAction = null;
+export type TDefaultAction = null;
 
 // a type for undocumented internal properties that are *actually* returned
 // in addition to the User object. note: these could change without warning
 // in future.
-export type UserPlus = User & {
+export type TUserPlus = User & {
     stsTokenManager?: {
         refreshToken?: unknown;
         expirationTime: number;
@@ -127,68 +153,25 @@ export type UserPlus = User & {
     lastLoginAt?: number;
 };
 
-type AuthProviderConstructor =
+type TAuthProviderConstructor =
     | typeof GoogleAuthProvider
     | typeof FacebookAuthProvider
     | typeof GithubAuthProvider;
 
-type EventListenerMethod = <K extends keyof HTMLElementEventMap>(
-    type: K,
-    listener: (this: HTMLElement, ev: HTMLElementEventMap[K]) => any,
+type TEventListenerMethod = <TKey extends keyof HTMLElementEventMap>(
+    type: TKey,
+    listener: (this: HTMLElement, ev: HTMLElementEventMap[TKey]) => any,
     options?: boolean | AddEventListenerOptions,
 ) => void;
 
-// #endregion
+export type TCRUDValues = (typeof CRUD)[keyof typeof CRUD];
 
-// #region consts
-
-export const firebaseDependencies: FirebaseDependencies = {
-    FacebookAuthProvider,
-    GithubAuthProvider,
-    GoogleAuthProvider,
-    getAuth,
-    getRedirectResult,
-    initializeApp,
-    isSignInWithEmailLink,
-    onAuthStateChanged,
-    sendSignInLinkToEmail,
-    signInWithEmailLink,
-    signInWithRedirect,
-};
-
-export const authProviders = {
-    Email: EmailAuthProvider.PROVIDER_ID,
-    Google: GoogleAuthProvider.PROVIDER_ID,
-    Facebook: FacebookAuthProvider.PROVIDER_ID,
-    GitHub: GithubAuthProvider.PROVIDER_ID,
-} as const;
-
-export const defaultAction: DefaultAction = null;
-
-// #endregion
-
-// #region enums
-
-// export enum EmailSignInStates {
-//     EmailNotSent,
-//     WaitingForUserToFollowEmailLink,
-//     EmailLinkOpenedOnDifferentBrowser,
-//     EmailLinkOpenedOnSameBrowser,
-//     SignedIn,
-// }
-enum CRUD {
-    Create,
-    Read,
-    Update,
-    Delete,
-}
-
-// #endregion
+// #endregion consts and types
 
 export class FirebaseAuthService {
-    private settings: WrapperSettings;
+    private settings: TWrapperSettings;
     private logger: (logItem: LogItem) => void;
-    private env: ProcessEnv;
+    private env: TProcessEnv;
     public Auth: Auth;
     private emailAddress!: string | null;
     public UseLinkInsteadOfPassword: boolean = false;
@@ -213,11 +196,11 @@ export class FirebaseAuthService {
         newState: EmailSignInState,
     ) => void;
     private backedUpEmailLoginButtonClicked:
-        | DefaultAction
+        | TDefaultAction
         | ((self: FirebaseAuthService, e: MouseEvent) => Promise<void>)
         | null = null;
 
-    public set Settings(settings: WrapperSettings) {
+    public set Settings(settings: TWrapperSettings) {
         this.SetupEvents(this.settings, CRUD.Delete);
         this.settings = settings;
         this.SetupEvents(this.settings, CRUD.Create);
@@ -234,7 +217,7 @@ export class FirebaseAuthService {
         this.emailAddress = emailAddress;
     }
 
-    constructor(input: { env: ProcessEnv; settings: WrapperSettings }) {
+    constructor(input: { env: TProcessEnv; settings: TWrapperSettings }) {
         this.env = input.env;
         this.settings = input.settings;
         this.logger = input.settings.logger;
@@ -273,7 +256,10 @@ export class FirebaseAuthService {
         this.SetupEvents(this.settings, CRUD.Create);
     }
 
-    private SetupEvents(settings: WrapperSettings, eventAction: CRUD): void {
+    private SetupEvents(
+        settings: TWrapperSettings,
+        eventAction: TCRUDValues,
+    ): void {
         const eventListener = this.getEventListener(eventAction);
         const clearCacheButton = document.querySelector(
             settings.clearCachedUserButtonCSSClass,
@@ -293,7 +279,7 @@ export class FirebaseAuthService {
         }
         for (const button of loginButtons) {
             if (!(button instanceof HTMLButtonElement)) continue;
-            const provider = button.dataset.serviceProvider as AuthProviders;
+            const provider = button.dataset.serviceProvider as TAuthProviders;
             const foundProvider = settings.authProviderSettings[provider];
             const action =
                 foundProvider?.loginButtonClicked ??
@@ -309,7 +295,7 @@ export class FirebaseAuthService {
         }
     }
 
-    private getEventListener(action: CRUD): EventListenerMethod {
+    private getEventListener(action: TCRUDValues): TEventListenerMethod {
         switch (action) {
             case CRUD.Create:
                 return Element.prototype.addEventListener;
@@ -340,7 +326,7 @@ export class FirebaseAuthService {
             // we only get here once - immediately after login
             // (stackoverflow.com/a/44468387)
 
-            const providerId = redirectResult.providerId as AuthProviders;
+            const providerId = redirectResult.providerId as TAuthProviders;
             const providerClass = this.authProviderFactory(providerId);
             const credential =
                 providerClass.credentialFromResult(redirectResult);
@@ -388,7 +374,7 @@ export class FirebaseAuthService {
         }
     }
 
-    private afterUserSignedIn(user: UserPlus): void {
+    private afterUserSignedIn(user: TUserPlus): void {
         const logMessageStart: string = "firebase auth state changed";
         if (this.userAlreadyCached(user)) {
             this.logger?.({
@@ -410,7 +396,7 @@ export class FirebaseAuthService {
         this.settings.signedInCallback(user);
     }
 
-    public async Signin(provider: AuthProviders): Promise<void> {
+    public async Signin(provider: TAuthProviders): Promise<void> {
         if (provider === authProviders.Email) {
             this.callEmailAction(
                 emailSignInActions.UserInputsEmailAddressAndClicksSignInButton,
@@ -438,8 +424,8 @@ export class FirebaseAuthService {
     }
 
     private authProviderFactory(
-        providerId: AuthProviders,
-    ): AuthProviderConstructor {
+        providerId: TAuthProviders,
+    ): TAuthProviderConstructor {
         switch (providerId) {
             case authProviders.Google:
                 return GoogleAuthProvider;
@@ -493,8 +479,10 @@ export class FirebaseAuthService {
         this.setEmailState(newState);
     }
 
-    /** the only thing that should call this method is callEmailAction().
-     * i.e. a state change should only result from an action (transition). */
+    /**
+     * the only thing that should call this method is callEmailAction().
+     * i.e. a state change should only result from an action (transition).
+     */
     // but what about initialisation?
     private async setEmailState<T extends EmailSignInState>(
         stateClass: new () => T,
@@ -685,13 +673,13 @@ export class FirebaseAuthService {
     //     ].loginButtonClicked = this.backedUpEmailLoginButtonClicked;
     // }
 
-    private userAlreadyCached(user: UserPlus): boolean {
+    private userAlreadyCached(user: TUserPlus): boolean {
         const cachedUsersJSON: string | null = window.localStorage.getItem(
             this.localStorageCachedUserKey,
         );
         if (cachedUsersJSON === null) return false;
 
-        const cachedUsers: Record<string, UserPlus> =
+        const cachedUsers: Record<string, TUserPlus> =
             JSON.parse(cachedUsersJSON);
         const serviceProvider = user.providerData[0].providerId;
         if (!cachedUsers.hasOwnProperty(serviceProvider)) return false;
@@ -707,13 +695,13 @@ export class FirebaseAuthService {
         return cachedUserJSON === userJSON;
     }
 
-    private cacheUser(user: UserPlus): void {
+    private cacheUser(user: TUserPlus): void {
         // cache the user under service provider since FIREBASE_LINK_ACCOUNTS=false
         const serviceProvider = user.providerData[0].providerId;
         const cachedUserJSON: string | null = window.localStorage.getItem(
             this.localStorageCachedUserKey,
         );
-        let cachedUser: Record<string, UserPlus> = {};
+        let cachedUser: Record<string, TUserPlus> = {};
         if (cachedUserJSON !== null) {
             cachedUser = JSON.parse(cachedUserJSON!);
         }
@@ -742,9 +730,9 @@ export class FirebaseAuthService {
     /** use this method to zero out any sensitive fields before saving to localStorage,
      * since localStorage may be vulnerable to xss attacks.
      */
-    private safeUserResponse(user: UserPlus): UserPlus {
+    private safeUserResponse(user: TUserPlus): TUserPlus {
         // deep copy
-        const safeUser = JSON.parse(JSON.stringify(user)) as UserPlus;
+        const safeUser = JSON.parse(JSON.stringify(user)) as TUserPlus;
         if (safeUser.stsTokenManager) {
             if (safeUser.stsTokenManager.refreshToken) {
                 safeUser.stsTokenManager.refreshToken = this.hiddenMessage;
@@ -756,9 +744,9 @@ export class FirebaseAuthService {
         return safeUser;
     }
 
-    private idempotentUserResponse(user: UserPlus): UserPlus {
+    private idempotentUserResponse(user: TUserPlus): TUserPlus {
         // deep copy
-        const userCopy = JSON.parse(JSON.stringify(user)) as UserPlus;
+        const userCopy = JSON.parse(JSON.stringify(user)) as TUserPlus;
         if (userCopy.stsTokenManager) {
             userCopy.stsTokenManager.expirationTime = 0;
             userCopy.lastLoginAt = 0;

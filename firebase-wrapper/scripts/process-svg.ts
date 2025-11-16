@@ -209,7 +209,11 @@ function generateObject(objectName: string, classNames: string[]): string {
         )
         .sort((className1, className2) => className1.localeCompare(className2))
         .join("\n");
-    return `export const ${objectName} = {\n${objectKeyValuePairs}\n} as const\n`;
+    return `
+export const ${objectName}: Record<string, string> = {
+    ${objectKeyValuePairs}
+} as const
+`;
 }
 
 function kebabToPascalCase(str: string) {

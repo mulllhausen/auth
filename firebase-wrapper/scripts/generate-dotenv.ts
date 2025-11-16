@@ -43,10 +43,10 @@ if (process.env.NODE_ENV === "development") {
 const typedDotEnvConfig: Record<string, AllowedDotEnvTypes> =
     getTypedDotEnv(mergedDotEnvConfig);
 
-const dotenvTsContent = `export interface ProcessEnv {
+const dotenvTsContent = `export type TProcessEnv {
 ${dotenv2TsTypes(typedDotEnvConfig)}
 }
-export const env: ProcessEnv = ${JSON.stringify(typedDotEnvConfig, null, 4)};
+export const env: TProcessEnv = ${JSON.stringify(typedDotEnvConfig, null, 4)};
 `;
 
 const outputFile: string = "./src/dotenv.ts";

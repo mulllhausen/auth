@@ -12,27 +12,35 @@ import {
 // convention: if a var has `css` in the name then it is a css class at runtime.
 // eg. "state-box"
 
-type TEmailSVGHierarchy = {
-    [SVGCSSClassCategory.Arrow]: typeof EmailSVGArrowCSSClass;
-    [SVGCSSClassCategory.StateBox]: typeof EmailSVGStateBoxCSSClass;
-};
+// #region consts
 
 const EmailSVGHierarchy: TEmailSVGHierarchy = {
     [SVGCSSClassCategory.Arrow]: EmailSVGArrowCSSClass,
     [SVGCSSClassCategory.StateBox]: EmailSVGStateBoxCSSClass,
 } as const;
 
+// #endregion consts
+
+// #region types
+
+type TEmailSVGHierarchy = {
+    [SVGCSSClassCategory.Arrow]: typeof EmailSVGArrowCSSClass;
+    [SVGCSSClassCategory.StateBox]: typeof EmailSVGStateBoxCSSClass;
+};
+
 type TEmailSVGCSSClassCategory = keyof typeof EmailSVGHierarchy;
 
-type EmailSVGClassesByCategory = {
+type TEmailSVGClassesByCategory = {
     [TCat in TEmailSVGCSSClassCategory]: (typeof EmailSVGHierarchy)[TCat];
 };
 
-type EmailSVGClassKey<TCat extends TEmailSVGCSSClassCategory> =
-    keyof EmailSVGClassesByCategory[TCat];
+type TEmailSVGClassKey<TCat extends TEmailSVGCSSClassCategory> =
+    keyof TEmailSVGClassesByCategory[TCat];
 
-type EmailSVGClassValue<TCat extends TEmailSVGCSSClassCategory> =
-    EmailSVGClassesByCategory[TCat][EmailSVGClassKey<TCat>];
+type TEmailSVGClassValue<TCat extends TEmailSVGCSSClassCategory> =
+    TEmailSVGClassesByCategory[TCat][TEmailSVGClassKey<TCat>];
+
+// #endregion types
 
 export class SVGEmailFlowChartService extends SVGFlowChartService {
     /** for testing */
@@ -44,7 +52,7 @@ export class SVGEmailFlowChartService extends SVGFlowChartService {
     }
 
     public SetElementStatus<TCat extends TEmailSVGCSSClassCategory>(
-        classKey: EmailSVGClassKey<TCat>,
+        classKey: TEmailSVGClassKey<TCat>,
         status: TSVGStateStatusValues,
     ): void {
         const data = this.getElementData(classKey);
@@ -55,7 +63,7 @@ export class SVGEmailFlowChartService extends SVGFlowChartService {
     }
 
     private SetAllElementsInCategory<TCat extends TEmailSVGCSSClassCategory>(
-        categoryObj: EmailSVGClassesByCategory[TCat],
+        categoryObj: TEmailSVGClassesByCategory[TCat],
         status: TSVGStateStatusValues,
     ): void {
         for (const key in categoryObj) {
@@ -64,10 +72,10 @@ export class SVGEmailFlowChartService extends SVGFlowChartService {
     }
 
     private getElementData<TCat extends TEmailSVGCSSClassCategory>(
-        svgClassKey: EmailSVGClassKey<TCat>,
+        svgClassKey: TEmailSVGClassKey<TCat>,
     ): {
         cssCategory: TCat;
-        cssClass: EmailSVGClassValue<TCat>;
+        cssClass: TEmailSVGClassValue<TCat>;
     } {
         for (const category of Object.keys(EmailSVGHierarchy) as TCat[]) {
             const emailSVGCSSClassObj = EmailSVGHierarchy[category];

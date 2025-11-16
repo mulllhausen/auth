@@ -4,6 +4,11 @@
 // transition so having 1 call another would blur the bountaries between states and result in tight
 // coupling.
 
+// the idea with this state machine is that you should pass it all the data you currently have and
+// it will decide which state to transition to
+// it would be nice if the state machine could just be initialised and then take it from there - calling
+// all the methods it needs in the firebase wrapper to decide if it needs to transition
+
 import { isSignInWithEmailLink } from "firebase/auth";
 import { FirebaseAuthService } from "./firebase-wrapper";
 import { LogItem } from "./gui-logger";
@@ -103,10 +108,10 @@ export abstract class EmailSignInState {
             this.firebaseAuthService.Auth,
             window.location.href,
         );
-        const not = urlIsASignInWithEmailLink ? "" : "not";
+        const not = urlIsASignInWithEmailLink ? "" : "not ";
         this.logger?.({
             logMessage:
-                `just checked: the current page url is ${not} a ` +
+                `just checked: the current page url is ${not}a ` +
                 `sign-in-with-email-link`,
         });
         return urlIsASignInWithEmailLink;
@@ -123,6 +128,9 @@ export abstract class EmailSignInState {
     }
 }
 
+/**
+ * EmailSignInFSM is a namespace to keep all classes of this state machine together
+ */
 export class EmailSignInFSM {
     public static Idle = class Idle extends EmailSignInState {
         public override UserInputsEmailAddressAndClicksSignInButton(): new () => EmailSignInState {
@@ -237,7 +245,14 @@ export class EmailSignInFSM {
         SignedIn: EmailSignInFSM.SignedIn,
     };
 }
-//#region consts
+
+// #region consts and types
+
+type MethodNames<T> = {
+    [K in keyof T]: T[K] extends (...args: any[]) => void ? K : never;
+}[keyof T];
+
+type EmailSignInStateMethodNames = MethodNames<EmailSignInState>;
 
 // export const emailSignInStates = {
 //     Idle: EmailSignInFSM.Idle.name,
@@ -245,12 +260,6 @@ export class EmailSignInFSM {
 //         EmailSignInFSM.WaitingForUserToClickLinkInEmail.name,
 //     BadEmailAddress: EmailSignInFSM.BadEmailAddress.name,
 // } as const;
-
-type MethodNames<T> = {
-    [K in keyof T]: T[K] extends (...args: any[]) => void ? K : never;
-}[keyof T];
-
-type EmailSignInStateMethodNames = MethodNames<EmailSignInState>;
 
 export const emailSignInActions: Record<
     EmailSignInStateMethodNames,
@@ -269,4 +278,4 @@ export const emailSignInActions: Record<
     continuingOnSameBrowser: "continuingOnSameBrowser",
 };
 
-//#endregion
+// #endregion consts and types
