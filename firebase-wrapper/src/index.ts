@@ -191,7 +191,10 @@ function emailStateChangedCallback(
     }
     const emailStateCSSClass =
         emailStateToCSSBoxClassMappings[newEmailStateStr];
-    emailFSMSVGService.SetElementStatus(emailStateCSSClass, emailStateStatus);
+    emailFSMSVGService.SetElementStatus<typeof SVGCSSClassCategory.StateBox>(
+        emailStateCSSClass,
+        emailStateStatus,
+    );
 }
 
 function emailActionCallback(
@@ -223,7 +226,10 @@ function emailActionCallback(
     const emailStateCSSClass =
         emailStateToCSSArrowClassMappings[emailActionStr];
 
-    emailFSMSVGService.SetElementStatus(emailStateCSSClass, emailStateStatus);
+    emailFSMSVGService.SetElementStatus<typeof SVGCSSClassCategory.Arrow>(
+        emailStateCSSClass,
+        emailStateStatus,
+    );
     // class="arrow user-inputs-email"
     // class="arrow user-clicks-link-in-email1"
     // class="arrow user-clicks-link-in-email2"

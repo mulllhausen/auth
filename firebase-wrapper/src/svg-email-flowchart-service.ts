@@ -44,10 +44,10 @@ export class SVGEmailFlowChartService extends SVGFlowChartService {
     }
 
     public SetElementStatus<TCat extends TEmailSVGCSSClassCategory>(
-        key: EmailSVGClassKey<TCat>,
+        classKey: EmailSVGClassKey<TCat>,
         status: TSVGStateStatusValues,
     ): void {
-        const data = this.getElementData(key);
+        const data = this.getElementData(classKey);
         this.AddCSSClassBySelector(
             `.${data.cssCategory}.${data.cssClass}`,
             status,
@@ -79,7 +79,6 @@ export class SVGEmailFlowChartService extends SVGFlowChartService {
                 };
             }
         }
-
         throw new Error(`css key not found: ${String(svgClassKey)}`);
     }
 }

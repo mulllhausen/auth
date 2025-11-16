@@ -6,67 +6,60 @@ import {
 
 export const emailStateToCSSBoxClassMappings: Record<
     string,
-    EmailSVGStateBoxCSSClass
+    keyof typeof EmailSVGStateBoxCSSClass
 > = {
-    [EmailSignInFSM.Idle.name]: EmailSVGStateBoxCSSClass.Idle0,
+    [EmailSignInFSM.Idle.name]: "Idle0",
 
     [EmailSignInFSM.SubmittingEmailToFirebase.name]:
-        EmailSVGStateBoxCSSClass.EmailSubmittedToFirebase0,
+        "EmailSubmittedToFirebase0",
 
     [EmailSignInFSM.WaitingForUserToClickLinkInEmail.name]:
-        EmailSVGStateBoxCSSClass.WaitingForUserToClickLinkInEmail0,
+        "WaitingForUserToClickLinkInEmail0",
 
-    [EmailSignInFSM.BadEmailAddress.name]:
-        EmailSVGStateBoxCSSClass.BadEmailAddress0,
+    [EmailSignInFSM.BadEmailAddress.name]: "BadEmailAddress0",
 
     [EmailSignInFSM.LinkOpenedOnDifferentBrowser.name]:
-        EmailSVGStateBoxCSSClass.SignInLinkOpenedOnDifferentBrowser0,
+        "SignInLinkOpenedOnDifferentBrowser0",
 
     [EmailSignInFSM.LinkOpenedOnSameBrowser.name]:
-        EmailSVGStateBoxCSSClass.SignInLinkOpenedOnSameBrowser0,
+        "SignInLinkOpenedOnSameBrowser0",
 
     [EmailSignInFSM.WaitingForEmailAddressInGUI.name]:
-        EmailSVGStateBoxCSSClass.WaitingForEmailAddressInGui0,
+        "WaitingForEmailAddressInGui0",
 
-    [EmailSignInFSM.AuthorisingViaFirebase.name]:
-        EmailSVGStateBoxCSSClass.AuthorisingViaFirebase0,
+    [EmailSignInFSM.AuthorisingViaFirebase.name]: "AuthorisingViaFirebase0",
 
-    [EmailSignInFSM.SignedIn.name]: EmailSVGStateBoxCSSClass.SignedIn0,
+    [EmailSignInFSM.SignedIn.name]: "SignedIn0",
 };
 
 export const emailStateToCSSArrowClassMappings: Record<
     string,
-    EmailSVGArrowCSSClass
+    keyof typeof EmailSVGArrowCSSClass
 > = {
     [EmailSignInFSM.Idle.name +
     emailSignInActions.UserInputsEmailAddressAndClicksSignInButton]:
-        EmailSVGArrowCSSClass.UserInputsEmailAddressAndClicksSigninButton0,
+        "UserInputsEmailAddressAndClicksSigninButton0",
 
     [EmailSignInFSM.SubmittingEmailToFirebase.name +
-    emailSignInActions.DifferentEmailAddressEntered]:
-        EmailSVGArrowCSSClass.DifferentEmailAddress0,
+    emailSignInActions.DifferentEmailAddressEntered]: "DifferentEmailAddress0",
 
     [EmailSignInFSM.WaitingForUserToClickLinkInEmail.name +
-    emailSignInActions.CheckIfURLIsASignInWithEmailLink]:
-        EmailSVGArrowCSSClass.OkResponse0,
+    emailSignInActions.CheckIfURLIsASignInWithEmailLink]: "OkResponse0",
 
     [EmailSignInFSM.BadEmailAddress.name +
     emailSignInActions.FirebaseOKResponse]:
-        EmailSVGArrowCSSClass.UserChangesEmailAddressAndClicksSignInWithEmailButton0,
+        "UserChangesEmailAddressAndClicksSignInWithEmailButton0",
 
     [EmailSignInFSM.LinkOpenedOnDifferentBrowser.name +
     emailSignInActions.FirebaseErrorResponse]:
-        EmailSVGArrowCSSClass.RequestEmailAddressFromUserAgain0,
+        "RequestEmailAddressFromUserAgain0",
 
     [EmailSignInFSM.LinkOpenedOnDifferentBrowser.name +
-    emailSignInActions.validateEmailDataBeforeSignIn]:
-        EmailSVGArrowCSSClass.OkResponse0, // todo
+    emailSignInActions.validateEmailDataBeforeSignIn]: "OkResponse0", // todo
 
     [EmailSignInFSM.LinkOpenedOnDifferentBrowser.name +
-    emailSignInActions.urlIsASignInWithEmailLink]:
-        EmailSVGArrowCSSClass.OkResponse0, // todo
+    emailSignInActions.urlIsASignInWithEmailLink]: "OkResponse0", // todo
 
     [EmailSignInFSM.LinkOpenedOnDifferentBrowser.name +
-    emailSignInActions.continuingOnSameBrowser]:
-        EmailSVGArrowCSSClass.OkResponse0, // todo
+    emailSignInActions.continuingOnSameBrowser]: "OkResponse0", // todo
 };
