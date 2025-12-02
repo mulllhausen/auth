@@ -38,9 +38,9 @@ import {
     EmailSignInState,
 } from "./state-machine-email";
 
-// #endregion
+// #endregion imports
 
-//#region consts and types
+// #region consts and types
 
 export const firebaseDependencies: TFirebaseDependencies = {
     FacebookAuthProvider,

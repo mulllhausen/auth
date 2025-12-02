@@ -68,7 +68,9 @@ import {
     TSVGStateStatusValues,
 } from "./svg-flowchart-service";
 
-const emailFSMSVGService = new SVGEmailFlowChartService("#emailLinkFSMChart");
+const emailFSMSVGService = new SVGEmailFlowChartService({
+    svgQuerySelector: "#emailLinkFSMChart",
+});
 
 const htmlTemplateManager = new HTMLTemplateManager(document);
 

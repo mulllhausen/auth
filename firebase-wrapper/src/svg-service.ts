@@ -2,7 +2,7 @@
 export class SVGService {
     private svg: SVGSVGElement;
 
-    constructor(svgQuerySelector: string) {
+    constructor({ svgQuerySelector }: { svgQuerySelector: string }) {
         const element = document.querySelector(
             svgQuerySelector,
         ) as HTMLObjectElement;
