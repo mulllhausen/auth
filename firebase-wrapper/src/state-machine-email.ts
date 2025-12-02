@@ -22,7 +22,7 @@ const EventData = {};
 
 export class EmailSignInFSMContext {
     private svgService: SVGService;
-    private state: EmailSignInState = EmailSignInState.Idle;
+    private state: EmailSignInState = new EmailSignInFSM.Idle();
 
     constructor(props: {
         svgService: SVGService;
