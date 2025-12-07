@@ -14,7 +14,7 @@ import {
 
 // #region consts
 
-const EmailSVGHierarchy: TEmailSVGHierarchy = {
+const EmailSVGHierarchy = {
     [SVGCSSClassCategory.Arrow]: EmailSVGArrowCSSClass,
     [SVGCSSClassCategory.StateBox]: EmailSVGStateBoxCSSClass,
 } as const;
@@ -23,14 +23,9 @@ const EmailSVGHierarchy: TEmailSVGHierarchy = {
 
 // #region types
 
-type TEmailSVGHierarchy = {
-    [SVGCSSClassCategory.Arrow]: typeof EmailSVGArrowCSSClass;
-    [SVGCSSClassCategory.StateBox]: typeof EmailSVGStateBoxCSSClass;
-};
-
 type TEmailSVGCSSClassCategory = keyof typeof EmailSVGHierarchy;
 
-type TEmailSVGClassesByCategory = {
+export type TEmailSVGClassesByCategory = {
     [TCat in TEmailSVGCSSClassCategory]: (typeof EmailSVGHierarchy)[TCat];
 };
 
@@ -59,6 +54,20 @@ export class SVGEmailFlowChartService extends SVGFlowChartService {
         this.AddCSSClassBySelector(
             `.${data.cssCategory}.${data.cssClass}`,
             status,
+        );
+    }
+
+    public Unset<TCat extends TEmailSVGCSSClassCategory>(
+        classKey: TEmailSVGClassKey<TCat>,
+    ): void {
+        const data = this.getElementData(classKey);
+        this.RemoveCSSClassBySelector(
+            `.${data.cssCategory}.${data.cssClass}`,
+            "success",
+        );
+        this.RemoveCSSClassBySelector(
+            `.${data.cssCategory}.${data.cssClass}`,
+            "failure",
         );
     }
 

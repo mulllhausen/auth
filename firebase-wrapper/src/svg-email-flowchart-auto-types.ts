@@ -8,7 +8,7 @@ export type TEmailSVGCSSClass =
     | typeof EmailSVGArrowCSSClass
     | typeof EmailSVGStateBoxCSSClass;
 
-export const EmailSVGArrowCSSClass: Record<string, string> = {
+export const EmailSVGArrowCSSClass = {
     AutomaticallySubmitToFirebase0: "automatically-submit-to-firebase-0",
     DifferentEmailAddress0: "different-email-address-0",
     FirebaseReturnsAnError0: "firebase-returns-an-error-0",
@@ -25,7 +25,7 @@ export const EmailSVGArrowCSSClass: Record<string, string> = {
         "user-inputs-email-address-and-clicks-signin-button-0",
 } as const;
 
-export const EmailSVGStateBoxCSSClass: Record<string, string> = {
+export const EmailSVGStateBoxCSSClass = {
     AuthorisingViaFirebase0: "authorising-via-firebase-0",
     BadEmailAddress0: "bad-email-address-0",
     EmailSubmittedToFirebase0: "email-submitted-to-firebase-0",

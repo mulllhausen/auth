@@ -210,7 +210,7 @@ function generateObject(objectName: string, classNames: string[]): string {
         .sort((className1, className2) => className1.localeCompare(className2))
         .join("\n");
     return `
-export const ${objectName}: Record<string, string> = {
+export const ${objectName} = {
     ${objectKeyValuePairs}
 } as const
 `;

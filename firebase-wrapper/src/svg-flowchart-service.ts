@@ -3,6 +3,8 @@ import { SVGService } from "./svg-service.ts";
 export type TSVGStateStatusValues =
     (typeof SVGStateStatus)[keyof typeof SVGStateStatus];
 
+// todo: just use "active" here. the SVG can specify if
+// a state is good or bad and same with arrows
 export const SVGStateStatus = {
     Success: "success",
     Failure: "failure",
