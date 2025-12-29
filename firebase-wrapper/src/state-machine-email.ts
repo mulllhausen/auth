@@ -1,7 +1,7 @@
 // notes:
 // finite state machines transition between states
 // one action method should not call another action method. each action method represents a single
-// transition so having 1 call another would blur the bountaries between states and result in tight
+// transition so having 1 call another would blur the boundaries between states and result in tight
 // coupling.
 
 // the idea with this state machine is that you should pass it all the data you currently have and
@@ -12,13 +12,26 @@
 import { LogItem } from "./gui-logger";
 import { StateToSVGMapperService } from "./state-to-svg-mapper-service";
 
+export type TEmailEventValues = (typeof EmailEvents)[keyof typeof EmailEvents];
+
 export const EmailEvents = {
     IdleNoText: "IdleNoText",
     UserInputtingText: "UserInputtingText",
     UserClickedLogin: "UserClickedLogin",
 } as const;
 
-const EventData = {};
+export type TEmailEventPayloads = {
+    [EmailEvents.IdleNoText]: void;
+    [EmailEvents.UserInputtingText]: { inputEmailValue: string };
+    [EmailEvents.UserClickedLogin]: {
+        inputEmailValue: string;
+        inputPasswordValue: string;
+    };
+};
+
+export type TStateMachineEvent<TEvent extends TEmailEventValues> = CustomEvent<
+    TEmailEventPayloads[TEvent]
+>;
 
 export class EmailSignInFSMContext {
     private stateToSVGMapperService: StateToSVGMapperService;
@@ -26,27 +39,37 @@ export class EmailSignInFSMContext {
 
     constructor(props: {
         stateToSVGMapperService: StateToSVGMapperService;
-        emailSignInState: EmailSignInState;
+        //emailSignInState: EmailSignInState;
     }) {
+        debugger;
         this.stateToSVGMapperService = props.stateToSVGMapperService;
-        this.state = new Idle({ context: this, logger: null });
+        this.state = new Idle({
+            context: this,
+            stateToSVGMapperService: this.stateToSVGMapperService,
+            logger: null,
+        });
     }
 
-    public setup() {
-        this.initEvents();
-    }
+    // public setup() {
+    //     this.initEvents();
+    // }
 
-    private initEvents() {
-        (Object.keys(EmailEvents) as Array<keyof typeof EmailEvents>).forEach(
-            (emailEvent) => {
-                window.addEventListener(emailEvent, (e: Event) =>
-                    this.state.handle(
-                        emailEvent,
-                        (e as StateMachineEvent).detail,
-                    ),
-                );
-            },
-        );
+    // private initEvents() {
+    //     (Object.values(EmailEvents) as TEmailEventValues[]).forEach(
+    //         (emailEvent: TEmailEventValues) => {
+    //             document.addEventListener(emailEvent, (e: Event) => {
+    //                 const fsmEvent = e as TStateMachineEvent<typeof emailEvent>;
+    //                 this.state.handle(emailEvent, fsmEvent.detail);
+    //             });
+    //         },
+    //     );
+    // }
+
+    public handle<TEvent extends TEmailEventValues>(props: {
+        eventType: TEvent;
+        eventData?: TEmailEventPayloads[TEvent];
+    }): void {
+        this.state.handle(props.eventType, props.eventData);
     }
 
     public transitionTo(state: EmailSignInState): void {
@@ -57,19 +80,22 @@ export class EmailSignInFSMContext {
 
 export abstract class EmailSignInState {
     protected context: EmailSignInFSMContext;
+    protected stateToSVGMapperService: StateToSVGMapperService;
     public logger: ((logItem: LogItem) => void) | null = null;
 
     constructor(props: {
         context: EmailSignInFSMContext;
+        stateToSVGMapperService: StateToSVGMapperService;
         logger: ((logItem: LogItem) => void) | null;
     }) {
         this.context = props.context;
+        this.stateToSVGMapperService = props.stateToSVGMapperService;
         this.logger = props.logger;
     }
 
-    public abstract handle(
-        eventType: keyof typeof EmailEvents,
-        eventData: typeof EventData,
+    public abstract handle<TEvent extends TEmailEventValues>(
+        eventType: TEvent,
+        eventData?: TEmailEventPayloads[TEvent],
     ): void;
 
     protected abstract onExit(): void;
@@ -77,19 +103,23 @@ export abstract class EmailSignInState {
 }
 
 export class Idle extends EmailSignInState {
-    public override handle(
-        eventType: keyof typeof EmailEvents,
-        eventData: typeof EventData,
+    public override handle<TEvent extends TEmailEventValues>(
+        eventType: TEvent,
+        eventData?: TEmailEventPayloads[TEvent],
     ): void {
+        debugger;
         this.onExit();
         switch (eventType) {
             case EmailEvents.IdleNoText:
                 break;
             case EmailEvents.UserInputtingText:
-            //this.context.transitionTo(new UserInputtingTextState());
+                //this.context.transitionTo(new UserInputtingTextState());
+                //this.stateToSVGMapperService.updateSvg(state);
+                break;
             case EmailEvents.UserClickedLogin:
                 break;
         }
+        this.stateToSVGMapperService.updateSvg(eventType);
     }
 
     protected override onExit(): void {}

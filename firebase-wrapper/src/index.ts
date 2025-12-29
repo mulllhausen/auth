@@ -56,11 +56,16 @@ import {
 import { GUILogger, LogItem } from "./gui-logger";
 import { HTMLTemplateManager } from "./html-template-manager";
 import "./index.css";
+// import {
+//     emailStateToCSSArrowClassMappings,
+//     emailStateToCSSBoxClassMappings,
+// } from "./mappers/email";
 import {
-    emailStateToCSSArrowClassMappings,
-    emailStateToCSSBoxClassMappings,
-} from "./mappers/email";
-import { emailSignInActions, EmailSignInState } from "./state-machine-email";
+    EmailEvents,
+    EmailSignInFSMContext,
+    EmailSignInState,
+} from "./state-machine-email";
+import { StateToSVGMapperService } from "./state-to-svg-mapper-service";
 import { SVGEmailFlowChartService } from "./svg-email-flowchart-service";
 import {
     SVGCSSClassCategory,
@@ -71,6 +76,15 @@ import {
 const emailFSMSVGService = new SVGEmailFlowChartService({
     svgQuerySelector: "#emailLinkFSMChart",
 });
+
+const stateToSVGMapperService = new StateToSVGMapperService({
+    svgService: emailFSMSVGService,
+    currentStateBoxCSSClassKey: null,
+});
+
+const emailSignInFSMContext = new EmailSignInFSMContext({
+    stateToSVGMapperService,
+}); //.setup();
 
 const htmlTemplateManager = new HTMLTemplateManager(document);
 
@@ -121,6 +135,9 @@ document.addEventListener("DOMContentLoaded", () => {
     document
         .querySelector("button#enableAllSVGElements")
         ?.addEventListener("click", testEmailFSMSVG);
+    document
+        .querySelector<HTMLInputElement>("input.email")
+        ?.addEventListener("input", onInputtingEmail);
 });
 
 // callback functions
@@ -151,6 +168,36 @@ function populateEmailInput(emailAddress: string | null): void {
         return;
     }
     emailInput.value = emailAddress;
+}
+
+function onInputtingEmail(e: Event): void {
+    debugger;
+    const inputEl = e.currentTarget as HTMLInputElement;
+    const inputEmailValue: string = inputEl.value.trim();
+    // todo: debounce
+    const eventType =
+        inputEmailValue === ""
+            ? EmailEvents.IdleNoText
+            : EmailEvents.UserInputtingText;
+
+    emailSignInFSMContext.handle({
+        eventType,
+        eventData: { inputEmailValue },
+    });
+    // document.dispatchEvent(
+    //     new TStateMachineEvent<typeof EmailEvents.IdleNoText>(
+    //         EmailEvents.IdleNoText,
+    //     ),
+    // );
+
+    // document.dispatchEvent(
+    //     new TStateMachineEvent<typeof EmailEvents.UserInputtingText>(
+    //         EmailEvents.UserInputtingText,
+    //         {
+    //             detail: { inputEmailValue },
+    //         },
+    //     ),
+    // );
 }
 
 async function handleEmailLogin(
@@ -231,7 +278,7 @@ function emailStateChangedCallback(
     debugger;
     emailFSMSVGService.UnsetCategory(SVGCSSClassCategory.StateBox);
 
-    const newEmailStateStr: string = newEmailState.Name;
+    const newEmailStateStr: string = ""; // newEmailState.Name;
     if (!emailStateToCSSBoxClassMappings.hasOwnProperty(newEmailStateStr)) {
         throw new Error(
             `emailStateChangedCallback: ${newEmailStateStr} ` +
@@ -248,14 +295,15 @@ function emailStateChangedCallback(
 
 function emailActionCallback(
     oldEmailState: EmailSignInState | null,
-    action: keyof typeof emailSignInActions | null,
+    action: null, // keyof typeof emailSignInActions | null,
     newEmailState: EmailSignInState,
 ): void {
     // when successful, the new state will always be different to the old state
     const emailStateStatus =
-        oldEmailState?.Name === newEmailState.Name
-            ? SVGStateStatus.Failure
-            : SVGStateStatus.Success;
+        // oldEmailState?.Name === newEmailState.Name
+        //     ? SVGStateStatus.Failure
+        //:
+        SVGStateStatus.Success;
 
     emailStateChangedCallback(newEmailState, emailStateStatus);
 

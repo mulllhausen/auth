@@ -33,8 +33,8 @@ import {
 import type { TProcessEnv } from "./dotenv";
 import { LogItem } from "./gui-logger";
 import {
-    emailSignInActions,
-    EmailSignInFSM,
+    //emailSignInActions,
+    // EmailSignInFSM,
     EmailSignInState,
 } from "./state-machine-email";
 
@@ -115,7 +115,7 @@ export type TWrapperSettings = {
     // ) => void;
     emailActionCallback: (
         oldState: /*typeof*/ EmailSignInState | null,
-        action: keyof typeof emailSignInActions | null,
+        action: null, // keyof typeof emailSignInActions | null,
         newState: /*typeof*/ EmailSignInState,
     ) => void;
     loginButtonCSSClass: string;
@@ -168,6 +168,10 @@ export type TCRUDValues = (typeof CRUD)[keyof typeof CRUD];
 
 // #endregion consts and types
 
+// todo: single responsibility principle. this service should not know anything about
+// state machines. it should just contain a bunch of method-wrappers that make taking
+// action more simple and uniform
+
 export class FirebaseAuthService {
     private settings: TWrapperSettings;
     private logger: (logItem: LogItem) => void;
@@ -184,17 +188,17 @@ export class FirebaseAuthService {
         "not stored in localStorage to prevent xss attacks";
 
     // init but may be overriden in constructor
-    private emailState: EmailSignInState = new EmailSignInFSM.Idle();
+    //private emailState: EmailSignInState = new EmailSignInFSM.Idle();
 
     //private emailStateChangedCallback: (newState: EmailSignInState) => void;
     // private emailStateChangedCallback: (
     //     newState: keyof typeof emailSignInStates,
     // ) => void;
-    private emailActionCallback: (
-        oldState: EmailSignInState | null,
-        action: keyof typeof emailSignInActions | null,
-        newState: EmailSignInState,
-    ) => void;
+    // private emailActionCallback: (
+    //     oldState: EmailSignInState | null,
+    //     action: keyof typeof emailSignInActions | null,
+    //     newState: EmailSignInState,
+    // ) => void;
     private backedUpEmailLoginButtonClicked:
         | TDefaultAction
         | ((self: FirebaseAuthService, e: MouseEvent) => Promise<void>)
@@ -222,8 +226,8 @@ export class FirebaseAuthService {
         this.settings = input.settings;
         this.logger = input.settings.logger;
         //this.emailStateChangedCallback = input.settings.emailStateChangedCallback;
-        this.emailActionCallback = input.settings.emailActionCallback;
-        this.initEmailState();
+        //this.emailActionCallback = input.settings.emailActionCallback;
+        //this.initEmailState();
         //this.setEmailState(EmailSignInFSM.Idle);
 
         if (this.env.FIREBASE_LINK_ACCOUNTS) {
@@ -310,7 +314,7 @@ export class FirebaseAuthService {
 
     private async setupFirebaseListeners(): Promise<void> {
         onAuthStateChanged(this.Auth, this.authStateChanged.bind(this));
-        await this.emailState.CheckIfURLIsASignInWithEmailLink();
+        //     await this.emailState.CheckIfURLIsASignInWithEmailLink();
         await this.handleGetRedirectResult();
     }
 
@@ -398,9 +402,9 @@ export class FirebaseAuthService {
 
     public async Signin(provider: TAuthProviders): Promise<void> {
         if (provider === authProviders.Email) {
-            this.callEmailAction(
-                emailSignInActions.UserInputsEmailAddressAndClicksSignInButton,
-            );
+            // this.callEmailAction(
+            //     emailSignInActions.UserInputsEmailAddressAndClicksSignInButton,
+            // );
             return; // this.emailState.UserInputsEmailAddressAndClicksSignInButton();
             //return await this.emailSignInStateMachine();
         } else {
@@ -438,93 +442,93 @@ export class FirebaseAuthService {
         }
     }
 
-    private initEmailState(): void {
-        if (this.restoreEmailStateFromLocalStorage()) {
-            return;
-        }
-        this.setEmailState(EmailSignInFSM.Idle);
-    }
+    // private initEmailState(): void {
+    //     if (this.restoreEmailStateFromLocalStorage()) {
+    //         return;
+    //     }
+    //     this.setEmailState(EmailSignInFSM.Idle);
+    // }
 
-    private restoreEmailStateFromLocalStorage(): boolean {
-        const emailStateJSON: string | null = window.localStorage.getItem(
-            this.localStorageEmailState,
-        );
-        if (emailStateJSON === null) {
-            return false;
-        }
-        const emailStateJSONParsed = JSON.parse(emailStateJSON);
-        const emailStateClass =
-            EmailSignInFSM.NameToClassMap[emailStateJSONParsed.typeName];
-        this.setEmailState(emailStateClass);
-        return true;
-    }
+    // private restoreEmailStateFromLocalStorage(): boolean {
+    //     const emailStateJSON: string | null = window.localStorage.getItem(
+    //         this.localStorageEmailState,
+    //     );
+    //     if (emailStateJSON === null) {
+    //         return false;
+    //     }
+    //     const emailStateJSONParsed = JSON.parse(emailStateJSON);
+    //     const emailStateClass =
+    //         EmailSignInFSM.NameToClassMap[emailStateJSONParsed.typeName];
+    //     this.setEmailState(emailStateClass);
+    //     return true;
+    // }
 
-    private async callEmailAction(
-        futureAction: keyof typeof emailSignInActions,
-        args?: any,
-    ): Promise<void> {
-        debugger;
-        if (this.emailState === null) {
-            return;
-        }
-        const oldState = this.emailState;
-        const methodName = emailSignInActions[futureAction];
-        const methodResult: typeof EmailSignInState = (
-            this.emailState[methodName] as Function
-        ).call(this.emailState);
-        const newState = (
-            methodResult instanceof Promise ? await methodResult : methodResult
-        ) as EmailSignInState;
-        this.emailActionCallback?.(oldState, futureAction, newState);
-        this.setEmailState(newState);
-    }
+    // private async callEmailAction(
+    //     futureAction: keyof typeof emailSignInActions,
+    //     args?: any,
+    // ): Promise<void> {
+    //     debugger;
+    //     if (this.emailState === null) {
+    //         return;
+    //     }
+    //     const oldState = this.emailState;
+    //     const methodName = emailSignInActions[futureAction];
+    //     const methodResult: typeof EmailSignInState = (
+    //         this.emailState[methodName] as Function
+    //     ).call(this.emailState);
+    //     const newState = (
+    //         methodResult instanceof Promise ? await methodResult : methodResult
+    //     ) as EmailSignInState;
+    //     this.emailActionCallback?.(oldState, futureAction, newState);
+    //     this.setEmailState(newState);
+    // }
 
     /**
      * the only thing that should call this method is callEmailAction().
      * i.e. a state change should only result from an action (transition).
      */
     // but what about initialisation?
-    private async setEmailState<T extends EmailSignInState>(
-        stateClass: new () => T,
-    ): Promise<void> {
-        debugger;
-        this.emailState = new stateClass();
-        this.emailState.firebaseAuthService = this;
-        this.emailState.logger = this.logger;
+    // private async setEmailState<T extends EmailSignInState>(
+    //     stateClass: new () => T,
+    // ): Promise<void> {
+    //     debugger;
+    //     this.emailState = new stateClass();
+    //     this.emailState.firebaseAuthService = this;
+    //     this.emailState.logger = this.logger;
 
-        const emailStateName: string = this.emailState.constructor.name;
-        window.localStorage.setItem(
-            this.localStorageEmailState,
-            JSON.stringify({
-                typeName: emailStateName,
-                data: this.emailState.backupData,
-            }),
-        );
-        this.logger?.({
-            logMessage: `email state changed to ${emailStateName}`,
-        });
-        // const oldState = null;
-        // const futureAction = null;
-        // this.emailActionCallback?.(oldState, futureAction, this.emailState);
-        //this.emailStateChangedCallback?.(this.emailState);
-        await this.emailState.Initialise();
-    }
+    //     const emailStateName: string = this.emailState.constructor.name;
+    //     window.localStorage.setItem(
+    //         this.localStorageEmailState,
+    //         JSON.stringify({
+    //             typeName: emailStateName,
+    //             data: this.emailState.backupData,
+    //         }),
+    //     );
+    //     this.logger?.({
+    //         logMessage: `email state changed to ${emailStateName}`,
+    //     });
+    //     // const oldState = null;
+    //     // const futureAction = null;
+    //     // this.emailActionCallback?.(oldState, futureAction, this.emailState);
+    //     //this.emailStateChangedCallback?.(this.emailState);
+    //     await this.emailState.Initialise();
+    // }
 
-    public async SendSignInLinkToEmail(): Promise<void> {
-        try {
-            await sendSignInLinkToEmail(
-                this.Auth,
-                this.EmailAddress!,
-                this.EmailActionCodeSettings,
-            );
-            this.callEmailAction(emailSignInActions.FirebaseOKResponse);
-        } catch (error) {
-            this.callEmailAction(
-                emailSignInActions.FirebaseErrorResponse,
-                error,
-            );
-        }
-    }
+    // public async SendSignInLinkToEmail(): Promise<void> {
+    //     try {
+    //         await sendSignInLinkToEmail(
+    //             this.Auth,
+    //             this.EmailAddress!,
+    //             this.EmailActionCodeSettings,
+    //         );
+    //         this.callEmailAction(emailSignInActions.FirebaseOKResponse);
+    //     } catch (error) {
+    //         this.callEmailAction(
+    //             emailSignInActions.FirebaseErrorResponse,
+    //             error,
+    //         );
+    //     }
+    // }
 
     // private changeEmailState(emailState: EmailSignInState): void {
     //     this.logger?.({ logMessage: `email state changed to ${emailState}` });
