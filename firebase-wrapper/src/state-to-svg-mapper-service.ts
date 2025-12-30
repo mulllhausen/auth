@@ -1,10 +1,14 @@
 import { EmailEvents } from "./state-machine-email";
 import {
-    EmailSVGArrowCSSClass,
     EmailSVGStateBoxCSSClass,
+    TEmailArrowKey,
+    TEmailStateBoxKey,
+    TEmailTransition,
 } from "./svg-email-flowchart-auto-types.ts";
 import { SVGEmailFlowChartService } from "./svg-email-flowchart-service";
 import { SVGCSSClassCategory, SVGStateStatus } from "./svg-flowchart-service";
+
+type TStateBox = keyof typeof EmailSVGStateBoxCSSClass;
 
 export class StateToSVGMapperService {
     private svgService: SVGEmailFlowChartService;
@@ -58,15 +62,22 @@ export class StateToSVGMapperService {
     }
 
     private getArrowClass(
-        oldBox: keyof typeof EmailSVGStateBoxCSSClass | null,
-        newBox: keyof typeof EmailSVGStateBoxCSSClass,
-    ): keyof typeof EmailSVGArrowCSSClass | null {
+        oldBox: TEmailStateBoxKey | null,
+        newBox: TEmailStateBoxKey,
+    ): TEmailArrowKey | null {
         switch (`${oldBox}->${newBox}`) {
-            case "Idle0->WaitingForEmailAddressInGui0":
-                return "UserChangesEmailAddressAndClicksSignInWithEmailButton0";
+            case this.generateTransition("Idle0", "UserIsEnteringDetails0"):
+                return "UserBeganTyping0";
             default:
                 return null;
         }
+    }
+
+    private generateTransition(
+        oldBox: TEmailStateBoxKey,
+        newBox: TEmailStateBoxKey,
+    ): TEmailTransition {
+        return `${oldBox}->${newBox}`;
     }
 
     private stateBoxMappings: Record<
@@ -74,7 +85,7 @@ export class StateToSVGMapperService {
         keyof typeof EmailSVGStateBoxCSSClass
     > = {
         IdleNoText: "Idle0",
-        UserInputtingText: "WaitingForEmailAddressInGui0",
-        UserClickedLogin: "EmailSubmittedToFirebase0",
+        UserInputtingText: "UserIsEnteringDetails0",
+        UserClickedLogin: "EmailSentToFirebase0",
     };
 }

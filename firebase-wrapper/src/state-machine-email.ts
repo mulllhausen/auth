@@ -14,6 +14,14 @@ import { StateToSVGMapperService } from "./state-to-svg-mapper-service";
 
 export type TEmailEventValues = (typeof EmailEvents)[keyof typeof EmailEvents];
 
+type TEmailSignInStateConstructor<
+    T extends EmailSignInState = EmailSignInState,
+> = new (props: {
+    context: EmailSignInFSMContext;
+    stateToSVGMapperService: StateToSVGMapperService;
+    logger: ((logItem: LogItem) => void) | null;
+}) => T;
+
 export const EmailEvents = {
     IdleNoText: "IdleNoText",
     UserInputtingText: "UserInputtingText",
@@ -43,11 +51,13 @@ export class EmailSignInFSMContext {
     }) {
         debugger;
         this.stateToSVGMapperService = props.stateToSVGMapperService;
-        this.state = new Idle({
-            context: this,
-            stateToSVGMapperService: this.stateToSVGMapperService,
-            logger: null,
-        });
+        this.state = this.transitionTo(Idle);
+        this.handle({ eventType: "IdleNoText" });
+        // this.state = new Idle({
+        //     context: this,
+        //     stateToSVGMapperService: this.stateToSVGMapperService,
+        //     logger: null,
+        // });
     }
 
     // public setup() {
@@ -69,12 +79,29 @@ export class EmailSignInFSMContext {
         eventType: TEvent;
         eventData?: TEmailEventPayloads[TEvent];
     }): void {
-        this.state.handle(props.eventType, props.eventData);
+        this.state?.handle(props.eventType, props.eventData);
     }
 
-    public transitionTo(state: EmailSignInState): void {
-        console.log(`Context: Transition to ${(<any>state).constructor.name}.`);
-        this.state = state;
+    // public transitionTo(state: EmailSignInState): void {
+    //     console.log(`Context: Transition to ${(<any>state).constructor.name}.`);
+    //     this.state = state;
+    // }
+    public transitionTo<T extends EmailSignInState>(
+        StateClass: TEmailSignInStateConstructor<T>,
+    ): EmailSignInState {
+        const oldStateName = this.state
+            ? (this.state as any).constructor.name
+            : "null";
+
+        this.state = new StateClass({
+            context: this,
+            stateToSVGMapperService: this.stateToSVGMapperService,
+            logger: null,
+        });
+
+        const newStateName = (this.state as any).constructor.name;
+        console.log(`Context: Transition ${oldStateName} -> ${newStateName}.`);
+        return this.state; // just to make the constructor shut up
     }
 }
 
@@ -109,11 +136,43 @@ export class Idle extends EmailSignInState {
     ): void {
         debugger;
         this.onExit();
+        const anyEmailText = (eventData?.inputEmailValue ?? "").length > 0;
         switch (eventType) {
             case EmailEvents.IdleNoText:
                 break;
             case EmailEvents.UserInputtingText:
-                //this.context.transitionTo(new UserInputtingTextState());
+                if (!anyEmailText) {
+                    console.log(
+                        `no email found. unable to transition to UserInputtingText state`,
+                    );
+                    return;
+                }
+                this.context.transitionTo(UserInputtingTextState);
+                break;
+            case EmailEvents.UserClickedLogin:
+                break;
+        }
+        this.stateToSVGMapperService.updateSvg(eventType);
+    }
+
+    protected override onExit(): void {}
+
+    protected override onEnter(): void {}
+}
+
+export class UserInputtingTextState extends EmailSignInState {
+    public override handle<TEvent extends TEmailEventValues>(
+        eventType: TEvent,
+        eventData?: TEmailEventPayloads[TEvent],
+    ): void {
+        debugger;
+        this.onExit();
+        switch (eventType) {
+            case EmailEvents.IdleNoText:
+                this.context.transitionTo(Idle);
+                break;
+            case EmailEvents.UserInputtingText:
+                //this.context.transitionTo(UserInputtingTextState);
                 //this.stateToSVGMapperService.updateSvg(state);
                 break;
             case EmailEvents.UserClickedLogin:
