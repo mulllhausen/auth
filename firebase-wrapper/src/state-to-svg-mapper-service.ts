@@ -68,6 +68,8 @@ export class StateToSVGMapperService {
         switch (`${oldBox}->${newBox}`) {
             case this.generateTransition("Idle0", "UserIsEnteringDetails0"):
                 return "UserBeganTyping0";
+            case this.generateTransition("UserIsEnteringDetails0", "Idle0"):
+                return "UserDeletedAllInputText0";
             default:
                 return null;
         }

@@ -168,7 +168,6 @@ function populateEmailInput(emailAddress: string | null): void {
 }
 
 function onInputtingEmail(e: Event): void {
-    debugger;
     const inputEl = e.currentTarget as HTMLInputElement;
     const inputEmailValue: string = inputEl.value;
     // todo: debounce

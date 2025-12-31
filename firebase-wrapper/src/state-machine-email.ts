@@ -98,10 +98,9 @@ abstract class EmailSignInState {
 class IdleState extends EmailSignInState {
     public override readonly ID = "Idle";
     public override handle(emailStateDTO?: TEmailStateDTO): void {
-        debugger;
         const anyEmailText = (emailStateDTO?.inputEmailValue ?? "").length > 0;
         this.logger?.({
-            logMessage: `${anyEmailText ? "" : "no "}email found in input.`,
+            logMessage: `${anyEmailText ? "" : "no "}email found in input`,
         });
         if (anyEmailText) {
             this.context.transitionTo(UserInputtingTextState);
@@ -112,10 +111,12 @@ class IdleState extends EmailSignInState {
 class UserInputtingTextState extends EmailSignInState {
     public override readonly ID = "UserInputtingText";
     public override handle(emailStateDTO?: TEmailStateDTO): void {
-        debugger;
         const anyEmailText = (emailStateDTO?.inputEmailValue ?? "").length > 0;
         this.logger?.({
-            logMessage: `${anyEmailText ? "" : "no "}email found in input.`,
+            logMessage: `${anyEmailText ? "" : "no "}email found in input`,
         });
+        if (!anyEmailText) {
+            this.context.transitionTo(IdleState);
+        }
     }
 }
