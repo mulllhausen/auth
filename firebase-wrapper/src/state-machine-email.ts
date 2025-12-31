@@ -4,8 +4,8 @@
 // transition so having 1 call another would blur the boundaries between states and result in tight
 // coupling.
 
-// the idea with this state machine is that you should pass it all the data you currently have and
-// it will decide which state to transition to
+// the idea with this state machine is that you should pass it a DTO of all the data you currently have
+// and it will decide which state to transition to
 // it would be nice if the state machine could just be initialised and then take it from there - calling
 // all the methods it needs in the firebase wrapper to decide if it needs to transition
 
@@ -20,16 +20,20 @@ export type TEmailStateDTO = {
     inputPasswordValue?: string;
 };
 
-type TEmailSignInStateConstructor<
-    TState extends EmailSignInState = EmailSignInState,
-> = new (props: {
+type TEmailSignInStateConstructorProps = {
     context: EmailSignInFSMContext;
     stateToSVGMapperService: StateToSVGMapperService;
     logger: ((logItem: LogItem) => void) | null;
-}) => TState;
+};
+
+type TEmailSignInStateConstructor<
+    TState extends EmailSignInState = EmailSignInState,
+> = new (props: TEmailSignInStateConstructorProps) => TState;
 
 const emailFSMID = ["Idle", "UserInputtingText"] as const;
 export type TEmailFSMID = (typeof emailFSMID)[number];
+
+const transitionToken: unique symbol = Symbol("transitionToken");
 
 // #endregion consts and types
 
@@ -37,6 +41,8 @@ export class EmailSignInFSMContext {
     private stateToSVGMapperService: StateToSVGMapperService;
     private state: EmailSignInState;
     private logger: (logItemInput: LogItem) => void | null;
+    public emailValue: string = "";
+    public passwordValue: string = "";
 
     constructor(props: {
         stateToSVGMapperService: StateToSVGMapperService;
@@ -44,18 +50,20 @@ export class EmailSignInFSMContext {
     }) {
         this.stateToSVGMapperService = props.stateToSVGMapperService;
         this.logger = props.logger;
-        this.state = this.transitionTo(IdleState); // init. a class is required.
-        //this.handle(); // change state if necessary
+        this.state = this.transitionTo(transitionToken, IdleState); // init. a class is required.
     }
 
     public handle(emailStateDTO?: TEmailStateDTO): void {
         this.state?.handle(emailStateDTO);
     }
 
-    // todo: hide this from clients
     public transitionTo<T extends EmailSignInState>(
+        token: typeof transitionToken, // prevent external access
         StateClass: TEmailSignInStateConstructor<T>,
     ): EmailSignInState {
+        if (token !== transitionToken) {
+            throw new Error(`incorrect transition token`);
+        }
         const oldStateName = this.state ? this.state.constructor.name : "null";
 
         this.state = new StateClass({
@@ -77,33 +85,45 @@ export class EmailSignInFSMContext {
 }
 
 abstract class EmailSignInState {
+    public abstract readonly ID: TEmailFSMID;
     protected context: EmailSignInFSMContext;
     protected stateToSVGMapperService: StateToSVGMapperService;
     protected logger: ((logItem: LogItem) => void) | null = null;
-    public abstract readonly ID: TEmailFSMID;
 
-    constructor(props: {
-        context: EmailSignInFSMContext;
-        stateToSVGMapperService: StateToSVGMapperService;
-        logger: ((logItem: LogItem) => void) | null;
-    }) {
+    constructor(props: TEmailSignInStateConstructorProps) {
         this.context = props.context;
         this.stateToSVGMapperService = props.stateToSVGMapperService;
         this.logger = props.logger;
     }
 
     public abstract handle(emailStateDTO?: TEmailStateDTO): void;
+
+    protected log(logMessage: string): void {
+        this.logger?.({ logMessage });
+    }
+
+    protected setEmail(input?: string): void {
+        if (input?.trim() != null) this.context.emailValue = input.trim();
+    }
+    protected setPassword(input?: string): void {
+        if (input?.trim() != null) this.context.passwordValue = input.trim();
+    }
 }
 
 class IdleState extends EmailSignInState {
     public override readonly ID = "Idle";
+
     public override handle(emailStateDTO?: TEmailStateDTO): void {
-        const anyEmailText = (emailStateDTO?.inputEmailValue ?? "").length > 0;
-        this.logger?.({
-            logMessage: `${anyEmailText ? "" : "no "}email found in input`,
-        });
-        if (anyEmailText) {
-            this.context.transitionTo(UserInputtingTextState);
+        this.setEmail(emailStateDTO?.inputEmailValue);
+        this.setPassword(emailStateDTO?.inputPasswordValue);
+        const anyEmail = this.context.emailValue.length > 0;
+        const anyPassword = this.context.passwordValue.length > 0;
+        this.log(
+            `${anyEmail ? "an" : "no"} email was entered and ` +
+                `${anyPassword ? "a" : "no"} password was entered`,
+        );
+        if (anyEmail || anyPassword) {
+            this.context.transitionTo(transitionToken, UserInputtingTextState);
         }
     }
 }
@@ -111,12 +131,16 @@ class IdleState extends EmailSignInState {
 class UserInputtingTextState extends EmailSignInState {
     public override readonly ID = "UserInputtingText";
     public override handle(emailStateDTO?: TEmailStateDTO): void {
-        const anyEmailText = (emailStateDTO?.inputEmailValue ?? "").length > 0;
-        this.logger?.({
-            logMessage: `${anyEmailText ? "" : "no "}email found in input`,
-        });
-        if (!anyEmailText) {
-            this.context.transitionTo(IdleState);
+        this.setEmail(emailStateDTO?.inputEmailValue);
+        this.setPassword(emailStateDTO?.inputPasswordValue);
+        const anyEmail = this.context.emailValue.length > 0;
+        const anyPassword = this.context.passwordValue.length > 0;
+        this.log(
+            `${anyEmail ? "an" : "no"} email was entered and ` +
+                `${anyPassword ? "a" : "no"} password was entered`,
+        );
+        if (!anyEmail && !anyPassword) {
+            this.context.transitionTo(transitionToken, IdleState);
         }
     }
 }

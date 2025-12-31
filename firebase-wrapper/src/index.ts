@@ -135,6 +135,9 @@ document.addEventListener("DOMContentLoaded", () => {
     document
         .querySelector<HTMLInputElement>("input.email")
         ?.addEventListener("input", onInputtingEmail);
+    document
+        .querySelector<HTMLInputElement>("input.password")
+        ?.addEventListener("input", onInputtingPassword);
 });
 
 // callback functions
@@ -172,20 +175,13 @@ function onInputtingEmail(e: Event): void {
     const inputEmailValue: string = inputEl.value;
     // todo: debounce
     emailSignInFSMContext.handle({ inputEmailValue });
-    // document.dispatchEvent(
-    //     new TStateMachineEvent<typeof EmailEvents.IdleNoText>(
-    //         EmailEvents.IdleNoText,
-    //     ),
-    // );
+}
 
-    // document.dispatchEvent(
-    //     new TStateMachineEvent<typeof EmailEvents.UserInputtingText>(
-    //         EmailEvents.UserInputtingText,
-    //         {
-    //             detail: { inputEmailValue },
-    //         },
-    //     ),
-    // );
+function onInputtingPassword(e: Event): void {
+    const inputEl = e.currentTarget as HTMLInputElement;
+    const inputPasswordValue: string = inputEl.value;
+    // todo: debounce
+    emailSignInFSMContext.handle({ inputPasswordValue });
 }
 
 async function handleEmailLogin(
