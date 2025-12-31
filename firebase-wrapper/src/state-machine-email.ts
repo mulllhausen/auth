@@ -18,6 +18,7 @@ import { StateToSVGMapperService } from "./state-to-svg-mapper-service";
 export type TEmailStateDTO = {
     inputEmailValue?: string;
     inputPasswordValue?: string;
+    isLoginClicked?: boolean;
 };
 
 type TEmailSignInStateConstructorProps = {
@@ -30,7 +31,11 @@ type TEmailSignInStateConstructor<
     TState extends EmailSignInState = EmailSignInState,
 > = new (props: TEmailSignInStateConstructorProps) => TState;
 
-const emailFSMID = ["Idle", "UserInputtingText"] as const;
+const emailFSMID = [
+    "Idle",
+    "UserInputtingText",
+    "SendingEmailToFirebase",
+] as const;
 export type TEmailFSMID = (typeof emailFSMID)[number];
 
 const transitionToken: unique symbol = Symbol("transitionToken");
@@ -41,15 +46,30 @@ export class EmailSignInFSMContext {
     private stateToSVGMapperService: StateToSVGMapperService;
     private state: EmailSignInState;
     private logger: (logItemInput: LogItem) => void | null;
+
+    // internal state data
     public emailValue: string = "";
     public passwordValue: string = "";
+    public anyEmail: boolean = false;
+    public anyPassword: boolean = false;
+
+    // callbacks
+    public callbackEnableLoginButton: (enabled: boolean) => void | null;
+    public callbackEnableEmailInput: (enabled: boolean) => void | null;
+    public callbackEnablePasswordInput: (enabled: boolean) => void | null;
 
     constructor(props: {
         stateToSVGMapperService: StateToSVGMapperService;
         logger: (logItemInput: LogItem) => void | null;
+        callbackEnableLoginButton: (enabled: boolean) => void | null;
+        callbackEnableEmailInput: (enabled: boolean) => void | null;
+        callbackEnablePasswordInput: (enabled: boolean) => void | null;
     }) {
         this.stateToSVGMapperService = props.stateToSVGMapperService;
         this.logger = props.logger;
+        this.callbackEnableLoginButton = props.callbackEnableLoginButton;
+        this.callbackEnableEmailInput = props.callbackEnableEmailInput;
+        this.callbackEnablePasswordInput = props.callbackEnablePasswordInput;
         this.state = this.transitionTo(transitionToken, IdleState); // init. a class is required.
     }
 
@@ -80,6 +100,7 @@ export class EmailSignInFSMContext {
                 `transitioned email state from ` +
                 `<i>${oldStateName}</i> to <i>${newStateName}</i>`,
         });
+        this.state.onEnter();
         return this.state;
     }
 }
@@ -97,9 +118,21 @@ abstract class EmailSignInState {
     }
 
     public abstract handle(emailStateDTO?: TEmailStateDTO): void;
+    public abstract onEnter(): void;
 
     protected log(logMessage: string): void {
         this.logger?.({ logMessage });
+    }
+
+    protected saveInputValues(emailStateDTO?: TEmailStateDTO): void {
+        this.setEmail(emailStateDTO?.inputEmailValue);
+        this.setPassword(emailStateDTO?.inputPasswordValue);
+        this.context.anyEmail = this.context.emailValue.length > 0;
+        this.context.anyPassword = this.context.passwordValue.length > 0;
+        this.log(
+            `${this.context.anyEmail ? "an" : "no"} email was entered and ` +
+                `${this.context.anyPassword ? "a" : "no"} password was entered`,
+        );
     }
 
     protected setEmail(input?: string): void {
@@ -114,33 +147,57 @@ class IdleState extends EmailSignInState {
     public override readonly ID = "Idle";
 
     public override handle(emailStateDTO?: TEmailStateDTO): void {
-        this.setEmail(emailStateDTO?.inputEmailValue);
-        this.setPassword(emailStateDTO?.inputPasswordValue);
-        const anyEmail = this.context.emailValue.length > 0;
-        const anyPassword = this.context.passwordValue.length > 0;
-        this.log(
-            `${anyEmail ? "an" : "no"} email was entered and ` +
-                `${anyPassword ? "a" : "no"} password was entered`,
-        );
-        if (anyEmail || anyPassword) {
+        this.saveInputValues(emailStateDTO);
+        if (this.context.anyEmail || this.context.anyPassword) {
             this.context.transitionTo(transitionToken, UserInputtingTextState);
         }
+    }
+
+    public override onEnter(): void {
+        this.context.callbackEnableLoginButton(false);
     }
 }
 
 class UserInputtingTextState extends EmailSignInState {
     public override readonly ID = "UserInputtingText";
+
     public override handle(emailStateDTO?: TEmailStateDTO): void {
-        this.setEmail(emailStateDTO?.inputEmailValue);
-        this.setPassword(emailStateDTO?.inputPasswordValue);
-        const anyEmail = this.context.emailValue.length > 0;
-        const anyPassword = this.context.passwordValue.length > 0;
-        this.log(
-            `${anyEmail ? "an" : "no"} email was entered and ` +
-                `${anyPassword ? "a" : "no"} password was entered`,
-        );
-        if (!anyEmail && !anyPassword) {
+        this.saveInputValues(emailStateDTO);
+        if (!this.context.anyEmail && !this.context.anyPassword) {
             this.context.transitionTo(transitionToken, IdleState);
         }
+
+        this.context.callbackEnableLoginButton(
+            this.context.anyEmail && this.context.anyPassword,
+        );
+
+        if (emailStateDTO?.isLoginClicked) {
+            this.context.transitionTo(
+                transitionToken,
+                SendingEmailToFirebaseState,
+            );
+        }
+    }
+
+    public override onEnter(): void {
+        if (this.context.anyEmail && this.context.anyPassword) {
+            this.context.callbackEnableLoginButton(true);
+        }
+    }
+}
+
+class SendingEmailToFirebaseState extends EmailSignInState {
+    public override readonly ID = "SendingEmailToFirebase";
+
+    public override handle(emailStateDTO?: TEmailStateDTO): void {
+        // call firebase wrapper
+    }
+
+    public override onEnter(): void {
+        // delete the secret ASAP
+        this.context.passwordValue = "";
+        this.context.callbackEnableLoginButton(false);
+        this.context.callbackEnableEmailInput(false);
+        this.context.callbackEnablePasswordInput(false);
     }
 }

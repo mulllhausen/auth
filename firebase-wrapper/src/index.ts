@@ -93,6 +93,9 @@ const stateToSVGMapperService = new StateToSVGMapperService({
 const emailSignInFSMContext = new EmailSignInFSMContext({
     stateToSVGMapperService,
     logger: guiLogger.log.bind(guiLogger),
+    callbackEnableLoginButton,
+    callbackEnableEmailInput,
+    callbackEnablePasswordInput,
 }); //.setup();
 
 const wrapperSettings: TWrapperSettings = {
@@ -132,12 +135,20 @@ document.addEventListener("DOMContentLoaded", () => {
     document
         .querySelector("button#enableAllSVGElements")
         ?.addEventListener("click", testEmailFSMSVG);
+
     document
         .querySelector<HTMLInputElement>("input.email")
         ?.addEventListener("input", onInputtingEmail);
+
     document
         .querySelector<HTMLInputElement>("input.password")
         ?.addEventListener("input", onInputtingPassword);
+
+    document
+        .querySelector<HTMLInputElement>(
+            'button.login[data-service-provider="password"]',
+        )
+        ?.addEventListener("click", onEmailLoginClick);
 });
 
 // callback functions
@@ -182,6 +193,36 @@ function onInputtingPassword(e: Event): void {
     const inputPasswordValue: string = inputEl.value;
     // todo: debounce
     emailSignInFSMContext.handle({ inputPasswordValue });
+}
+
+function onEmailLoginClick(e: Event): void {
+    const inputEmailValue: string =
+        document.querySelector<HTMLInputElement>("input.email")!.value;
+
+    const inputPasswordValue: string =
+        document.querySelector<HTMLInputElement>("input.password")!.value;
+
+    emailSignInFSMContext.handle({
+        inputEmailValue,
+        inputPasswordValue,
+        isLoginClicked: true,
+    });
+}
+
+function callbackEnableLoginButton(enabled: boolean): void {
+    document.querySelector<HTMLInputElement>(
+        'button.login[data-service-provider="password"]',
+    )!.disabled = !enabled;
+}
+
+function callbackEnableEmailInput(enabled: boolean): void {
+    document.querySelector<HTMLInputElement>("input.email")!.disabled =
+        !enabled;
+}
+
+function callbackEnablePasswordInput(enabled: boolean): void {
+    document.querySelector<HTMLInputElement>("input.password")!.disabled =
+        !enabled;
 }
 
 async function handleEmailLogin(

@@ -70,11 +70,17 @@ export class StateToSVGMapperService {
                 return "UserBeganTyping0";
             case this.generateTransition("UserIsEnteringDetails0", "Idle0"):
                 return "UserDeletedAllInputText0";
+            case this.generateTransition(
+                "UserIsEnteringDetails0",
+                "EmailSentToFirebase0",
+            ):
+                return "UserClickedSubmitButton0";
             default:
                 return null;
         }
     }
 
+    /** this function exists purely for type safety */
     private generateTransition(
         oldBox: TEmailStateBoxKey,
         newBox: TEmailStateBoxKey,
@@ -88,6 +94,6 @@ export class StateToSVGMapperService {
     > = {
         Idle: "Idle0",
         UserInputtingText: "UserIsEnteringDetails0",
-        //UserClickedLogin: "EmailSentToFirebase0",
+        SendingEmailToFirebase: "EmailSentToFirebase0",
     };
 }
