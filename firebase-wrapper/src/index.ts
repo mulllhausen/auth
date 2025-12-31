@@ -96,7 +96,7 @@ const emailSignInFSMContext = new EmailSignInFSMContext({
     callbackEnableLoginButton,
     callbackEnableEmailInput,
     callbackEnablePasswordInput,
-}); //.setup();
+});
 
 const wrapperSettings: TWrapperSettings = {
     logger: guiLogger.log.bind(guiLogger),
