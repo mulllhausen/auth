@@ -32,11 +32,7 @@ import {
 } from "firebase/auth";
 import type { TProcessEnv } from "./dotenv";
 import { LogItem } from "./gui-logger";
-import {
-    //emailSignInActions,
-    // EmailSignInFSM,
-    EmailSignInState,
-} from "./state-machine-email";
+//import {} from "./state-machine-email";
 
 // #endregion imports
 
@@ -113,11 +109,11 @@ export type TWrapperSettings = {
     // emailStateChangedCallback: (
     //     newState: keyof typeof emailSignInStates,
     // ) => void;
-    emailActionCallback: (
-        oldState: /*typeof*/ EmailSignInState | null,
-        action: null, // keyof typeof emailSignInActions | null,
-        newState: /*typeof*/ EmailSignInState,
-    ) => void;
+    // emailActionCallback: (
+    //     oldState: /*typeof*/ EmailSignInState | null,
+    //     action: null, // keyof typeof emailSignInActions | null,
+    //     newState: /*typeof*/ EmailSignInState,
+    // ) => void;
     loginButtonCSSClass: string;
     clearCachedUserButtonCSSClass: string;
     authProviderSettings: {

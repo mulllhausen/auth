@@ -12,103 +12,75 @@
 import { LogItem } from "./gui-logger";
 import { StateToSVGMapperService } from "./state-to-svg-mapper-service";
 
-export type TEmailEventValues = (typeof EmailEvents)[keyof typeof EmailEvents];
+// #region consts and types
+
+/** this is the only DTO you need to pass data to the email state machine */
+export type TEmailStateDTO = {
+    inputEmailValue?: string;
+    inputPasswordValue?: string;
+};
 
 type TEmailSignInStateConstructor<
-    T extends EmailSignInState = EmailSignInState,
+    TState extends EmailSignInState = EmailSignInState,
 > = new (props: {
     context: EmailSignInFSMContext;
     stateToSVGMapperService: StateToSVGMapperService;
     logger: ((logItem: LogItem) => void) | null;
-}) => T;
+}) => TState;
 
-export const EmailEvents = {
-    IdleNoText: "IdleNoText",
-    UserInputtingText: "UserInputtingText",
-    UserClickedLogin: "UserClickedLogin",
-} as const;
+const emailFSMID = ["Idle", "UserInputtingText"] as const;
+export type TEmailFSMID = (typeof emailFSMID)[number];
 
-export type TEmailEventPayloads = {
-    [EmailEvents.IdleNoText]: void;
-    [EmailEvents.UserInputtingText]: { inputEmailValue: string };
-    [EmailEvents.UserClickedLogin]: {
-        inputEmailValue: string;
-        inputPasswordValue: string;
-    };
-};
-
-export type TStateMachineEvent<TEvent extends TEmailEventValues> = CustomEvent<
-    TEmailEventPayloads[TEvent]
->;
+// #endregion consts and types
 
 export class EmailSignInFSMContext {
     private stateToSVGMapperService: StateToSVGMapperService;
     private state: EmailSignInState;
+    private logger: (logItemInput: LogItem) => void | null;
 
     constructor(props: {
         stateToSVGMapperService: StateToSVGMapperService;
-        //emailSignInState: EmailSignInState;
+        logger: (logItemInput: LogItem) => void | null;
     }) {
-        debugger;
         this.stateToSVGMapperService = props.stateToSVGMapperService;
-        this.state = this.transitionTo(Idle);
-        this.handle({ eventType: "IdleNoText" });
-        // this.state = new Idle({
-        //     context: this,
-        //     stateToSVGMapperService: this.stateToSVGMapperService,
-        //     logger: null,
-        // });
+        this.logger = props.logger;
+        this.state = this.transitionTo(IdleState); // init. a class is required.
+        //this.handle(); // change state if necessary
     }
 
-    // public setup() {
-    //     this.initEvents();
-    // }
-
-    // private initEvents() {
-    //     (Object.values(EmailEvents) as TEmailEventValues[]).forEach(
-    //         (emailEvent: TEmailEventValues) => {
-    //             document.addEventListener(emailEvent, (e: Event) => {
-    //                 const fsmEvent = e as TStateMachineEvent<typeof emailEvent>;
-    //                 this.state.handle(emailEvent, fsmEvent.detail);
-    //             });
-    //         },
-    //     );
-    // }
-
-    public handle<TEvent extends TEmailEventValues>(props: {
-        eventType: TEvent;
-        eventData?: TEmailEventPayloads[TEvent];
-    }): void {
-        this.state?.handle(props.eventType, props.eventData);
+    public handle(emailStateDTO?: TEmailStateDTO): void {
+        this.state?.handle(emailStateDTO);
     }
 
-    // public transitionTo(state: EmailSignInState): void {
-    //     console.log(`Context: Transition to ${(<any>state).constructor.name}.`);
-    //     this.state = state;
-    // }
+    // todo: hide this from clients
     public transitionTo<T extends EmailSignInState>(
         StateClass: TEmailSignInStateConstructor<T>,
     ): EmailSignInState {
-        const oldStateName = this.state
-            ? (this.state as any).constructor.name
-            : "null";
+        const oldStateName = this.state ? this.state.constructor.name : "null";
 
         this.state = new StateClass({
             context: this,
             stateToSVGMapperService: this.stateToSVGMapperService,
-            logger: null,
+            logger: this.logger,
         });
 
-        const newStateName = (this.state as any).constructor.name;
-        console.log(`Context: Transition ${oldStateName} -> ${newStateName}.`);
-        return this.state; // just to make the constructor shut up
+        this.stateToSVGMapperService.updateSvg(this.state.ID);
+
+        const newStateName = this.state.constructor.name;
+        this.logger?.({
+            logMessage:
+                `transitioned email state from ` +
+                `<i>${oldStateName}</i> to <i>${newStateName}</i>`,
+        });
+        return this.state;
     }
 }
 
-export abstract class EmailSignInState {
+abstract class EmailSignInState {
     protected context: EmailSignInFSMContext;
     protected stateToSVGMapperService: StateToSVGMapperService;
-    public logger: ((logItem: LogItem) => void) | null = null;
+    protected logger: ((logItem: LogItem) => void) | null = null;
+    public abstract readonly ID: TEmailFSMID;
 
     constructor(props: {
         context: EmailSignInFSMContext;
@@ -120,68 +92,30 @@ export abstract class EmailSignInState {
         this.logger = props.logger;
     }
 
-    public abstract handle<TEvent extends TEmailEventValues>(
-        eventType: TEvent,
-        eventData?: TEmailEventPayloads[TEvent],
-    ): void;
-
-    protected abstract onExit(): void;
-    protected abstract onEnter(): void;
+    public abstract handle(emailStateDTO?: TEmailStateDTO): void;
 }
 
-export class Idle extends EmailSignInState {
-    public override handle<TEvent extends TEmailEventValues>(
-        eventType: TEvent,
-        eventData?: TEmailEventPayloads[TEvent],
-    ): void {
+class IdleState extends EmailSignInState {
+    public override readonly ID = "Idle";
+    public override handle(emailStateDTO?: TEmailStateDTO): void {
         debugger;
-        this.onExit();
-        const anyEmailText = (eventData?.inputEmailValue ?? "").length > 0;
-        switch (eventType) {
-            case EmailEvents.IdleNoText:
-                break;
-            case EmailEvents.UserInputtingText:
-                if (!anyEmailText) {
-                    console.log(
-                        `no email found. unable to transition to UserInputtingText state`,
-                    );
-                    return;
-                }
-                this.context.transitionTo(UserInputtingTextState);
-                break;
-            case EmailEvents.UserClickedLogin:
-                break;
+        const anyEmailText = (emailStateDTO?.inputEmailValue ?? "").length > 0;
+        this.logger?.({
+            logMessage: `${anyEmailText ? "" : "no "}email found in input.`,
+        });
+        if (anyEmailText) {
+            this.context.transitionTo(UserInputtingTextState);
         }
-        this.stateToSVGMapperService.updateSvg(eventType);
     }
-
-    protected override onExit(): void {}
-
-    protected override onEnter(): void {}
 }
 
-export class UserInputtingTextState extends EmailSignInState {
-    public override handle<TEvent extends TEmailEventValues>(
-        eventType: TEvent,
-        eventData?: TEmailEventPayloads[TEvent],
-    ): void {
+class UserInputtingTextState extends EmailSignInState {
+    public override readonly ID = "UserInputtingText";
+    public override handle(emailStateDTO?: TEmailStateDTO): void {
         debugger;
-        this.onExit();
-        switch (eventType) {
-            case EmailEvents.IdleNoText:
-                this.context.transitionTo(Idle);
-                break;
-            case EmailEvents.UserInputtingText:
-                //this.context.transitionTo(UserInputtingTextState);
-                //this.stateToSVGMapperService.updateSvg(state);
-                break;
-            case EmailEvents.UserClickedLogin:
-                break;
-        }
-        this.stateToSVGMapperService.updateSvg(eventType);
+        const anyEmailText = (emailStateDTO?.inputEmailValue ?? "").length > 0;
+        this.logger?.({
+            logMessage: `${anyEmailText ? "" : "no "}email found in input.`,
+        });
     }
-
-    protected override onExit(): void {}
-
-    protected override onEnter(): void {}
 }

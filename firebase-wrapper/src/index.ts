@@ -60,11 +60,7 @@ import "./index.css";
 //     emailStateToCSSArrowClassMappings,
 //     emailStateToCSSBoxClassMappings,
 // } from "./mappers/email";
-import {
-    EmailEvents,
-    EmailSignInFSMContext,
-    EmailSignInState,
-} from "./state-machine-email";
+import { EmailSignInFSMContext } from "./state-machine-email";
 import { StateToSVGMapperService } from "./state-to-svg-mapper-service";
 import { SVGEmailFlowChartService } from "./svg-email-flowchart-service";
 import {
@@ -72,19 +68,6 @@ import {
     SVGStateStatus,
     TSVGStateStatusValues,
 } from "./svg-flowchart-service";
-
-const emailFSMSVGService = new SVGEmailFlowChartService({
-    svgQuerySelector: "#emailLinkFSMChart",
-});
-
-const stateToSVGMapperService = new StateToSVGMapperService({
-    svgService: emailFSMSVGService,
-    currentStateBoxCSSClassKey: null,
-});
-
-const emailSignInFSMContext = new EmailSignInFSMContext({
-    stateToSVGMapperService,
-}); //.setup();
 
 const htmlTemplateManager = new HTMLTemplateManager(document);
 
@@ -97,6 +80,20 @@ const guiLogger = new GUILogger({
 })
     .initEvents()
     .initGUIFromLocalStorage();
+
+const emailFSMSVGService = new SVGEmailFlowChartService({
+    svgQuerySelector: "#emailLinkFSMChart",
+});
+
+const stateToSVGMapperService = new StateToSVGMapperService({
+    svgService: emailFSMSVGService,
+    currentStateBoxCSSClassKey: null,
+});
+
+const emailSignInFSMContext = new EmailSignInFSMContext({
+    stateToSVGMapperService,
+    logger: guiLogger.log.bind(guiLogger),
+}); //.setup();
 
 const wrapperSettings: TWrapperSettings = {
     logger: guiLogger.log.bind(guiLogger),
@@ -122,7 +119,7 @@ const wrapperSettings: TWrapperSettings = {
     reenterEmailAddressCallback,
     clearEmailAfterSignInCallback,
     //emailStateChangedCallback,
-    emailActionCallback,
+    //emailActionCallback,
 };
 
 const firebaseAuthService = new FirebaseAuthService({
@@ -173,17 +170,9 @@ function populateEmailInput(emailAddress: string | null): void {
 function onInputtingEmail(e: Event): void {
     debugger;
     const inputEl = e.currentTarget as HTMLInputElement;
-    const inputEmailValue: string = inputEl.value.trim();
+    const inputEmailValue: string = inputEl.value;
     // todo: debounce
-    const eventType =
-        inputEmailValue === ""
-            ? EmailEvents.IdleNoText
-            : EmailEvents.UserInputtingText;
-
-    emailSignInFSMContext.handle({
-        eventType,
-        eventData: { inputEmailValue },
-    });
+    emailSignInFSMContext.handle({ inputEmailValue });
     // document.dispatchEvent(
     //     new TStateMachineEvent<typeof EmailEvents.IdleNoText>(
     //         EmailEvents.IdleNoText,

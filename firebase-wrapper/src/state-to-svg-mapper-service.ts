@@ -1,4 +1,4 @@
-import { EmailEvents } from "./state-machine-email";
+import { TEmailFSMID } from "./state-machine-email";
 import {
     EmailSVGStateBoxCSSClass,
     TEmailArrowKey,
@@ -28,7 +28,7 @@ export class StateToSVGMapperService {
         this.currentStateBoxCSSClassKey = props.currentStateBoxCSSClassKey;
     }
 
-    public updateSvg(newStateClassKey: keyof typeof EmailEvents): void {
+    public updateSvg(newStateClassKey: TEmailFSMID): void {
         const oldStateBoxCSSClassKey = this.currentStateBoxCSSClassKey;
         if (oldStateBoxCSSClassKey != null) {
             this.svgService.Unset<typeof SVGCSSClassCategory.StateBox>(
@@ -81,11 +81,11 @@ export class StateToSVGMapperService {
     }
 
     private stateBoxMappings: Record<
-        keyof typeof EmailEvents,
+        TEmailFSMID,
         keyof typeof EmailSVGStateBoxCSSClass
     > = {
-        IdleNoText: "Idle0",
+        Idle: "Idle0",
         UserInputtingText: "UserIsEnteringDetails0",
-        UserClickedLogin: "EmailSentToFirebase0",
+        //UserClickedLogin: "EmailSentToFirebase0",
     };
 }
