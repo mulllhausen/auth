@@ -510,21 +510,23 @@ export class FirebaseAuthService {
     //     await this.emailState.Initialise();
     // }
 
-    // public async SendSignInLinkToEmail(): Promise<void> {
-    //     try {
-    //         await sendSignInLinkToEmail(
-    //             this.Auth,
-    //             this.EmailAddress!,
-    //             this.EmailActionCodeSettings,
-    //         );
-    //         this.callEmailAction(emailSignInActions.FirebaseOKResponse);
-    //     } catch (error) {
-    //         this.callEmailAction(
-    //             emailSignInActions.FirebaseErrorResponse,
-    //             error,
-    //         );
-    //     }
-    // }
+    public async SendSignInLinkToEmail(): Promise<boolean> {
+        try {
+            await sendSignInLinkToEmail(
+                this.Auth,
+                this.EmailAddress!,
+                this.EmailActionCodeSettings,
+            );
+            return true;
+            //this.callEmailAction(emailSignInActions.FirebaseOKResponse);
+        } catch (error) {
+            // this.callEmailAction(
+            //     emailSignInActions.FirebaseErrorResponse,
+            //     error,
+            // );
+            return false;
+        }
+    }
 
     // private changeEmailState(emailState: EmailSignInState): void {
     //     this.logger?.({ logMessage: `email state changed to ${emailState}` });

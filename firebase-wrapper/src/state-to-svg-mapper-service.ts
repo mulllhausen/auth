@@ -75,6 +75,16 @@ export class StateToSVGMapperService {
                 "SendingEmailToFirebase0",
             ):
                 return "UserClickedSubmitButton0";
+            case this.generateTransition(
+                "SendingEmailToFirebase0",
+                "WaitingForUserToClickLinkInEmail0",
+            ):
+                return "OkResponse0";
+            case this.generateTransition(
+                "SendingEmailToFirebase0",
+                "BadEmailAddress0",
+            ):
+                return "FirebaseReturnsAnError0";
             default:
                 return null;
         }
@@ -95,5 +105,7 @@ export class StateToSVGMapperService {
         Idle: "Idle0",
         UserInputtingText: "UserIsInputtingDetails0",
         SendingEmailToFirebase: "SendingEmailToFirebase0",
+        WaitingForUserToClickLinkInEmail: "WaitingForUserToClickLinkInEmail0",
+        BadEmailAddress: "BadEmailAddress0",
     };
 }
