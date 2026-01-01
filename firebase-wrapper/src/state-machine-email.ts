@@ -9,6 +9,7 @@
 // it would be nice if the state machine could just be initialised and then take it from there - calling
 // all the methods it needs in the firebase wrapper to decide if it needs to transition
 
+import { FirebaseAuthService } from "./firebase-wrapper";
 import { LogItem } from "./gui-logger";
 import { StateToSVGMapperService } from "./state-to-svg-mapper-service";
 
@@ -22,6 +23,7 @@ export type TEmailStateDTO = {
 };
 
 type TEmailSignInStateConstructorProps = {
+    firebaseAuthService: FirebaseAuthService;
     context: EmailSignInFSMContext;
     stateToSVGMapperService: StateToSVGMapperService;
     logger: ((logItem: LogItem) => void) | null;
@@ -43,6 +45,7 @@ const transitionToken: unique symbol = Symbol("transitionToken");
 // #endregion consts and types
 
 export class EmailSignInFSMContext {
+    private firebaseAuthService: FirebaseAuthService;
     private stateToSVGMapperService: StateToSVGMapperService;
     private state: EmailSignInState;
     private logger: ((logItemInput: LogItem) => void) | null;
@@ -59,12 +62,14 @@ export class EmailSignInFSMContext {
     public callbackEnablePasswordInput: ((enabled: boolean) => void) | null;
 
     constructor(props: {
+        firebaseAuthService: FirebaseAuthService;
         stateToSVGMapperService: StateToSVGMapperService;
         logger: ((logItemInput: LogItem) => void) | null;
         callbackEnableLoginButton: ((enabled: boolean) => void) | null;
         callbackEnableEmailInput: ((enabled: boolean) => void) | null;
         callbackEnablePasswordInput: ((enabled: boolean) => void) | null;
     }) {
+        this.firebaseAuthService = props.firebaseAuthService;
         this.stateToSVGMapperService = props.stateToSVGMapperService;
         this.logger = props.logger;
         this.callbackEnableLoginButton = props.callbackEnableLoginButton;
@@ -87,6 +92,7 @@ export class EmailSignInFSMContext {
         const oldStateName = this.state ? this.state.constructor.name : "null";
 
         this.state = new StateClass({
+            firebaseAuthService: this.firebaseAuthService,
             context: this,
             stateToSVGMapperService: this.stateToSVGMapperService,
             logger: this.logger,
@@ -107,11 +113,13 @@ export class EmailSignInFSMContext {
 
 abstract class EmailSignInState {
     public abstract readonly ID: TEmailFSMID;
+    protected firebaseAuthService: FirebaseAuthService;
     protected context: EmailSignInFSMContext;
     protected stateToSVGMapperService: StateToSVGMapperService;
     protected logger: ((logItem: LogItem) => void) | null = null;
 
     constructor(props: TEmailSignInStateConstructorProps) {
+        this.firebaseAuthService = props.firebaseAuthService;
         this.context = props.context;
         this.stateToSVGMapperService = props.stateToSVGMapperService;
         this.logger = props.logger;
@@ -198,6 +206,7 @@ class SendingEmailToFirebaseState extends EmailSignInState {
 
     public override handle(emailStateDTO: TEmailStateDTO): void {
         // call firebase wrapper
+        this.context.firebase;
     }
 
     public override onEnter(): void {

@@ -81,23 +81,6 @@ const guiLogger = new GUILogger({
     .initEvents()
     .initGUIFromLocalStorage();
 
-const emailFSMSVGService = new SVGEmailFlowChartService({
-    svgQuerySelector: "#emailLinkFSMChart",
-});
-
-const stateToSVGMapperService = new StateToSVGMapperService({
-    svgService: emailFSMSVGService,
-    currentStateBoxCSSClassKey: null,
-});
-
-const emailSignInFSMContext = new EmailSignInFSMContext({
-    stateToSVGMapperService,
-    logger: guiLogger.log.bind(guiLogger),
-    callbackEnableLoginButton,
-    callbackEnableEmailInput,
-    callbackEnablePasswordInput,
-});
-
 const wrapperSettings: TWrapperSettings = {
     logger: guiLogger.log.bind(guiLogger),
     loginButtonCSSClass: "button.login",
@@ -130,8 +113,26 @@ const firebaseAuthService = new FirebaseAuthService({
     settings: wrapperSettings,
 });
 
+const emailFSMSVGService = new SVGEmailFlowChartService({
+    svgQuerySelector: "#emailLinkFSMChart",
+});
+
+const stateToSVGMapperService = new StateToSVGMapperService({
+    svgService: emailFSMSVGService,
+    currentStateBoxCSSClassKey: null,
+});
+
+const emailSignInFSMContext = new EmailSignInFSMContext({
+    firebaseAuthService,
+    stateToSVGMapperService,
+    logger: guiLogger.log.bind(guiLogger),
+    callbackEnableLoginButton,
+    callbackEnableEmailInput,
+    callbackEnablePasswordInput,
+});
+
 document.addEventListener("DOMContentLoaded", () => {
-    populateEmailInput(firebaseAuthService.EmailAddress);
+    //populateEmailInput(firebaseAuthService.EmailAddress);
     document
         .querySelector("button#enableAllSVGElements")
         ?.addEventListener("click", testEmailFSMSVG);

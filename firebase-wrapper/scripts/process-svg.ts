@@ -14,9 +14,9 @@ import {
 //    generate typescript types.
 // the gui can then interact with the svg.
 
-const INPUT_SVG_FILE: string = "./public/images/fsm-email-flowchart.svg";
+const INPUT_SVG_FILE: string = "./public/images/fsm-email-link-flowchart.svg";
 const OUTPUT_SVG_FILE: string =
-    "./public/images/fsm-email-flowchart-cleaned.svg";
+    "./public/images/fsm-email-link-flowchart-cleaned.svg";
 const OUTPUT_SVG_TYPES_FILE: string = "./src/svg-email-flowchart-auto-types.ts";
 
 // init

@@ -66,13 +66,13 @@ export class StateToSVGMapperService {
         newBox: TEmailStateBoxKey,
     ): TEmailArrowKey | null {
         switch (`${oldBox}->${newBox}`) {
-            case this.generateTransition("Idle0", "UserIsEnteringDetails0"):
+            case this.generateTransition("Idle0", "UserIsInputtingDetails0"):
                 return "UserBeganTyping0";
-            case this.generateTransition("UserIsEnteringDetails0", "Idle0"):
+            case this.generateTransition("UserIsInputtingDetails0", "Idle0"):
                 return "UserDeletedAllInputText0";
             case this.generateTransition(
-                "UserIsEnteringDetails0",
-                "EmailSentToFirebase0",
+                "UserIsInputtingDetails0",
+                "SendingEmailToFirebase0",
             ):
                 return "UserClickedSubmitButton0";
             default:
@@ -93,7 +93,7 @@ export class StateToSVGMapperService {
         keyof typeof EmailSVGStateBoxCSSClass
     > = {
         Idle: "Idle0",
-        UserInputtingText: "UserIsEnteringDetails0",
-        SendingEmailToFirebase: "EmailSentToFirebase0",
+        UserInputtingText: "UserIsInputtingDetails0",
+        SendingEmailToFirebase: "SendingEmailToFirebase0",
     };
 }
