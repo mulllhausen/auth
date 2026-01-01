@@ -79,7 +79,7 @@ export class StateToSVGMapperService {
                 "SendingEmailToFirebase0",
                 "WaitingForUserToClickLinkInEmail0",
             ):
-                return "OkResponse0";
+                return "OkResponse1";
             case this.generateTransition(
                 "SendingEmailToFirebase0",
                 "BadEmailAddress0",

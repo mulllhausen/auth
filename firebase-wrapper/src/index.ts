@@ -60,7 +60,7 @@ import "./index.css";
 //     emailStateToCSSArrowClassMappings,
 //     emailStateToCSSBoxClassMappings,
 // } from "./mappers/email";
-import { EmailSignInFSMContext } from "./state-machine-email";
+import { EmailSignInFSMContext, TEmailStateDTO } from "./state-machine-email";
 import { StateToSVGMapperService } from "./state-to-svg-mapper-service";
 import { SVGEmailFlowChartService } from "./svg-email-flowchart-service";
 import {
@@ -68,6 +68,7 @@ import {
     SVGStateStatus,
     TSVGStateStatusValues,
 } from "./svg-flowchart-service";
+import { debounce } from "./utils";
 
 const htmlTemplateManager = new HTMLTemplateManager(document);
 
@@ -182,18 +183,25 @@ function populateEmailInput(emailAddress: string | null): void {
     emailInput.value = emailAddress;
 }
 
+// single function for simplicity
+// note: typing in one field resets the debounce for the other
+const debouncedEmailSignInFSMContextHandler = debounce(
+    (emailStateDTO: TEmailStateDTO) => {
+        emailSignInFSMContext.handle(emailStateDTO);
+    },
+    300,
+);
+
 function onInputtingEmail(e: Event): void {
     const inputEl = e.currentTarget as HTMLInputElement;
     const inputEmailValue: string = inputEl.value;
-    // todo: debounce
-    emailSignInFSMContext.handle({ inputEmailValue });
+    debouncedEmailSignInFSMContextHandler.call({ inputEmailValue });
 }
 
 function onInputtingPassword(e: Event): void {
     const inputEl = e.currentTarget as HTMLInputElement;
     const inputPasswordValue: string = inputEl.value;
-    // todo: debounce
-    emailSignInFSMContext.handle({ inputPasswordValue });
+    debouncedEmailSignInFSMContextHandler.call({ inputPasswordValue });
 }
 
 function onEmailLoginClick(e: Event): void {
@@ -203,11 +211,11 @@ function onEmailLoginClick(e: Event): void {
     const inputPasswordValue: string =
         document.querySelector<HTMLInputElement>("input.password")!.value;
 
-    emailSignInFSMContext.handle({
+    debouncedEmailSignInFSMContextHandler.flush({
         inputEmailValue,
         inputPasswordValue,
-        isLoginClicked: true,
     });
+    emailSignInFSMContext.handle({ isLoginClicked: true });
 }
 
 function callbackEnableLoginButton(enabled: boolean): void {
