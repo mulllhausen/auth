@@ -16,7 +16,7 @@ const dotEnvTypeNames: string[] = allowedDotEnvTypes.map((type_) => type_.name);
 const regexKeyEmbeddedType = getRegexFromDotEnvTypes(dotEnvTypeNames);
 
 // something like: string | number
-type AllowedDotEnvTypes = (typeof allowedDotEnvTypes)[number] extends new (
+type TAllowedDotEnvTypes = (typeof allowedDotEnvTypes)[number] extends new (
     ...args: any[]
 ) => infer ReturnType
     ? ReturnType
@@ -40,7 +40,7 @@ if (process.env.NODE_ENV === "development") {
     );
 }
 
-const typedDotEnvConfig: Record<string, AllowedDotEnvTypes> =
+const typedDotEnvConfig: Record<string, TAllowedDotEnvTypes> =
     getTypedDotEnv(mergedDotEnvConfig);
 
 const dotenvTsContent = `export type TProcessEnv = {
@@ -118,9 +118,9 @@ function mergeDotEnvConfigs(
 
 function getTypedDotEnv(
     parsedDotenvVars: NodeJS.ProcessEnv,
-): Record<string, AllowedDotEnvTypes> {
+): Record<string, TAllowedDotEnvTypes> {
     return Object.keys(parsedDotenvVars).reduce<
-        Record<string, AllowedDotEnvTypes>
+        Record<string, TAllowedDotEnvTypes>
     >((acc, key) => {
         const { updatedKey, keyTypeNameUpper } = extractTypeFromKey(key);
         switch (keyTypeNameUpper) {
@@ -182,7 +182,7 @@ function getNumber(dotEnvKey: string, dotEnvValue: string | undefined): number {
 }
 
 function dotenv2TsTypes(
-    parsedDotenvVars: Record<string, AllowedDotEnvTypes>,
+    parsedDotenvVars: Record<string, TAllowedDotEnvTypes>,
 ): string {
     const tab: string = "    ";
 

@@ -94,7 +94,7 @@ export class EmailSignInFSMContext {
         await this.state.handle(emailStateDTO);
     }
 
-    // call only 1 of these
+    // call either transitionToSync() or transitionToAsync() but not both
     public transitionToSync<T extends EmailSignInState>(
         token: typeof transitionToken, // prevent external access
         stateClass: TEmailSignInStateConstructor<T>,
@@ -131,7 +131,8 @@ export class EmailSignInFSMContext {
         token: typeof transitionToken, // prevent external access
         stateClass: TEmailSignInStateConstructor<T>,
     ): Promise<EmailSignInState> {
-        this.state = this.transitionToSync(token, stateClass);
+        const shouldRunOnEnter = false;
+        this.state = this.transitionToSync(token, stateClass, shouldRunOnEnter);
         await this.state.onEnterAsync();
         return this.state;
     }
@@ -245,28 +246,31 @@ class SendingEmailToFirebaseState extends EmailSignInState {
     public override readonly ID = "SendingEmailToFirebase";
 
     public override async handle(emailStateDTO: TEmailStateDTO): Promise<void> {
-        if (emailStateDTO.successfullySentSignInLinkToEmail) {
+        if (emailStateDTO.successfullySentSignInLinkToEmail == null) {
+            return;
+        } else if (emailStateDTO.successfullySentSignInLinkToEmail) {
             await this.context.transitionToAsync(
                 transitionToken,
                 WaitingForUserToClickLinkInEmailState,
             );
+            return;
         } else {
             await this.context.transitionToAsync(
                 transitionToken,
                 BadEmailAddressState,
             );
+            return;
         }
     }
 
     public override onEnterSync(): void {
-        // leave empty when onEnterAsync actually does something asynchronously
+        // leave empty since onEnterAsync() actually does something asynchronously here
     }
 
     public override async onEnterAsync(): Promise<void> {
         this.context.callbackEnableEmailInput?.(false);
         this.context.callbackEnablePasswordInput?.(false);
         this.context.callbackEnableLoginButton?.(false);
-        debugger;
         this.firebaseAuthService.EmailAddress = this.context.emailValue;
         this.firebaseAuthService.EmailPassword = this.context.passwordValue;
         await this.firebaseAuthService.SendSignInLinkToEmail();
@@ -277,7 +281,7 @@ class WaitingForUserToClickLinkInEmailState extends EmailSignInState {
     public override readonly ID = "WaitingForUserToClickLinkInEmail";
 
     public override async handle(emailStateDTO: TEmailStateDTO): Promise<void> {
-        //blah
+        //todo
     }
 
     public override onEnterSync(): void {}
@@ -288,13 +292,20 @@ class BadEmailAddressState extends EmailSignInState {
     public override readonly ID = "BadEmailAddress";
 
     public override async handle(emailStateDTO: TEmailStateDTO): Promise<void> {
-        //blah
+        this.saveInputValues(emailStateDTO);
+        if (this.context.anyEmail || this.context.anyPassword) {
+            await this.context.transitionToAsync(
+                transitionToken,
+                UserInputtingTextState,
+            );
+            return;
+        }
     }
 
     public override onEnterSync(): void {
         this.context.callbackEnableEmailInput?.(true);
         this.context.callbackEnablePasswordInput?.(true);
-        this.context.callbackEnableLoginButton?.(true);
+        this.context.callbackEnableLoginButton?.(false);
     }
 
     public override async onEnterAsync(): Promise<void> {

@@ -68,29 +68,40 @@ export class StateToSVGMapperService {
         switch (`${oldBox}->${newBox}`) {
             case this.generateTransition("Idle0", "UserIsInputtingDetails0"):
                 return "UserBeganTyping0";
+
             case this.generateTransition("UserIsInputtingDetails0", "Idle0"):
                 return "UserDeletedAllInputText0";
+
             case this.generateTransition(
                 "UserIsInputtingDetails0",
                 "SendingEmailToFirebase0",
             ):
                 return "UserClickedSubmitButton0";
+
             case this.generateTransition(
                 "SendingEmailToFirebase0",
                 "WaitingForUserToClickLinkInEmail0",
             ):
                 return "OkResponse1";
+
             case this.generateTransition(
                 "SendingEmailToFirebase0",
                 "BadEmailAddress0",
             ):
-                return "FirebaseReturnsAnError0";
+                return "FirebaseReturnedAnError0";
+
+            case this.generateTransition(
+                "BadEmailAddress0",
+                "UserIsInputtingDetails0",
+            ):
+                return "UserIsTypingAgain0";
+
             default:
                 return null;
         }
     }
 
-    /** this function exists purely for type safety */
+    /** note: this function exists purely for type safety */
     private generateTransition(
         oldBox: TEmailStateBoxKey,
         newBox: TEmailStateBoxKey,

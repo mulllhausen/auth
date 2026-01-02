@@ -21,6 +21,15 @@ body {
     margin: 2px 2px 0 2px;
     padding: 7px;
     background-color: #c6edff;
+
+    display: flex;
+    align-items: center; /* vertical centering */
+    gap: 6px;
+}
+.log-message {
+    flex: 1; /* take remaining space */
+    word-break: break-word;
+    line-height: 1.4;
 }
 pre.log-data {
     background-color: lightgray;
@@ -33,8 +42,8 @@ pre.log-data {
     display: none;
 }
 span.log-datetime {
-    float: right;
     font-size: 9px;
+    white-space: nowrap; /* prevents wrapping */
 }
 .fsm-chart {
     display: inline-block;

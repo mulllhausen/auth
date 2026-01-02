@@ -136,7 +136,7 @@ export type TWrapperSettings = {
 export type TAuthProviders = (typeof authProviders)[keyof typeof authProviders];
 
 export type TFirebaseWrapperStateDTO = {
-    successfullySentSignInLinkToEmail: boolean;
+    successfullySentSignInLinkToEmail?: boolean;
     errorMessage?: string;
 };
 
