@@ -51,12 +51,6 @@ export class EmailSignInFSMContext {
     private state: EmailSignInState;
     private logger: ((logItemInput: TLogItem) => void) | null;
 
-    // internal state data
-    public emailValue: string = "";
-    public passwordValue: string = "";
-    public anyEmail: boolean = false;
-    public anyPassword: boolean = false;
-
     // callbacks
     public callbackEnableLoginButton: ((enabled: boolean) => void) | null;
     public callbackEnableEmailInput: ((enabled: boolean) => void) | null;
@@ -165,19 +159,32 @@ abstract class EmailSignInState {
     protected saveInputValues(emailStateDTO?: TEmailStateDTO): void {
         this.setEmail(emailStateDTO?.inputEmailValue);
         this.setPassword(emailStateDTO?.inputPasswordValue);
-        this.context.anyEmail = this.context.emailValue.length > 0;
-        this.context.anyPassword = this.context.passwordValue.length > 0;
         this.log(
-            `${this.context.anyEmail ? "an" : "no"} email was entered and ` +
-                `${this.context.anyPassword ? "a" : "no"} password was entered`,
+            `${this.isAnyEmailEntered() ? "an" : "no"} email was entered and ` +
+                `${this.isAnyPasswordEntered() ? "a" : "no"} password was entered`,
         );
     }
 
     protected setEmail(input?: string): void {
-        if (input?.trim() != null) this.context.emailValue = input.trim();
+        if (input?.trim() != null) {
+            this.firebaseAuthService.EmailAddress = input.trim();
+        }
     }
+
     protected setPassword(input?: string): void {
-        if (input?.trim() != null) this.context.passwordValue = input.trim();
+        if (input?.trim() != null) {
+            this.firebaseAuthService.EmailPassword = input.trim();
+        }
+    }
+
+    protected isAnyEmailEntered(): boolean {
+        if (this.firebaseAuthService.EmailAddress == null) return false;
+        return this.firebaseAuthService.EmailAddress?.length > 0;
+    }
+
+    protected isAnyPasswordEntered(): boolean {
+        if (this.firebaseAuthService.EmailPassword == null) return false;
+        return this.firebaseAuthService.EmailPassword?.length > 0;
     }
 }
 
@@ -186,7 +193,7 @@ class IdleState extends EmailSignInState {
 
     public override async handle(emailStateDTO: TEmailStateDTO): Promise<void> {
         this.saveInputValues(emailStateDTO);
-        if (this.context.anyEmail || this.context.anyPassword) {
+        if (this.isAnyEmailEntered() || this.isAnyPasswordEntered()) {
             await this.context.transitionToAsync(
                 transitionToken,
                 UserInputtingTextState,
@@ -211,13 +218,13 @@ class UserInputtingTextState extends EmailSignInState {
 
     public override async handle(emailStateDTO: TEmailStateDTO): Promise<void> {
         this.saveInputValues(emailStateDTO);
-        if (!this.context.anyEmail && !this.context.anyPassword) {
+        if (!this.isAnyEmailEntered() && !this.isAnyPasswordEntered()) {
             await this.context.transitionToAsync(transitionToken, IdleState);
             return;
         }
 
         this.context.callbackEnableLoginButton?.(
-            this.context.anyEmail && this.context.anyPassword,
+            this.isAnyEmailEntered() && this.isAnyPasswordEntered(),
         );
 
         if (emailStateDTO?.isLoginClicked) {
@@ -232,7 +239,7 @@ class UserInputtingTextState extends EmailSignInState {
     public override onEnterSync(): void {
         this.context.callbackEnableEmailInput?.(true);
         this.context.callbackEnablePasswordInput?.(true);
-        if (this.context.anyEmail && this.context.anyPassword) {
+        if (this.isAnyEmailEntered() && this.isAnyPasswordEntered()) {
             this.context.callbackEnableLoginButton?.(true);
         }
     }
@@ -271,8 +278,6 @@ class SendingEmailToFirebaseState extends EmailSignInState {
         this.context.callbackEnableEmailInput?.(false);
         this.context.callbackEnablePasswordInput?.(false);
         this.context.callbackEnableLoginButton?.(false);
-        this.firebaseAuthService.EmailAddress = this.context.emailValue;
-        this.firebaseAuthService.EmailPassword = this.context.passwordValue;
         await this.firebaseAuthService.SendSignInLinkToEmail();
     }
 }
@@ -293,7 +298,7 @@ class BadEmailAddressState extends EmailSignInState {
 
     public override async handle(emailStateDTO: TEmailStateDTO): Promise<void> {
         this.saveInputValues(emailStateDTO);
-        if (this.context.anyEmail || this.context.anyPassword) {
+        if (this.isAnyEmailEntered() || this.isAnyPasswordEntered()) {
             await this.context.transitionToAsync(
                 transitionToken,
                 UserInputtingTextState,

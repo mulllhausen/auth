@@ -23,7 +23,7 @@ body {
     background-color: #c6edff;
 
     display: flex;
-    align-items: center; /* vertical centering */
+    align-items: center; /* vertically */
     gap: 6px;
 }
 .log-message {
@@ -43,7 +43,7 @@ pre.log-data {
 }
 span.log-datetime {
     font-size: 9px;
-    white-space: nowrap; /* prevents wrapping */
+    white-space: nowrap;
 }
 .fsm-chart {
     display: inline-block;
