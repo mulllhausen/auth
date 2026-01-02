@@ -24,8 +24,8 @@ export type TEmailStateDTO = Partial<TGUIStateDTO & TFirebaseWrapperStateDTO>;
 type TEmailSignInStateConstructorProps = {
     firebaseAuthService: FirebaseAuthService;
     context: EmailSignInFSMContext;
-    stateToSVGMapperService: StateToSVGMapperService;
-    logger: ((logItem: TLogItem) => void) | null;
+    stateToSVGMapperService?: StateToSVGMapperService;
+    logger?: (logItem: TLogItem) => void;
 };
 
 type TEmailSignInStateConstructor<
@@ -38,6 +38,8 @@ const emailFSMStateIDs = [
     "SendingEmailToFirebase",
     "WaitingForUserToClickLinkInEmail",
     "BadEmailAddress",
+    "SignInLinkOpenedOnSameBrowser",
+    "SignInLinkOpenedOnDifferentBrowser",
 ] as const;
 export type TEmailFSMStateID = (typeof emailFSMStateIDs)[number];
 
@@ -47,28 +49,28 @@ const transitionToken: unique symbol = Symbol("transitionToken");
 
 export class EmailSignInFSMContext {
     private firebaseAuthService: FirebaseAuthService;
-    private stateToSVGMapperService: StateToSVGMapperService;
+    private stateToSVGMapperService?: StateToSVGMapperService;
     private state: EmailSignInState;
-    private logger: ((logItemInput: TLogItem) => void) | null;
+    private logger?: (logItemInput: TLogItem) => void;
 
     // callbacks
-    public callbackEnableLoginButton: ((enabled: boolean) => void) | null;
-    public callbackEnableEmailInput: ((enabled: boolean) => void) | null;
-    public callbackEnablePasswordInput: ((enabled: boolean) => void) | null;
+    public callbackEnableLoginButton?: (enabled: boolean) => void;
+    public callbackEnableEmailInput?: (enabled: boolean) => void;
+    public callbackEnablePasswordInput?: (enabled: boolean) => void;
 
     constructor(props: {
         firebaseAuthService: FirebaseAuthService;
-        stateToSVGMapperService: StateToSVGMapperService;
-        logger: ((logItemInput: TLogItem) => void) | null;
-        callbackEnableLoginButton: ((enabled: boolean) => void) | null;
-        callbackEnableEmailInput: ((enabled: boolean) => void) | null;
-        callbackEnablePasswordInput: ((enabled: boolean) => void) | null;
+        stateToSVGMapperService?: StateToSVGMapperService;
+        logger?: (logItemInput: TLogItem) => void;
+        callbackEnableLoginButton?: (enabled: boolean) => void;
+        callbackEnableEmailInput?: (enabled: boolean) => void;
+        callbackEnablePasswordInput?: (enabled: boolean) => void;
     }) {
         this.firebaseAuthService = props.firebaseAuthService;
         this.stateToSVGMapperService = props.stateToSVGMapperService;
         this.logger = props.logger;
 
-        this.firebaseAuthService.setupStateChangedCallback(
+        this.firebaseAuthService.setupCallbackStateChanged(
             this.handle.bind(this),
         );
 
@@ -76,11 +78,13 @@ export class EmailSignInFSMContext {
         this.callbackEnableEmailInput = props.callbackEnableEmailInput;
         this.callbackEnablePasswordInput = props.callbackEnablePasswordInput;
         const shouldRunOnEnter = true;
+        // todo: get state from localstorage
         this.state = this.transitionToSync(
             transitionToken,
             IdleState, // init. a class is required.
             shouldRunOnEnter,
         );
+        this.firebaseAuthService.setupFirebaseListeners();
     }
 
     /** should always be called by an action external to this FSM */
@@ -106,7 +110,7 @@ export class EmailSignInFSMContext {
             logger: this.logger,
         });
 
-        this.stateToSVGMapperService.updateSvg(this.state.ID);
+        this.stateToSVGMapperService?.updateSvg(this.state.ID);
 
         const newStateName = this.state.constructor.name;
         this.logger?.({
@@ -136,8 +140,8 @@ abstract class EmailSignInState {
     public abstract readonly ID: TEmailFSMStateID;
     protected firebaseAuthService: FirebaseAuthService;
     protected context: EmailSignInFSMContext;
-    protected stateToSVGMapperService: StateToSVGMapperService;
-    protected logger: ((logItem: TLogItem) => void) | null = null;
+    protected stateToSVGMapperService?: StateToSVGMapperService;
+    protected logger?: (logItem: TLogItem) => void;
 
     constructor(props: TEmailSignInStateConstructorProps) {
         this.firebaseAuthService = props.firebaseAuthService;
@@ -193,6 +197,22 @@ class IdleState extends EmailSignInState {
 
     public override async handle(emailStateDTO: TEmailStateDTO): Promise<void> {
         this.saveInputValues(emailStateDTO);
+        if (emailStateDTO.userOpenedEmailLinkOnSameBrowser === true) {
+            await this.context.transitionToAsync(
+                transitionToken,
+                SignInLinkOpenedOnSameBrowserState,
+            );
+            return;
+        }
+
+        if (emailStateDTO.userOpenedEmailLinkOnSameBrowser === false) {
+            await this.context.transitionToAsync(
+                transitionToken,
+                SignInLinkOpenedOnDifferentBrowserState,
+            );
+            return;
+        }
+
         if (this.isAnyEmailEntered() || this.isAnyPasswordEntered()) {
             await this.context.transitionToAsync(
                 transitionToken,
@@ -286,7 +306,21 @@ class WaitingForUserToClickLinkInEmailState extends EmailSignInState {
     public override readonly ID = "WaitingForUserToClickLinkInEmail";
 
     public override async handle(emailStateDTO: TEmailStateDTO): Promise<void> {
-        //todo
+        if (emailStateDTO.userOpenedEmailLinkOnSameBrowser === true) {
+            await this.context.transitionToAsync(
+                transitionToken,
+                SignInLinkOpenedOnSameBrowserState,
+            );
+            return;
+        }
+
+        if (emailStateDTO.userOpenedEmailLinkOnSameBrowser === false) {
+            await this.context.transitionToAsync(
+                transitionToken,
+                SignInLinkOpenedOnDifferentBrowserState,
+            );
+            return;
+        }
     }
 
     public override onEnterSync(): void {}
@@ -316,4 +350,28 @@ class BadEmailAddressState extends EmailSignInState {
     public override async onEnterAsync(): Promise<void> {
         this.onEnterSync();
     }
+}
+
+class SignInLinkOpenedOnSameBrowserState extends EmailSignInState {
+    public override readonly ID = "SignInLinkOpenedOnSameBrowser";
+
+    public override async handle(
+        emailStateDTO: TEmailStateDTO,
+    ): Promise<void> {}
+
+    public override onEnterSync(): void {}
+
+    public override async onEnterAsync(): Promise<void> {}
+}
+
+class SignInLinkOpenedOnDifferentBrowserState extends EmailSignInState {
+    public override readonly ID = "SignInLinkOpenedOnDifferentBrowser";
+
+    public override async handle(
+        emailStateDTO: TEmailStateDTO,
+    ): Promise<void> {}
+
+    public override onEnterSync(): void {}
+
+    public override async onEnterAsync(): Promise<void> {}
 }

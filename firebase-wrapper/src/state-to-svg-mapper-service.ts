@@ -96,6 +96,26 @@ export class StateToSVGMapperService {
             ):
                 return "UserIsTypingAgain0";
 
+            case this.generateTransition(
+                "Idle0",
+                "SignInLinkOpenedOnSameBrowser0",
+            ):
+            case this.generateTransition(
+                "WaitingForUserToClickLinkInEmail0",
+                "SignInLinkOpenedOnSameBrowser0",
+            ):
+                return "UserClickedLinkInEmail0";
+
+            case this.generateTransition(
+                "Idle0",
+                "SignInLinkOpenedOnDifferentBrowser0",
+            ):
+            case this.generateTransition(
+                "WaitingForUserToClickLinkInEmail0",
+                "SignInLinkOpenedOnDifferentBrowser0",
+            ):
+                return "UserClickedLinkInEmail1";
+
             default:
                 return null;
         }
@@ -118,5 +138,8 @@ export class StateToSVGMapperService {
         SendingEmailToFirebase: "SendingEmailToFirebase0",
         WaitingForUserToClickLinkInEmail: "WaitingForUserToClickLinkInEmail0",
         BadEmailAddress: "BadEmailAddress0",
+        SignInLinkOpenedOnSameBrowser: "SignInLinkOpenedOnSameBrowser0",
+        SignInLinkOpenedOnDifferentBrowser:
+            "SignInLinkOpenedOnDifferentBrowser0",
     };
 }

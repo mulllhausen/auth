@@ -92,7 +92,6 @@ const guiLogger = new GUILogger({
 const wrapperSettings: TWrapperSettings = {
     logger: guiLogger.log.bind(guiLogger),
     loginButtonCSSClass: "button.login",
-    clearCachedUserButtonCSSClass: "button#clearCachedUser",
     signedInCallback,
     signedOutCallback,
     authProviderSettings: {
@@ -141,6 +140,13 @@ const emailSignInFSMContext = new EmailSignInFSMContext({
 
 document.addEventListener("DOMContentLoaded", () => {
     //populateEmailInput(firebaseAuthService.EmailAddress);
+    document
+        .querySelector("button#clearCachedUser")
+        ?.addEventListener(
+            "click",
+            firebaseAuthService.clearUserCache.bind(firebaseAuthService),
+        );
+
     document
         .querySelector("button#enableAllSVGElements")
         ?.addEventListener("click", testEmailFSMSVG);
