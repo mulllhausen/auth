@@ -53,7 +53,8 @@ import {
     FirebaseAuthService,
     TUserPlus,
 } from "./firebase-wrapper";
-import { GUILogger, LogItem } from "./gui-logger";
+import type { TLogItem } from "./gui-logger";
+import { GUILogger } from "./gui-logger";
 import { HTMLTemplateManager } from "./html-template-manager";
 import "./index.css";
 // import {
@@ -69,6 +70,12 @@ import {
     TSVGStateStatusValues,
 } from "./svg-flowchart-service";
 import { debounce } from "./utils";
+
+export type TGUIStateDTO = {
+    inputEmailValue?: string;
+    inputPasswordValue?: string;
+    isLoginClicked?: boolean;
+};
 
 const htmlTemplateManager = new HTMLTemplateManager(document);
 
@@ -257,7 +264,7 @@ async function handleEmailLogin(
 
 function signedInCallback(user: TUserPlus) {
     if (user.photoURL != null && user.photoURL !== "") {
-        const logItem: LogItem = {
+        const logItem: TLogItem = {
             logMessage: "image detected",
             imageURL: user.photoURL,
         };

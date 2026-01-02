@@ -10,38 +10,36 @@
 // it would be nice if the state machine could just be initialised and then take it from there - calling
 // all the methods it needs in the firebase wrapper to decide if it needs to transition
 
+import type { TGUIStateDTO } from ".";
+import type { TFirebaseWrapperStateDTO } from "./firebase-wrapper";
 import { FirebaseAuthService } from "./firebase-wrapper";
-import { LogItem } from "./gui-logger";
+import type { TLogItem } from "./gui-logger";
 import { StateToSVGMapperService } from "./state-to-svg-mapper-service";
 
 // #region consts and types
 
 /** this is the only DTO you need to pass data to the email state machine */
-export type TEmailStateDTO = {
-    inputEmailValue?: string;
-    inputPasswordValue?: string;
-    isLoginClicked?: boolean;
-};
+export type TEmailStateDTO = Partial<TGUIStateDTO & TFirebaseWrapperStateDTO>;
 
 type TEmailSignInStateConstructorProps = {
     firebaseAuthService: FirebaseAuthService;
     context: EmailSignInFSMContext;
     stateToSVGMapperService: StateToSVGMapperService;
-    logger: ((logItem: LogItem) => void) | null;
+    logger: ((logItem: TLogItem) => void) | null;
 };
 
 type TEmailSignInStateConstructor<
     TState extends EmailSignInState = EmailSignInState,
 > = new (props: TEmailSignInStateConstructorProps) => TState;
 
-const emailFSMID = [
+const emailFSMStateIDs = [
     "Idle",
     "UserInputtingText",
     "SendingEmailToFirebase",
     "WaitingForUserToClickLinkInEmail",
     "BadEmailAddress",
 ] as const;
-export type TEmailFSMID = (typeof emailFSMID)[number];
+export type TEmailFSMStateID = (typeof emailFSMStateIDs)[number];
 
 const transitionToken: unique symbol = Symbol("transitionToken");
 
@@ -51,7 +49,7 @@ export class EmailSignInFSMContext {
     private firebaseAuthService: FirebaseAuthService;
     private stateToSVGMapperService: StateToSVGMapperService;
     private state: EmailSignInState;
-    private logger: ((logItemInput: LogItem) => void) | null;
+    private logger: ((logItemInput: TLogItem) => void) | null;
 
     // internal state data
     public emailValue: string = "";
@@ -67,7 +65,7 @@ export class EmailSignInFSMContext {
     constructor(props: {
         firebaseAuthService: FirebaseAuthService;
         stateToSVGMapperService: StateToSVGMapperService;
-        logger: ((logItemInput: LogItem) => void) | null;
+        logger: ((logItemInput: TLogItem) => void) | null;
         callbackEnableLoginButton: ((enabled: boolean) => void) | null;
         callbackEnableEmailInput: ((enabled: boolean) => void) | null;
         callbackEnablePasswordInput: ((enabled: boolean) => void) | null;
@@ -75,6 +73,11 @@ export class EmailSignInFSMContext {
         this.firebaseAuthService = props.firebaseAuthService;
         this.stateToSVGMapperService = props.stateToSVGMapperService;
         this.logger = props.logger;
+
+        this.firebaseAuthService.setupStateChangedCallback(
+            this.handle.bind(this),
+        );
+
         this.callbackEnableLoginButton = props.callbackEnableLoginButton;
         this.callbackEnableEmailInput = props.callbackEnableEmailInput;
         this.callbackEnablePasswordInput = props.callbackEnablePasswordInput;
@@ -86,6 +89,7 @@ export class EmailSignInFSMContext {
         );
     }
 
+    /** should always be called by an action external to this FSM */
     public async handle(emailStateDTO: TEmailStateDTO): Promise<void> {
         await this.state.handle(emailStateDTO);
     }
@@ -134,11 +138,11 @@ export class EmailSignInFSMContext {
 }
 
 abstract class EmailSignInState {
-    public abstract readonly ID: TEmailFSMID;
+    public abstract readonly ID: TEmailFSMStateID;
     protected firebaseAuthService: FirebaseAuthService;
     protected context: EmailSignInFSMContext;
     protected stateToSVGMapperService: StateToSVGMapperService;
-    protected logger: ((logItem: LogItem) => void) | null = null;
+    protected logger: ((logItem: TLogItem) => void) | null = null;
 
     constructor(props: TEmailSignInStateConstructorProps) {
         this.firebaseAuthService = props.firebaseAuthService;
@@ -241,22 +245,7 @@ class SendingEmailToFirebaseState extends EmailSignInState {
     public override readonly ID = "SendingEmailToFirebase";
 
     public override async handle(emailStateDTO: TEmailStateDTO): Promise<void> {
-        this.log(`no actions are allowed until firebase has sent the email`);
-    }
-
-    public override onEnterSync(): void {
-        // leave empty
-    }
-
-    public override async onEnterAsync(): Promise<void> {
-        this.context.callbackEnableEmailInput?.(false);
-        this.context.callbackEnablePasswordInput?.(false);
-        this.context.callbackEnableLoginButton?.(false);
-        debugger;
-        this.firebaseAuthService.EmailAddress = this.context.emailValue;
-        this.firebaseAuthService.EmailPassword = this.context.passwordValue;
-        const success = await this.firebaseAuthService.SendSignInLinkToEmail();
-        if (success) {
+        if (emailStateDTO.successfullySentSignInLinkToEmail) {
             await this.context.transitionToAsync(
                 transitionToken,
                 WaitingForUserToClickLinkInEmailState,
@@ -267,6 +256,20 @@ class SendingEmailToFirebaseState extends EmailSignInState {
                 BadEmailAddressState,
             );
         }
+    }
+
+    public override onEnterSync(): void {
+        // leave empty when onEnterAsync actually does something asynchronously
+    }
+
+    public override async onEnterAsync(): Promise<void> {
+        this.context.callbackEnableEmailInput?.(false);
+        this.context.callbackEnablePasswordInput?.(false);
+        this.context.callbackEnableLoginButton?.(false);
+        debugger;
+        this.firebaseAuthService.EmailAddress = this.context.emailValue;
+        this.firebaseAuthService.EmailPassword = this.context.passwordValue;
+        await this.firebaseAuthService.SendSignInLinkToEmail();
     }
 }
 

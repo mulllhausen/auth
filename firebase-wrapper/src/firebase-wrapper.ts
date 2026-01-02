@@ -31,7 +31,7 @@ import {
     UserCredential,
 } from "firebase/auth";
 import type { TProcessEnv } from "./dotenv";
-import { LogItem } from "./gui-logger";
+import { TLogItem } from "./gui-logger";
 //import {} from "./state-machine-email";
 
 // #endregion imports
@@ -104,7 +104,7 @@ export type TFirebaseDependencies = {
 };
 
 export type TWrapperSettings = {
-    logger: (logItemInput: LogItem) => void;
+    logger: (logItemInput: TLogItem) => void;
     //emailStateChangedCallback: (newState: EmailSignInState) => void;
     // emailStateChangedCallback: (
     //     newState: keyof typeof emailSignInStates,
@@ -134,6 +134,11 @@ export type TWrapperSettings = {
 };
 
 export type TAuthProviders = (typeof authProviders)[keyof typeof authProviders];
+
+export type TFirebaseWrapperStateDTO = {
+    successfullySentSignInLinkToEmail: boolean;
+    errorMessage?: string;
+};
 
 export type TDefaultAction = null;
 
@@ -167,10 +172,10 @@ export type TCRUDValues = (typeof CRUD)[keyof typeof CRUD];
 // todo: single responsibility principle. this service should not know anything about
 // state machines. it should just contain a bunch of method-wrappers that make taking
 // action more simple and uniform
-
+// assumption: this class is not a singleton. it should be instantiated per provider
 export class FirebaseAuthService {
     private settings: TWrapperSettings;
-    private logger: (logItem: LogItem) => void;
+    private logger: (logItem: TLogItem) => void;
     private env: TProcessEnv;
     public Auth: Auth;
     private emailAddress!: string | null;
@@ -186,6 +191,9 @@ export class FirebaseAuthService {
     // init but may be overriden in constructor
     //private emailState: EmailSignInState = new EmailSignInFSM.Idle();
 
+    private stateChangedCallback:
+        | ((dto: TFirebaseWrapperStateDTO) => Promise<void>)
+        | null = null;
     //private emailStateChangedCallback: (newState: EmailSignInState) => void;
     // private emailStateChangedCallback: (
     //     newState: keyof typeof emailSignInStates,
@@ -306,6 +314,12 @@ export class FirebaseAuthService {
                     `action ${action} is not allowed in getEventListener()`,
                 );
         }
+    }
+
+    public setupStateChangedCallback(
+        stateChangedCallback: (dto: TFirebaseWrapperStateDTO) => Promise<void>,
+    ) {
+        this.stateChangedCallback = stateChangedCallback;
     }
 
     private async setupFirebaseListeners(): Promise<void> {
@@ -510,21 +524,34 @@ export class FirebaseAuthService {
     //     await this.emailState.Initialise();
     // }
 
-    public async SendSignInLinkToEmail(): Promise<boolean> {
+    public async SendSignInLinkToEmail(): Promise<void> {
         try {
+            this.logger?.({
+                logMessage: `instructing firebase to send sign-in link`,
+            });
             await sendSignInLinkToEmail(
                 this.Auth,
                 this.EmailAddress!,
                 this.EmailActionCodeSettings,
             );
-            return true;
+            this.logger?.({ logMessage: `successfully sent sign-in link` });
+
+            await this.stateChangedCallback?.({
+                successfullySentSignInLinkToEmail: true,
+            });
             //this.callEmailAction(emailSignInActions.FirebaseOKResponse);
         } catch (error) {
-            // this.callEmailAction(
-            //     emailSignInActions.FirebaseErrorResponse,
-            //     error,
-            // );
-            return false;
+            const error_ = error as Error;
+            // this.callEmailAction(emailSignInActions.FirebaseErrorResponse, error);
+            this.logger?.({
+                logMessage:
+                    `firebase failed to send sign-in link. ` +
+                    `error message: "${error_.message}"`,
+            });
+            await this.stateChangedCallback?.({
+                successfullySentSignInLinkToEmail: false,
+                errorMessage: error_.message,
+            });
         }
     }
 

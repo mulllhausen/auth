@@ -8,3 +8,12 @@ it seems like i'm deviating from the goal, but i do need to test this.
 
 ok then. new requirement: a querystring flag to put the svg in test mode:
 ?svg-test=1
+
+
+i have 2 services:
+1. FirebaseAuthService - a wrapper around the firebase library
+2. EmailSignInFSMContext - finite state machine that contains business logic for transitioning between states for signing in. this service calls the firebase wrapper and commands it to take actions
+
+the problem is that the firebase library has event listeners that get triggered when logins change state. for example onAuthStateChanged(). if there is a change of state from the firebase library then the finite state machine should be the one to decide which state to change to. this implies that the firebase wrapper (FirebaseAuthService) will need to call EmailSignInFSMContext. so i have a situation where two services call each other. is this acceptable?
+
+solution: fsm controls firebase wrapper and subscribes to its events during setup.

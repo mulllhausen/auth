@@ -1,6 +1,6 @@
 import { HTMLTemplateManager } from "./html-template-manager";
 
-export interface LogItem {
+export type TLogItem = {
     logMessage: string;
     logData?: any;
     safeLocalStorageData?: any;
@@ -8,7 +8,7 @@ export interface LogItem {
     logDateTime?: string | null;
     color?: string | null;
     fromLocalStorage?: boolean;
-}
+};
 
 export class GUILogger {
     private _document: Document;
@@ -71,7 +71,7 @@ export class GUILogger {
             this._window.localStorage.getItem(this.localStorageLogstreamKey);
         if (savedLogstreamJSON == null) return this;
 
-        const savedLogstreamItems: LogItem[] = JSON.parse(savedLogstreamJSON);
+        const savedLogstreamItems: TLogItem[] = JSON.parse(savedLogstreamJSON);
         for (const logItem of savedLogstreamItems) {
             logItem.fromLocalStorage = true;
             this.log(logItem);
@@ -85,7 +85,7 @@ export class GUILogger {
         this._window.localStorage.removeItem(this.localStorageColorKey);
     }
 
-    public log(logItemInput: LogItem): void {
+    public log(logItemInput: TLogItem): void {
         const logItemElement: HTMLElement =
             this.htmlTemplateManager.cloneTemplateSingle(this.logItemCSS);
 
@@ -144,7 +144,7 @@ export class GUILogger {
         return `${hours}:${minutes}:${seconds}.${milliseconds}`;
     }
 
-    public saveLogToLocalStorage(logItem: LogItem): void {
+    public saveLogToLocalStorage(logItem: TLogItem): void {
         const savedLogstreamJSON: string | null =
             this._window.localStorage.getItem(this.localStorageLogstreamKey);
         if (savedLogstreamJSON == null) {
