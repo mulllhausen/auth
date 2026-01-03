@@ -116,6 +116,36 @@ export class StateToSVGMapperService {
             ):
                 return "UserClickedLinkInEmail1";
 
+            case this.generateTransition(
+                "SignInLinkOpenedOnSameBrowser0",
+                "AuthorisingViaFirebase0",
+            ):
+                return "AutomaticallySubmitToFirebase0";
+
+            case this.generateTransition(
+                "SignInLinkOpenedOnDifferentBrowser0",
+                "WaitingForEmailAddressInGui0",
+            ):
+                return "RequestEmailAddressFromUserAgain0";
+
+            case this.generateTransition(
+                "WaitingForEmailAddressInGui0",
+                "SendingEmailToFirebase0",
+            ):
+                return "DifferentEmailAddress0";
+
+            case this.generateTransition(
+                "WaitingForEmailAddressInGui0",
+                "AuthorisingViaFirebase0",
+            ):
+                return "SameEmailAddress0";
+
+            case this.generateTransition(
+                "AuthorisingViaFirebase0",
+                "SignedIn0",
+            ):
+                return "OkResponse0";
+
             default:
                 return null;
         }
@@ -141,5 +171,8 @@ export class StateToSVGMapperService {
         SignInLinkOpenedOnSameBrowser: "SignInLinkOpenedOnSameBrowser0",
         SignInLinkOpenedOnDifferentBrowser:
             "SignInLinkOpenedOnDifferentBrowser0",
+        AuthorisingViaFirebase: "AuthorisingViaFirebase0",
+        WaitingForReEnteredEmail: "WaitingForEmailAddressInGui0",
+        SignedIn: "SignedIn0",
     };
 }

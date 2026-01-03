@@ -138,6 +138,7 @@ export type TFirebaseWrapperStateDTO = {
     successfullySentSignInLinkToEmail?: boolean;
     urlIsAnEmailSignInLink?: boolean;
     userOpenedEmailLinkOnSameBrowser?: boolean;
+    userCredentialFoundViaEmail?: boolean;
     errorMessage?: string;
 };
 
@@ -594,7 +595,8 @@ export class FirebaseAuthService {
     //     }
     // }
 
-    private async checkIfURLIsASignInWithEmailLink(): Promise<void> {
+    public async checkIfURLIsASignInWithEmailLink(): Promise<void> {
+        debugger;
         if (!isSignInWithEmailLink(this.Auth, window.location.href)) {
             this.log(
                 `just checked: the current page url is not a ` +
@@ -642,45 +644,51 @@ export class FirebaseAuthService {
     //         ].loginButtonClicked;
     // }
 
-    // /** email sign-in step 7/9 */
-    // private async handleSignInWithEmailLink(): Promise<void> {
-    //     try {
-    //         const result: UserCredential = await signInWithEmailLink(
-    //             this.Auth,
-    //             this.emailAddress!,
-    //             window.location.href,
-    //         );
-    //         if (result) {
-    //             this.logger?.({
-    //                 logMessage: "user signed in with email link",
-    //                 logData: result,
-    //             });
-    //         } else {
-    //             this.logger?.({
-    //                 logMessage: "user was not signed in with email link",
-    //                 logData: result,
-    //             });
-    //         }
+    public async handleSignInWithEmailLink(): Promise<void> {
+        try {
+            const userCredentialResult: UserCredential =
+                await signInWithEmailLink(
+                    this.Auth,
+                    this.emailAddress!,
+                    window.location.href,
+                );
+            if (userCredentialResult) {
+                this.logger?.({
+                    logMessage: "user signed in with email link",
+                    logData: userCredentialResult,
+                });
+                this.callbackStateChanged?.({
+                    userCredentialFoundViaEmail: true,
+                });
+            } else {
+                this.logger?.({
+                    logMessage: "user was not signed in with email link",
+                    logData: userCredentialResult,
+                });
+                this.callbackStateChanged?.({
+                    userCredentialFoundViaEmail: false,
+                });
+            }
 
-    //         // email sign-in step 8/9
-    //         if (this.settings.clearEmailAfterSignInCallback(this)) {
-    //             this.clearEmailCache();
-    //         }
+            // email sign-in step 8/9
+            // if (this.settings.clearEmailAfterSignInCallback(this)) {
+            //     this.clearEmailCache();
+            // }
 
-    //         // You can access the new user via result.user
-    //         // Additional user info profile not available via:
-    //         // result.additionalUserInfo.profile == null
-    //         // You can check if the user is new or existing:
-    //         // result.additionalUserInfo.isNewUser
+            // You can access the new user via result.user
+            // Additional user info profile not available via:
+            // result.additionalUserInfo.profile == null
+            // You can check if the user is new or existing:
+            // result.additionalUserInfo.isNewUser
 
-    //         // email sign-in step 9/9
-    //         this.restoreEmailLoginButtonClicked();
-    //     } catch (error) {
-    //         console.log(error);
-    //         // Some error occurred, you can inspect the code: error.code
-    //         // Common errors could be invalid email and invalid or expired OTPs.
-    //     }
-    // }
+            // email sign-in step 9/9
+            //this.restoreEmailLoginButtonClicked();
+        } catch (error) {
+            this.log((error as Error).message);
+            // Some error occurred, you can inspect the code: error.code
+            // Common errors could be invalid email and invalid or expired OTPs.
+        }
+    }
 
     // /** email sign-in step 9/9 */
     // private restoreEmailLoginButtonClicked(): void {

@@ -137,6 +137,7 @@ const emailSignInFSMContext = new EmailSignInFSMContext({
     callbackEnableLoginButton,
     callbackEnableEmailInput,
     callbackEnablePasswordInput,
+    callbackShowInstructionsToReEnterEmail,
 });
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -246,6 +247,12 @@ function callbackEnableEmailInput(enabled: boolean): void {
 function callbackEnablePasswordInput(enabled: boolean): void {
     document.querySelector<HTMLInputElement>("input.password")!.disabled =
         !enabled;
+}
+
+function callbackShowInstructionsToReEnterEmail(enabled: boolean): void {
+    document.querySelector<HTMLInputElement>(
+        ".re-enter-email-instructions",
+    )!.style.display = enabled ? "block" : "none";
 }
 
 async function handleEmailLogin(
