@@ -186,7 +186,6 @@ export class FirebaseAuthService {
     public UseLinkInsteadOfPassword: boolean = false;
     public EmailPassword: string | null = null;
     public EmailActionCodeSettings: ActionCodeSettings;
-    //private localStorageEmailState = "emailState";
     private localStorageEmailAddressKey = "emailAddress";
     private localStorageCachedUserKey = "cachedUser";
     private hiddenMessage: string =
@@ -324,7 +323,7 @@ export class FirebaseAuthService {
 
     public async setupFirebaseListeners(): Promise<void> {
         onAuthStateChanged(this.Auth, this.authStateChanged.bind(this));
-        await this.checkIfURLIsASignInWithEmailLink();
+        //await this.checkIfURLIsASignInWithEmailLink();
         await this.handleGetRedirectResult();
     }
 

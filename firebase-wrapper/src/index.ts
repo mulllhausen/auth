@@ -130,6 +130,7 @@ const stateToSVGMapperService = new StateToSVGMapperService({
 });
 
 const emailSignInFSMContext = new EmailSignInFSMContext({
+    window,
     firebaseAuthService,
     stateToSVGMapperService,
     logger: guiLogger.log.bind(guiLogger),

@@ -48,10 +48,23 @@ const transitionToken: unique symbol = Symbol("transitionToken");
 // #endregion consts and types
 
 export class EmailSignInFSMContext {
+    private window_: Window & typeof globalThis;
     private firebaseAuthService: FirebaseAuthService;
     private stateToSVGMapperService?: StateToSVGMapperService;
     private state: EmailSignInState;
     private logger?: (logItemInput: TLogItem) => void;
+    private localStorageEmailState = "emailState";
+
+    public stateMap: Record<TEmailFSMStateID, TEmailSignInStateConstructor> = {
+        Idle: IdleState,
+        UserInputtingText: UserInputtingTextState,
+        SendingEmailToFirebase: SendingEmailToFirebaseState,
+        WaitingForUserToClickLinkInEmail: WaitingForUserToClickLinkInEmailState,
+        BadEmailAddress: BadEmailAddressState,
+        SignInLinkOpenedOnSameBrowser: SignInLinkOpenedOnSameBrowserState,
+        SignInLinkOpenedOnDifferentBrowser:
+            SignInLinkOpenedOnDifferentBrowserState,
+    };
 
     // callbacks
     public callbackEnableLoginButton?: (enabled: boolean) => void;
@@ -59,6 +72,7 @@ export class EmailSignInFSMContext {
     public callbackEnablePasswordInput?: (enabled: boolean) => void;
 
     constructor(props: {
+        window: Window & typeof globalThis;
         firebaseAuthService: FirebaseAuthService;
         stateToSVGMapperService?: StateToSVGMapperService;
         logger?: (logItemInput: TLogItem) => void;
@@ -66,6 +80,8 @@ export class EmailSignInFSMContext {
         callbackEnableEmailInput?: (enabled: boolean) => void;
         callbackEnablePasswordInput?: (enabled: boolean) => void;
     }) {
+        debugger;
+        this.window_ = props.window;
         this.firebaseAuthService = props.firebaseAuthService;
         this.stateToSVGMapperService = props.stateToSVGMapperService;
         this.logger = props.logger;
@@ -77,14 +93,16 @@ export class EmailSignInFSMContext {
         this.callbackEnableLoginButton = props.callbackEnableLoginButton;
         this.callbackEnableEmailInput = props.callbackEnableEmailInput;
         this.callbackEnablePasswordInput = props.callbackEnablePasswordInput;
+
+        const emailSignInStateConstructor = this.restoreStateFromLocalstorage();
         const shouldRunOnEnter = true;
-        // todo: get state from localstorage
         this.state = this.transitionToSync(
             transitionToken,
-            IdleState, // init. a class is required.
+            emailSignInStateConstructor, // init. a class is required.
             shouldRunOnEnter,
         );
         this.firebaseAuthService.setupFirebaseListeners();
+        //todo: await this.firebaseAuthService.checkIfURLIsASignInWithEmailLink();
     }
 
     /** should always be called by an action external to this FSM */
@@ -92,16 +110,16 @@ export class EmailSignInFSMContext {
         await this.state.handle(emailStateDTO);
     }
 
-    // call either transitionToSync() or transitionToAsync() but not both
-    public transitionToSync<T extends EmailSignInState>(
+    // note: call either transitionToSync() or transitionToAsync() but not both
+    public transitionToSync<TState extends EmailSignInState>(
         token: typeof transitionToken, // prevent external access
-        stateClass: TEmailSignInStateConstructor<T>,
+        stateClass: TEmailSignInStateConstructor<TState>,
         shouldRunOnEnter: boolean = false,
     ): EmailSignInState {
         if (token !== transitionToken) {
             throw new Error(`incorrect transition token`);
         }
-        const oldStateName = this.state ? this.state.constructor.name : "null";
+        const oldStateID = this.state ? this.state.ID : "null";
 
         this.state = new stateClass({
             firebaseAuthService: this.firebaseAuthService,
@@ -112,11 +130,10 @@ export class EmailSignInFSMContext {
 
         this.stateToSVGMapperService?.updateSvg(this.state.ID);
 
-        const newStateName = this.state.constructor.name;
+        const newStateID = this.state.ID;
+        this.backupStateToLocalstorage(newStateID);
         this.logger?.({
-            logMessage:
-                `transitioned email state from ` +
-                `<i>${oldStateName}</i> to <i>${newStateName}</i>`,
+            logMessage: `transitioned email state from <i>${oldStateID}</i> to <i>${newStateID}</i>`,
         });
 
         if (shouldRunOnEnter) {
@@ -125,14 +142,29 @@ export class EmailSignInFSMContext {
         return this.state;
     }
 
-    public async transitionToAsync<T extends EmailSignInState>(
+    public async transitionToAsync<TState extends EmailSignInState>(
         token: typeof transitionToken, // prevent external access
-        stateClass: TEmailSignInStateConstructor<T>,
+        stateClass: TEmailSignInStateConstructor<TState>,
     ): Promise<EmailSignInState> {
         const shouldRunOnEnter = false;
         this.state = this.transitionToSync(token, stateClass, shouldRunOnEnter);
         await this.state.onEnterAsync();
         return this.state;
+    }
+
+    private restoreStateFromLocalstorage(): TEmailSignInStateConstructor {
+        const emailFSMStateID = this.window_.localStorage.getItem(
+            this.localStorageEmailState,
+        ) as TEmailFSMStateID | null;
+        if (emailFSMStateID == null) return IdleState;
+        return this.stateMap[emailFSMStateID];
+    }
+
+    private backupStateToLocalstorage(emailFSMStateID: TEmailFSMStateID): void {
+        this.window_.localStorage.setItem(
+            this.localStorageEmailState,
+            emailFSMStateID as string,
+        );
     }
 }
 
