@@ -43,6 +43,7 @@ const emailFSMStateIDs = [
     "AuthorisingViaFirebase",
     "WaitingForReEnteredEmail",
     "SignedIn",
+    "AuthFailed",
 ] as const;
 export type TEmailFSMStateID = (typeof emailFSMStateIDs)[number];
 
@@ -70,6 +71,7 @@ export class EmailSignInFSMContext {
         AuthorisingViaFirebase: AuthorisingViaFirebaseState,
         WaitingForReEnteredEmail: WaitingForUserToClickLinkInEmailState,
         SignedIn: SignedInState,
+        AuthFailed: AuthFailedState,
     };
 
     // callbacks
@@ -405,9 +407,21 @@ class BadEmailAddressState extends EmailSignInState {
 class SignInLinkOpenedOnSameBrowserState extends EmailSignInState {
     public override readonly ID = "SignInLinkOpenedOnSameBrowser";
 
-    public override async handle(
-        emailStateDTO: TEmailStateDTO,
-    ): Promise<void> {}
+    public override async handle(emailStateDTO: TEmailStateDTO): Promise<void> {
+        if (emailStateDTO.successfullySentSignInRequestToFirebase == null) {
+            return;
+        } else if (emailStateDTO.successfullySentSignInRequestToFirebase) {
+            await this.context.transitionToAsync(
+                transitionToken,
+                AuthorisingViaFirebaseState,
+            );
+        } else {
+            await this.context.transitionToAsync(
+                transitionToken,
+                UserInputtingTextState,
+            );
+        }
+    }
 
     public override onEnterSync(): void {
         this.context.callbackEnableEmailInput?.(false);
@@ -418,6 +432,7 @@ class SignInLinkOpenedOnSameBrowserState extends EmailSignInState {
 
     public override async onEnterAsync(): Promise<void> {
         this.onEnterSync();
+        this.firebaseAuthService.handleSignInWithEmailLink();
     }
 }
 
@@ -470,6 +485,20 @@ class WaitingForReEnteredEmailState extends EmailSignInState {
 
 class SignedInState extends EmailSignInState {
     public override readonly ID = "SignedIn";
+
+    public override async handle(
+        emailStateDTO: TEmailStateDTO,
+    ): Promise<void> {}
+
+    public override onEnterSync(): void {}
+
+    public override async onEnterAsync(): Promise<void> {
+        this.onEnterSync();
+    }
+}
+
+class AuthFailedState extends EmailSignInState {
+    public override readonly ID = "AuthFailed";
 
     public override async handle(
         emailStateDTO: TEmailStateDTO,

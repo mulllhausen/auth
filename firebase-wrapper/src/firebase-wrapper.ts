@@ -138,6 +138,7 @@ export type TFirebaseWrapperStateDTO = {
     successfullySentSignInLinkToEmail?: boolean;
     urlIsAnEmailSignInLink?: boolean;
     userOpenedEmailLinkOnSameBrowser?: boolean;
+    successfullySentSignInRequestToFirebase?: boolean;
     userCredentialFoundViaEmail?: boolean;
     errorMessage?: string;
 };
@@ -645,6 +646,7 @@ export class FirebaseAuthService {
     // }
 
     public async handleSignInWithEmailLink(): Promise<void> {
+        debugger;
         try {
             const userCredentialResult: UserCredential =
                 await signInWithEmailLink(
@@ -652,6 +654,9 @@ export class FirebaseAuthService {
                     this.emailAddress!,
                     window.location.href,
                 );
+            this.callbackStateChanged?.({
+                successfullySentSignInRequestToFirebase: true,
+            });
             if (userCredentialResult) {
                 this.logger?.({
                     logMessage: "user signed in with email link",
@@ -685,6 +690,9 @@ export class FirebaseAuthService {
             //this.restoreEmailLoginButtonClicked();
         } catch (error) {
             this.log((error as Error).message);
+            this.callbackStateChanged?.({
+                successfullySentSignInRequestToFirebase: false,
+            });
             // Some error occurred, you can inspect the code: error.code
             // Common errors could be invalid email and invalid or expired OTPs.
         }

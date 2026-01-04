@@ -146,6 +146,21 @@ export class StateToSVGMapperService {
             ):
                 return "OkResponse0";
 
+            case this.generateTransition(
+                "AuthorisingViaFirebase0",
+                "AuthFailed0",
+            ):
+                return "Fail0";
+
+            case this.generateTransition(
+                "AuthFailed0",
+                "AuthorisingViaFirebase0",
+            ):
+                return "TryAgain0";
+
+            case this.generateTransition("AuthFailed0", "Idle0"):
+                return "Restart0";
+
             default:
                 return null;
         }
@@ -174,5 +189,6 @@ export class StateToSVGMapperService {
         AuthorisingViaFirebase: "AuthorisingViaFirebase0",
         WaitingForReEnteredEmail: "WaitingForEmailAddressInGui0",
         SignedIn: "SignedIn0",
+        AuthFailed: "AuthFailed0",
     };
 }
