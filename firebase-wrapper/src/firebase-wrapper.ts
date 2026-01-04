@@ -193,6 +193,12 @@ export class FirebaseAuthService {
     private localStorageCachedUserKey = "cachedUser";
     private hiddenMessage: string =
         "not stored in localStorage to prevent xss attacks";
+    public signedInStatus: Record<keyof typeof authProviders, boolean> = {
+        Email: false,
+        Google: false,
+        Facebook: false,
+        GitHub: false,
+    };
 
     // init but may be overriden in constructor
     //private emailState: EmailSignInState = new EmailSignInFSM.Idle();
@@ -332,7 +338,6 @@ export class FirebaseAuthService {
 
     public async setupFirebaseListeners(): Promise<void> {
         onAuthStateChanged(this.Auth, this.authStateChanged.bind(this));
-        //await this.checkIfURLIsASignInWithEmailLink();
         await this.handleGetRedirectResult();
     }
 
@@ -526,7 +531,6 @@ export class FirebaseAuthService {
     }
 
     public async handleSignInWithEmailLink(): Promise<void> {
-        debugger;
         try {
             const userCredentialResult: UserCredential =
                 await signInWithEmailLink(
@@ -542,6 +546,7 @@ export class FirebaseAuthService {
                     imageURL: userCredentialResult.user.photoURL,
                 });
                 this.cacheUser(userCredentialResult.user);
+                this.signedInStatus["Email"] = true;
                 this.callbackStateChanged?.({
                     userCredentialFoundViaEmail: true,
                 });

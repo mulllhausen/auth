@@ -147,7 +147,7 @@ document.addEventListener("DOMContentLoaded", () => {
             firebaseAuthService.clearUserCache.bind(firebaseAuthService);
             firebaseAuthService.deleteFirebaseQuerystringParams();
             emailSignInFSMContext.deleteStateFromLocalstorage();
-            await emailSignInFSMContext.setup();
+            await emailSignInFSMContext.handle({ emailDataDeleted: true });
         });
 
     document

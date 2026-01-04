@@ -114,8 +114,6 @@ export class EmailSignInFSMContext {
             emailSignInStateConstructor, // init. a class is required.
         );
         await this.firebaseAuthService.checkIfURLIsASignInWithEmailLink();
-        // not needed for email?
-        //this.firebaseAuthService.setupFirebaseListeners();
     }
 
     /** should always be called by an action external to this FSM */
@@ -478,7 +476,7 @@ class SignedInState extends EmailSignInState {
 
     public override async handle(emailStateDTO: TEmailStateDTO): Promise<void> {
         // this.firebaseAuthService.logout();
-        if (emailStateDTO.isLogoutClicked) {
+        if (emailStateDTO.isLogoutClicked || emailStateDTO.emailDataDeleted) {
             await this.context.transitionTo(transitionToken, IdleState);
         }
     }
