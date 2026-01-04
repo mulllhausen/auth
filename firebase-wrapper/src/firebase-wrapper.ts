@@ -564,13 +564,12 @@ export class FirebaseAuthService {
     }
 
     public async checkIfURLIsASignInWithEmailLink(): Promise<void> {
-        debugger;
         if (!isSignInWithEmailLink(this.Auth, this.window_.location.href)) {
             this.log(
                 `just checked: the current page url is not a ` +
                     `sign-in-with-email-link`,
             );
-            //this.callbackStateChanged?.({ urlIsAnEmailSignInLink: false });
+            // note: do not call this.callbackStateChanged() here
             return;
         }
 
@@ -586,12 +585,6 @@ export class FirebaseAuthService {
                 userOpenedEmailLinkOnSameBrowser: false,
             });
             return;
-
-            // email sign-in step 4/9
-            //this.backupEmailLoginButtonClicked();
-
-            // email sign-in step 5/9
-            //this.settings.reenterEmailAddressCallback(this);
         }
 
         this.log(`the user has opened the email link on the same browser.`);
@@ -599,17 +592,7 @@ export class FirebaseAuthService {
             userOpenedEmailLinkOnSameBrowser: true,
         });
         return;
-
-        //await this.emailSignInStateMachine();
     }
-
-    // /** email sign-in step 4/9 */
-    // private backupEmailLoginButtonClicked(): void {
-    //     this.backedUpEmailLoginButtonClicked =
-    //         this.settings.authProviderSettings[
-    //             authProviders.Email
-    //         ].loginButtonClicked;
-    // }
 
     public async handleSignInWithEmailLink(): Promise<void> {
         debugger;

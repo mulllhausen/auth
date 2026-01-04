@@ -112,6 +112,7 @@ export class EmailSignInFSMContext {
             transitionToken,
             emailSignInStateConstructor, // init. a class is required.
         );
+        await this.firebaseAuthService.checkIfURLIsASignInWithEmailLink();
         // not needed for email?
         //this.firebaseAuthService.setupFirebaseListeners();
     }
@@ -259,9 +260,12 @@ class IdleState extends EmailSignInState {
             this.firebaseAuthService.EmailAddress,
         );
         this.context.callbackEnablePasswordInput?.(true);
-        this.context.callbackEnableLoginButton?.(false);
+
+        const emailAndPasswordEntered =
+            this.isAnyEmailEntered() && this.isAnyPasswordEntered();
+        this.context.callbackEnableLoginButton?.(emailAndPasswordEntered);
+
         this.context.callbackShowInstructionsToReEnterEmail?.(false);
-        await this.firebaseAuthService.checkIfURLIsASignInWithEmailLink();
     }
 }
 
@@ -295,7 +299,6 @@ class UserInputtingTextState extends EmailSignInState {
             this.context.callbackEnableLoginButton?.(true);
         }
         this.context.callbackShowInstructionsToReEnterEmail?.(false);
-        await this.firebaseAuthService.checkIfURLIsASignInWithEmailLink();
     }
 }
 
@@ -352,7 +355,6 @@ class WaitingForUserToClickLinkInEmailState extends EmailSignInState {
 
     public override async onEnter(): Promise<void> {
         this.context.callbackShowInstructionsToReEnterEmail?.(false);
-        await this.firebaseAuthService.checkIfURLIsASignInWithEmailLink();
     }
 }
 
@@ -375,7 +377,6 @@ class BadEmailAddressState extends EmailSignInState {
         this.context.callbackEnablePasswordInput?.(true);
         this.context.callbackEnableLoginButton?.(false);
         this.context.callbackShowInstructionsToReEnterEmail?.(false);
-        await this.firebaseAuthService.checkIfURLIsASignInWithEmailLink();
     }
 }
 
