@@ -76,7 +76,7 @@ export class StateToSVGMapperService {
                 "UserIsInputtingDetails0",
                 "SendingEmailToFirebase0",
             ):
-                return "UserClickedSubmitButton0";
+                return "UserClickedLoginButton0";
 
             case this.generateTransition(
                 "SendingEmailToFirebase0",
@@ -152,14 +152,11 @@ export class StateToSVGMapperService {
             ):
                 return "Fail0";
 
-            case this.generateTransition(
-                "AuthFailed0",
-                "AuthorisingViaFirebase0",
-            ):
-                return "TryAgain0";
-
             case this.generateTransition("AuthFailed0", "Idle0"):
                 return "Restart0";
+
+            case this.generateTransition("SignedIn0", "Idle0"):
+                return "UserClickedLogoutButton0";
 
             default:
                 return null;
@@ -186,8 +183,8 @@ export class StateToSVGMapperService {
         SignInLinkOpenedOnSameBrowser: "SignInLinkOpenedOnSameBrowser0",
         SignInLinkOpenedOnDifferentBrowser:
             "SignInLinkOpenedOnDifferentBrowser0",
-        AuthorisingViaFirebase: "AuthorisingViaFirebase0",
         WaitingForReEnteredEmail: "WaitingForEmailAddressInGui0",
+        AuthorisingViaFirebase: "AuthorisingViaFirebase0",
         SignedIn: "SignedIn0",
         AuthFailed: "AuthFailed0",
     };

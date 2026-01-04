@@ -15,11 +15,11 @@ export const EmailSVGArrowCSSClass = {
         "request-email-address-from-user-again-0",
     Restart0: "restart-0",
     SameEmailAddress0: "same-email-address-0",
-    TryAgain0: "try-again-0",
     UserBeganTyping0: "user-began-typing-0",
     UserClickedLinkInEmail0: "user-clicked-link-in-email-0",
     UserClickedLinkInEmail1: "user-clicked-link-in-email-1",
-    UserClickedSubmitButton0: "user-clicked-submit-button-0",
+    UserClickedLoginButton0: "user-clicked-login-button-0",
+    UserClickedLogoutButton0: "user-clicked-logout-button-0",
     UserDeletedAllInputText0: "user-deleted-all-input-text-0",
     UserIsTypingAgain0: "user-is-typing-again-0",
 } as const;

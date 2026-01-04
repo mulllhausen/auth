@@ -75,6 +75,7 @@ export type TGUIStateDTO = {
     inputEmailValue?: string;
     inputPasswordValue?: string;
     isLoginClicked?: boolean;
+    isLogoutClicked?: boolean;
 };
 
 const htmlTemplateManager = new HTMLTemplateManager(document);
@@ -116,6 +117,7 @@ const wrapperSettings: TWrapperSettings = {
 };
 
 const firebaseAuthService = new FirebaseAuthService({
+    window,
     env,
     settings: wrapperSettings,
 });
@@ -139,6 +141,7 @@ const emailSignInFSMContext = new EmailSignInFSMContext({
     callbackEnablePasswordInput,
     callbackShowInstructionsToReEnterEmail,
 });
+await emailSignInFSMContext.setup();
 
 document.addEventListener("DOMContentLoaded", () => {
     //populateEmailInput(firebaseAuthService.EmailAddress);
@@ -166,12 +169,15 @@ document.addEventListener("DOMContentLoaded", () => {
             'button.login[data-service-provider="password"]',
         )
         ?.addEventListener("click", onEmailLoginClick);
+
+    document
+        .querySelector<HTMLInputElement>("button.logout")
+        ?.addEventListener("click", onLogoutClick);
 });
 
 // callback functions
 
 function testEmailFSMSVG(event_: Event) {
-    debugger;
     const buttonEl = event_.target as HTMLButtonElement;
     let buttonState = buttonEl.dataset.state;
     switch (buttonState) {
@@ -217,6 +223,10 @@ function onInputtingPassword(e: Event): void {
     const inputEl = e.currentTarget as HTMLInputElement;
     const inputPasswordValue: string = inputEl.value;
     debouncedEmailSignInFSMContextHandler.call({ inputPasswordValue });
+}
+
+function onLogoutClick(e: Event): void {
+    emailSignInFSMContext.handle({ isLogoutClicked: true });
 }
 
 function onEmailLoginClick(e: Event): void {

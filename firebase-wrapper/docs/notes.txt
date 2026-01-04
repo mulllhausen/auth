@@ -17,3 +17,13 @@ i have 2 services:
 the problem is that the firebase library has event listeners that get triggered when logins change state. for example onAuthStateChanged(). if there is a change of state from the firebase library then the finite state machine should be the one to decide which state to change to. this implies that the firebase wrapper (FirebaseAuthService) will need to call EmailSignInFSMContext. so i have a situation where two services call each other. is this acceptable?
 
 solution: fsm controls firebase wrapper and subscribes to its events during setup.
+
+is this correct?
+// one method (onEnter() or handle()) should not call handle(). handle() represents a single
+// transition so having 1 call another would blur the boundaries between states and result in tight
+// coupling.
+some firebase wrapper functions transition states at the start before completing the async call
+ie state -> wrapper -> state - all initiated by a single state's onEnter(). see sign-in-link's on-enter method
+this is nice because it allows for code re-use in the authstate's onEnter
+
+the main thing is to avoid infinite loops (one state transitioning to itself)
