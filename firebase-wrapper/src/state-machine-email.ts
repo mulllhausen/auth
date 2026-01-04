@@ -72,9 +72,10 @@ export class EmailSignInFSMContext {
     };
 
     // callbacks
-    public callbackEnableLoginButton?: (enabled: boolean) => void;
     public callbackEnableEmailInput?: (enabled: boolean) => void;
+    public callbackPopulateEmailInput?: (value: string | null) => void;
     public callbackEnablePasswordInput?: (enabled: boolean) => void;
+    public callbackEnableLoginButton?: (enabled: boolean) => void;
     public callbackShowInstructionsToReEnterEmail?: (enabled: boolean) => void;
 
     constructor(props: {
@@ -82,9 +83,10 @@ export class EmailSignInFSMContext {
         firebaseAuthService: FirebaseAuthService;
         stateToSVGMapperService?: StateToSVGMapperService;
         logger?: (logItemInput: TLogItem) => void;
-        callbackEnableLoginButton?: (enabled: boolean) => void;
         callbackEnableEmailInput?: (enabled: boolean) => void;
+        callbackPopulateEmailInput?: (value: string | null) => void;
         callbackEnablePasswordInput?: (enabled: boolean) => void;
+        callbackEnableLoginButton?: (enabled: boolean) => void;
         callbackShowInstructionsToReEnterEmail?: (enabled: boolean) => void;
     }) {
         this.window_ = props.window;
@@ -97,6 +99,7 @@ export class EmailSignInFSMContext {
         );
 
         this.callbackEnableLoginButton = props.callbackEnableLoginButton;
+        this.callbackPopulateEmailInput = props.callbackPopulateEmailInput;
         this.callbackEnableEmailInput = props.callbackEnableEmailInput;
         this.callbackEnablePasswordInput = props.callbackEnablePasswordInput;
         this.callbackShowInstructionsToReEnterEmail =
@@ -160,6 +163,10 @@ export class EmailSignInFSMContext {
             this.localStorageEmailState,
             emailFSMStateID as string,
         );
+    }
+
+    public deleteStateFromLocalstorage(): void {
+        this.window_.localStorage.removeItem(this.localStorageEmailState);
     }
 }
 
@@ -248,6 +255,9 @@ class IdleState extends EmailSignInState {
 
     public override async onEnter(): Promise<void> {
         this.context.callbackEnableEmailInput?.(true);
+        this.context.callbackPopulateEmailInput?.(
+            this.firebaseAuthService.EmailAddress,
+        );
         this.context.callbackEnablePasswordInput?.(true);
         this.context.callbackEnableLoginButton?.(false);
         this.context.callbackShowInstructionsToReEnterEmail?.(false);
@@ -390,14 +400,21 @@ class SignInLinkOpenedOnSameBrowserState extends EmailSignInState {
 class SignInLinkOpenedOnDifferentBrowserState extends EmailSignInState {
     public override readonly ID = "SignInLinkOpenedOnDifferentBrowser";
 
-    public override async handle(
-        emailStateDTO: TEmailStateDTO,
-    ): Promise<void> {}
+    public override async handle(emailStateDTO: TEmailStateDTO): Promise<void> {
+        if (emailStateDTO?.isLoginClicked) {
+            await this.context.transitionTo(
+                transitionToken,
+                SendingEmailToFirebaseState,
+            );
+            return;
+        }
+    }
 
     public override async onEnter(): Promise<void> {
-        this.context.callbackEnableEmailInput?.(false);
+        this.context.callbackEnableEmailInput?.(true);
         this.context.callbackEnablePasswordInput?.(false);
-        this.context.callbackEnableLoginButton?.(false);
+        this.context.callbackEnableLoginButton?.(true);
+
         this.context.callbackShowInstructionsToReEnterEmail?.(true);
     }
 }

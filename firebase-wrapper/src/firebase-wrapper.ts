@@ -32,7 +32,7 @@ import {
 } from "firebase/auth";
 import type { TProcessEnv } from "./dotenv";
 import { TLogItem } from "./gui-logger";
-//import {} from "./state-machine-email";
+import { clearQueryParams as deleteQuerystringParams } from "./utils";
 
 // #endregion imports
 
@@ -443,7 +443,8 @@ export class FirebaseAuthService {
     public async signoutProvider(providerID: TAuthProviders): Promise<void> {
         switch (providerID) {
             case authProviders.Email:
-                this.clearEmailCache();
+                this.deleteCachedEmail();
+                this.deleteFirebaseQuerystringParams();
                 await this.callbackStateChanged?.({ emailDataDeleted: true });
                 break;
         }
@@ -569,7 +570,7 @@ export class FirebaseAuthService {
                 `just checked: the current page url is not a ` +
                     `sign-in-with-email-link`,
             );
-            this.callbackStateChanged?.({ urlIsAnEmailSignInLink: false });
+            //this.callbackStateChanged?.({ urlIsAnEmailSignInLink: false });
             return;
         }
 
@@ -624,9 +625,11 @@ export class FirebaseAuthService {
                     logMessage: "user signed in with email link",
                     logData: userCredentialResult,
                 });
+                this.cacheUser(userCredentialResult.user);
                 this.callbackStateChanged?.({
                     userCredentialFoundViaEmail: true,
                 });
+                return;
             } else {
                 this.logger?.({
                     logMessage: "user was not signed in with email link",
@@ -710,11 +713,20 @@ export class FirebaseAuthService {
 
     public clearUserCache(): void {
         this.window_.localStorage.removeItem(this.localStorageCachedUserKey);
-        this.clearEmailCache();
+        this.deleteCachedEmail();
     }
 
-    private clearEmailCache(): void {
+    private deleteCachedEmail(): void {
         this.window_.localStorage.removeItem(this.localStorageEmailAddressKey);
+    }
+
+    public deleteFirebaseQuerystringParams() {
+        deleteQuerystringParams(this.window_, [
+            "apiKey",
+            "oobCode",
+            "mode",
+            "lang",
+        ]);
     }
 
     serviceProviderNotFoundAction(self: FirebaseAuthService, e: MouseEvent) {

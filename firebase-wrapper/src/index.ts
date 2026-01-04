@@ -137,6 +137,7 @@ const emailSignInFSMContext = new EmailSignInFSMContext({
     stateToSVGMapperService,
     logger: guiLogger.log.bind(guiLogger),
     callbackEnableLoginButton,
+    callbackPopulateEmailInput: populateEmailInput,
     callbackEnableEmailInput,
     callbackEnablePasswordInput,
     callbackShowInstructionsToReEnterEmail,
@@ -144,13 +145,14 @@ const emailSignInFSMContext = new EmailSignInFSMContext({
 await emailSignInFSMContext.setup();
 
 document.addEventListener("DOMContentLoaded", () => {
-    //populateEmailInput(firebaseAuthService.EmailAddress);
     document
         .querySelector("button#clearCachedUser")
-        ?.addEventListener(
-            "click",
-            firebaseAuthService.clearUserCache.bind(firebaseAuthService),
-        );
+        ?.addEventListener("click", async () => {
+            firebaseAuthService.clearUserCache.bind(firebaseAuthService);
+            firebaseAuthService.deleteFirebaseQuerystringParams();
+            emailSignInFSMContext.deleteStateFromLocalstorage();
+            await emailSignInFSMContext.setup();
+        });
 
     document
         .querySelector("button#enableAllSVGElements")
