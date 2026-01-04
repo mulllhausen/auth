@@ -57,10 +57,6 @@ import type { TLogItem } from "./gui-logger";
 import { GUILogger } from "./gui-logger";
 import { HTMLTemplateManager } from "./html-template-manager";
 import "./index.css";
-// import {
-//     emailStateToCSSArrowClassMappings,
-//     emailStateToCSSBoxClassMappings,
-// } from "./mappers/email";
 import { EmailSignInFSMContext, TEmailStateDTO } from "./state-machine-email";
 import { StateToSVGMapperService } from "./state-to-svg-mapper-service";
 import { SVGEmailFlowChartService } from "./svg-email-flowchart-service";
@@ -212,7 +208,7 @@ const debouncedEmailSignInFSMContextHandler = debounce(
     (emailStateDTO: TEmailStateDTO) => {
         emailSignInFSMContext.handle(emailStateDTO);
     },
-    300,
+    500,
 );
 
 function onInputtingEmail(e: Event): void {

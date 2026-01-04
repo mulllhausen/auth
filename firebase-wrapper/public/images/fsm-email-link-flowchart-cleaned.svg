@@ -142,7 +142,7 @@
             d="M28.75 0 C98.32 0, 167.89 0, 240.22 0 C259.39 0, 268.97 9.58, 268.97 28.75 C268.97 51.54, 268.97 74.33, 268.97 86.25 C268.97 105.42, 259.39 115, 240.22 115 C186.88 115, 133.54 115, 28.75 115 C9.58 115, 0 105.42, 0 86.25 C0 68, 0 49.74, 0 28.75 C0 9.58, 9.58 0, 28.75 0"
             stroke="none"
             stroke-width="0"
-            class="state-box sending-email-to-firebase-0"
+            class="state-box sending-email-address-to-firebase-0"
         ></path>
         <path
             d="M28.75 0 C76.49 0, 124.22 0, 240.22 0 M28.75 0 C112.7 0, 196.65 0, 240.22 0 M240.22 0 C259.39 0, 268.97 9.58, 268.97 28.75 M240.22 0 C259.39 0, 268.97 9.58, 268.97 28.75 M268.97 28.75 C268.97 43.14, 268.97 57.52, 268.97 86.25 M268.97 28.75 C268.97 49.47, 268.97 70.19, 268.97 86.25 M268.97 86.25 C268.97 105.42, 259.39 115, 240.22 115 M268.97 86.25 C268.97 105.42, 259.39 115, 240.22 115 M240.22 115 C181.82 115, 123.42 115, 28.75 115 M240.22 115 C178.36 115, 116.5 115, 28.75 115 M28.75 115 C9.58 115, 0 105.42, 0 86.25 M28.75 115 C9.58 115, 0 105.42, 0 86.25 M0 86.25 C0 66.91, 0 47.57, 0 28.75 M0 86.25 C0 64.29, 0 42.33, 0 28.75 M0 28.75 C0 9.58, 9.58 0, 28.75 0 M0 28.75 C0 9.58, 9.58 0, 28.75 0"
@@ -152,10 +152,10 @@
         ></path>
     </g>
     <g
-        transform="translate(263.62541251459515 214.5251973137976) rotate(0 109.38194274902344 35)"
+        transform="translate(285.36740165033734 197.0251973137976) rotate(0 87.63995361328125 52.5)"
     >
         <text
-            x="109.38194274902344"
+            x="87.63995361328125"
             y="24.668"
             font-family="Excalifont, Xiaolai, sans-serif, Segoe UI Emoji"
             font-size="28px"
@@ -164,11 +164,23 @@
             direction="ltr"
             dominant-baseline="alphabetic"
         >
-            Sending email to
+            Sending email
         </text>
         <text
-            x="109.38194274902344"
+            x="87.63995361328125"
             y="59.668"
+            font-family="Excalifont, Xiaolai, sans-serif, Segoe UI Emoji"
+            font-size="28px"
+            fill="#1e1e1e"
+            text-anchor="middle"
+            direction="ltr"
+            dominant-baseline="alphabetic"
+        >
+            address to
+        </text>
+        <text
+            x="87.63995361328125"
+            y="94.668"
             font-family="Excalifont, Xiaolai, sans-serif, Segoe UI Emoji"
             font-size="28px"
             fill="#1e1e1e"

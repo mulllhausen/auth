@@ -74,18 +74,18 @@ export class StateToSVGMapperService {
 
             case this.generateTransition(
                 "UserIsInputtingDetails0",
-                "SendingEmailToFirebase0",
+                "SendingEmailAddressToFirebase0",
             ):
                 return "UserClickedLoginButton0";
 
             case this.generateTransition(
-                "SendingEmailToFirebase0",
+                "SendingEmailAddressToFirebase0",
                 "WaitingForUserToClickLinkInEmail0",
             ):
                 return "OkResponse1";
 
             case this.generateTransition(
-                "SendingEmailToFirebase0",
+                "SendingEmailAddressToFirebase0",
                 "BadEmailAddress0",
             ):
                 return "FirebaseReturnedAnError0";
@@ -130,7 +130,7 @@ export class StateToSVGMapperService {
 
             case this.generateTransition(
                 "WaitingForEmailAddressInGui0",
-                "SendingEmailToFirebase0",
+                "SendingEmailAddressToFirebase0",
             ):
                 return "DifferentEmailAddress0";
 
@@ -177,7 +177,7 @@ export class StateToSVGMapperService {
     > = {
         Idle: "Idle0",
         UserInputtingText: "UserIsInputtingDetails0",
-        SendingEmailToFirebase: "SendingEmailToFirebase0",
+        SendingEmailAddressToFirebase: "SendingEmailAddressToFirebase0",
         WaitingForUserToClickLinkInEmail: "WaitingForUserToClickLinkInEmail0",
         BadEmailAddress: "BadEmailAddress0",
         SignInLinkOpenedOnSameBrowser: "SignInLinkOpenedOnSameBrowser0",

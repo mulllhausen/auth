@@ -32,7 +32,7 @@ type TEmailSignInStateConstructor<
 const emailFSMStateIDs = [
     "Idle",
     "UserInputtingText",
-    "SendingEmailToFirebase",
+    "SendingEmailAddressToFirebase",
     "WaitingForUserToClickLinkInEmail",
     "BadEmailAddress",
     "SignInLinkOpenedOnSameBrowser",
@@ -49,7 +49,7 @@ const transitionToken: unique symbol = Symbol("transitionToken");
 // #endregion consts and types
 
 export class EmailSignInFSMContext {
-    private window_: Window & typeof globalThis;
+    private _window: Window & typeof globalThis;
     private firebaseAuthService: FirebaseAuthService;
     private stateToSVGMapperService?: StateToSVGMapperService;
     private currentState?: EmailSignInState;
@@ -59,7 +59,7 @@ export class EmailSignInFSMContext {
     public stateMap: Record<TEmailFSMStateID, TEmailSignInStateConstructor> = {
         Idle: IdleState,
         UserInputtingText: UserInputtingTextState,
-        SendingEmailToFirebase: SendingEmailToFirebaseState,
+        SendingEmailAddressToFirebase: SendingEmailAddressToFirebaseState,
         WaitingForUserToClickLinkInEmail: WaitingForUserToClickLinkInEmailState,
         BadEmailAddress: BadEmailAddressState,
         SignInLinkOpenedOnSameBrowser: SignInLinkOpenedOnSameBrowserState,
@@ -89,7 +89,7 @@ export class EmailSignInFSMContext {
         callbackEnableLoginButton?: (enabled: boolean) => void;
         callbackShowInstructionsToReEnterEmail?: (enabled: boolean) => void;
     }) {
-        this.window_ = props.window;
+        this._window = props.window;
         this.firebaseAuthService = props.firebaseAuthService;
         this.stateToSVGMapperService = props.stateToSVGMapperService;
         this.logger = props.logger;
@@ -106,6 +106,7 @@ export class EmailSignInFSMContext {
             props.callbackShowInstructionsToReEnterEmail;
     }
 
+    /** note: call setup() once immediately after the constructor */
     public async setup(): Promise<void> {
         const emailSignInStateConstructor = this.getStateFromLocalstorage();
         this.currentState = await this.transitionTo(
@@ -152,7 +153,7 @@ export class EmailSignInFSMContext {
     }
 
     private getStateFromLocalstorage(): TEmailSignInStateConstructor {
-        const emailFSMStateID = this.window_.localStorage.getItem(
+        const emailFSMStateID = this._window.localStorage.getItem(
             this.localStorageEmailState,
         ) as TEmailFSMStateID | null;
         if (emailFSMStateID == null) return IdleState;
@@ -160,14 +161,14 @@ export class EmailSignInFSMContext {
     }
 
     private backupStateToLocalstorage(emailFSMStateID: TEmailFSMStateID): void {
-        this.window_.localStorage.setItem(
+        this._window.localStorage.setItem(
             this.localStorageEmailState,
             emailFSMStateID as string,
         );
     }
 
     public deleteStateFromLocalstorage(): void {
-        this.window_.localStorage.removeItem(this.localStorageEmailState);
+        this._window.localStorage.removeItem(this.localStorageEmailState);
     }
 }
 
@@ -286,7 +287,7 @@ class UserInputtingTextState extends EmailSignInState {
         if (emailStateDTO?.isLoginClicked) {
             await this.context.transitionTo(
                 transitionToken,
-                SendingEmailToFirebaseState,
+                SendingEmailAddressToFirebaseState,
             );
             return;
         }
@@ -294,6 +295,9 @@ class UserInputtingTextState extends EmailSignInState {
 
     public override async onEnter(): Promise<void> {
         this.context.callbackEnableEmailInput?.(true);
+        this.context.callbackPopulateEmailInput?.(
+            this.firebaseAuthService.EmailAddress,
+        );
         this.context.callbackEnablePasswordInput?.(true);
         if (this.isAnyEmailEntered() && this.isAnyPasswordEntered()) {
             this.context.callbackEnableLoginButton?.(true);
@@ -302,8 +306,8 @@ class UserInputtingTextState extends EmailSignInState {
     }
 }
 
-class SendingEmailToFirebaseState extends EmailSignInState {
-    public override readonly ID = "SendingEmailToFirebase";
+class SendingEmailAddressToFirebaseState extends EmailSignInState {
+    public override readonly ID = "SendingEmailAddressToFirebase";
 
     public override async handle(emailStateDTO: TEmailStateDTO): Promise<void> {
         if (emailStateDTO.successfullySentSignInLinkToEmail == null) {
@@ -374,6 +378,9 @@ class BadEmailAddressState extends EmailSignInState {
 
     public override async onEnter(): Promise<void> {
         this.context.callbackEnableEmailInput?.(true);
+        this.context.callbackPopulateEmailInput?.(
+            this.firebaseAuthService.EmailAddress,
+        );
         this.context.callbackEnablePasswordInput?.(true);
         this.context.callbackEnableLoginButton?.(false);
         this.context.callbackShowInstructionsToReEnterEmail?.(false);
@@ -405,7 +412,7 @@ class SignInLinkOpenedOnDifferentBrowserState extends EmailSignInState {
         if (emailStateDTO?.isLoginClicked) {
             await this.context.transitionTo(
                 transitionToken,
-                SendingEmailToFirebaseState,
+                SendingEmailAddressToFirebaseState,
             );
             return;
         }
@@ -413,6 +420,9 @@ class SignInLinkOpenedOnDifferentBrowserState extends EmailSignInState {
 
     public override async onEnter(): Promise<void> {
         this.context.callbackEnableEmailInput?.(true);
+        this.context.callbackPopulateEmailInput?.(
+            this.firebaseAuthService.EmailAddress,
+        );
         this.context.callbackEnablePasswordInput?.(false);
         this.context.callbackEnableLoginButton?.(true);
 
@@ -442,6 +452,7 @@ class AuthorisingViaFirebaseState extends EmailSignInState {
         debugger;
         switch (emailStateDTO.userCredentialFoundViaEmail) {
             case true:
+                this.firebaseAuthService.deleteFirebaseQuerystringParams();
                 await this.context.transitionTo(transitionToken, SignedInState);
                 return;
             case false:

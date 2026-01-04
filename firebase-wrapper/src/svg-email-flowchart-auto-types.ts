@@ -29,7 +29,7 @@ export const EmailSVGStateBoxCSSClass = {
     AuthorisingViaFirebase0: "authorising-via-firebase-0",
     BadEmailAddress0: "bad-email-address-0",
     Idle0: "idle-0",
-    SendingEmailToFirebase0: "sending-email-to-firebase-0",
+    SendingEmailAddressToFirebase0: "sending-email-address-to-firebase-0",
     SignedIn0: "signed-in-0",
     SignInLinkOpenedOnDifferentBrowser0:
         "sign-in-link-opened-on-different-browser-0",

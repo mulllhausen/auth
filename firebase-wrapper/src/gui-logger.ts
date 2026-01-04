@@ -32,31 +32,31 @@ export class GUILogger {
     ];
     private currentColor: string;
 
-    constructor(input: {
+    constructor(props: {
         _window: Window;
         htmlTemplateManager: HTMLTemplateManager;
         cleaLogStreamButtonCSS: string;
         logContainerCSS: string;
         logItemCSS: string;
     }) {
-        this._window = input._window;
-        this._document = input._window.document;
-        this.htmlTemplateManager = input.htmlTemplateManager;
-        this.cleaLogStreamButtonCSS = input.cleaLogStreamButtonCSS;
+        this._window = props._window;
+        this._document = props._window.document;
+        this.htmlTemplateManager = props.htmlTemplateManager;
+        this.cleaLogStreamButtonCSS = props.cleaLogStreamButtonCSS;
 
         this.currentColor = this.setupRandomLogstreamColor();
 
-        this.logContainerCSS = input.logContainerCSS;
+        this.logContainerCSS = props.logContainerCSS;
         this.logContainerElement = this._document.querySelector(
             this.logContainerCSS,
         ) as HTMLElement;
 
         if (this.logContainerElement == null) {
             throw new Error(
-                `unable to find log container ${input.logContainerCSS}`,
+                `unable to find log container ${props.logContainerCSS}`,
             );
         }
-        this.logItemCSS = input.logItemCSS;
+        this.logItemCSS = props.logItemCSS;
     }
 
     public initEvents(): GUILogger {
@@ -127,8 +127,10 @@ export class GUILogger {
             this.logContainerElement,
         );
 
-        console.log(logItemInput.logMessage, logItemInput.logData);
-        logItemInput.logData = null; // unsafe - do not save
+        //console.log(logItemInput.logMessage, logItemInput.logData);
+        if (logItemInput.logData != null) {
+            logItemInput.logData = "pii not saved in localstorage (unsafe)";
+        }
         if (!logItemInput.fromLocalStorage) {
             this.saveLogToLocalStorage(logItemInput);
         }

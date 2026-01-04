@@ -180,7 +180,7 @@ export type TCRUDValues = (typeof CRUD)[keyof typeof CRUD];
 // will share user-state, especially via local storage.
 // this class is not a state machine sop it does not hold an enumerated state.
 export class FirebaseAuthService {
-    private window_: Window & typeof globalThis;
+    private _window: Window & typeof globalThis;
     private settings: TWrapperSettings;
     private logger?: (logItem: TLogItem) => void;
     private env: TProcessEnv;
@@ -224,7 +224,8 @@ export class FirebaseAuthService {
         return this.emailAddress;
     }
     public set EmailAddress(emailAddress: string) {
-        window.localStorage.setItem(
+        this.log("email address cached");
+        this._window.localStorage.setItem(
             this.localStorageEmailAddressKey,
             emailAddress,
         );
@@ -236,7 +237,7 @@ export class FirebaseAuthService {
         env: TProcessEnv;
         settings: TWrapperSettings;
     }) {
-        this.window_ = props.window;
+        this._window = props.window;
         this.env = props.env;
         this.settings = props.settings;
         this.logger = props.settings.logger;
@@ -261,11 +262,11 @@ export class FirebaseAuthService {
         };
 
         // todo: ignore if older than 1 day
-        this.emailAddress = this.window_.localStorage.getItem(
+        this.emailAddress = this._window.localStorage.getItem(
             this.localStorageEmailAddressKey,
         );
         this.EmailActionCodeSettings = {
-            url: this.window_.location.href,
+            url: this._window.location.href,
             handleCodeInApp: true,
         };
         const app = initializeApp(firebaseOptions);
@@ -465,76 +466,6 @@ export class FirebaseAuthService {
         }
     }
 
-    // private initEmailState(): void {
-    //     if (this.restoreEmailStateFromLocalStorage()) {
-    //         return;
-    //     }
-    //     this.setEmailState(EmailSignInFSM.Idle);
-    // }
-
-    // private restoreEmailStateFromLocalStorage(): boolean {
-    //     const emailStateJSON: string | null = this.window_.localStorage.getItem(
-    //         this.localStorageEmailState,
-    //     );
-    //     if (emailStateJSON === null) {
-    //         return false;
-    //     }
-    //     const emailStateJSONParsed = JSON.parse(emailStateJSON);
-    //     const emailStateClass =
-    //         EmailSignInFSM.NameToClassMap[emailStateJSONParsed.typeName];
-    //     this.setEmailState(emailStateClass);
-    //     return true;
-    // }
-
-    // private async callEmailAction(
-    //     futureAction: keyof typeof emailSignInActions,
-    //     args?: any,
-    // ): Promise<void> {
-    //     debugger;
-    //     if (this.emailState === null) {
-    //         return;
-    //     }
-    //     const oldState = this.emailState;
-    //     const methodName = emailSignInActions[futureAction];
-    //     const methodResult: typeof EmailSignInState = (
-    //         this.emailState[methodName] as Function
-    //     ).call(this.emailState);
-    //     const newState = (
-    //         methodResult instanceof Promise ? await methodResult : methodResult
-    //     ) as EmailSignInState;
-    //     this.emailActionCallback?.(oldState, futureAction, newState);
-    //     this.setEmailState(newState);
-    // }
-
-    /**
-     * the only thing that should call this method is callEmailAction().
-     * i.e. a state change should only result from an action (transition).
-     */
-    // but what about initialisation?
-    // private async setEmailState<T extends EmailSignInState>(
-    //     stateClass: new () => T,
-    // ): Promise<void> {
-    //     debugger;
-    //     this.emailState = new stateClass();
-    //     this.emailState.firebaseAuthService = this;
-    //     this.emailState.logger = this.logger;
-
-    //     const emailStateName: string = this.emailState.constructor.name;
-    //     this.window_.localStorage.setItem(
-    //         this.localStorageEmailState,
-    //         JSON.stringify({
-    //             typeName: emailStateName,
-    //             data: this.emailState.backupData,
-    //         }),
-    //     );
-    //     this.log(`email state changed to ${emailStateName}`);
-    //     // const oldState = null;
-    //     // const futureAction = null;
-    //     // this.emailActionCallback?.(oldState, futureAction, this.emailState);
-    //     //this.emailStateChangedCallback?.(this.emailState);
-    //     await this.emailState.Initialise();
-    // }
-
     public async SendSignInLinkToEmail(): Promise<void> {
         try {
             this.log(`instructing firebase to send sign-in link`);
@@ -564,7 +495,7 @@ export class FirebaseAuthService {
     }
 
     public async checkIfURLIsASignInWithEmailLink(): Promise<void> {
-        if (!isSignInWithEmailLink(this.Auth, this.window_.location.href)) {
+        if (!isSignInWithEmailLink(this.Auth, this._window.location.href)) {
             this.log(
                 `just checked: the current page url is not a ` +
                     `sign-in-with-email-link`,
@@ -601,12 +532,14 @@ export class FirebaseAuthService {
                 await signInWithEmailLink(
                     this.Auth,
                     this.emailAddress!,
-                    this.window_.location.href,
+                    this._window.location.href,
                 );
+
             if (userCredentialResult) {
                 this.logger?.({
                     logMessage: "user signed in with email link",
                     logData: userCredentialResult,
+                    imageURL: userCredentialResult.user.photoURL,
                 });
                 this.cacheUser(userCredentialResult.user);
                 this.callbackStateChanged?.({
@@ -656,7 +589,7 @@ export class FirebaseAuthService {
 
     private userAlreadyCached(user: TUserPlus): boolean {
         const cachedUsersJSON: string | null =
-            this.window_.localStorage.getItem(this.localStorageCachedUserKey);
+            this._window.localStorage.getItem(this.localStorageCachedUserKey);
         if (cachedUsersJSON === null) return false;
 
         const cachedUsers: Record<string, TUserPlus> =
@@ -678,7 +611,7 @@ export class FirebaseAuthService {
     private cacheUser(user: TUserPlus): void {
         // cache the user under service provider since FIREBASE_LINK_ACCOUNTS=false
         const serviceProvider = user.providerData[0].providerId;
-        const cachedUserJSON: string | null = this.window_.localStorage.getItem(
+        const cachedUserJSON: string | null = this._window.localStorage.getItem(
             this.localStorageCachedUserKey,
         );
         let cachedUser: Record<string, TUserPlus> = {};
@@ -688,23 +621,23 @@ export class FirebaseAuthService {
         cachedUser[serviceProvider] = this.safeUserResponse(
             this.idempotentUserResponse(user),
         );
-        this.window_.localStorage.setItem(
+        this._window.localStorage.setItem(
             this.localStorageCachedUserKey,
             JSON.stringify(cachedUser),
         );
     }
 
     public clearUserCache(): void {
-        this.window_.localStorage.removeItem(this.localStorageCachedUserKey);
+        this._window.localStorage.removeItem(this.localStorageCachedUserKey);
         this.deleteCachedEmail();
     }
 
     private deleteCachedEmail(): void {
-        this.window_.localStorage.removeItem(this.localStorageEmailAddressKey);
+        this._window.localStorage.removeItem(this.localStorageEmailAddressKey);
     }
 
     public deleteFirebaseQuerystringParams() {
-        deleteQuerystringParams(this.window_, [
+        deleteQuerystringParams(this._window, [
             "apiKey",
             "oobCode",
             "mode",
