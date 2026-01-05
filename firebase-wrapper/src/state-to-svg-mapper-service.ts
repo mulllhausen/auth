@@ -130,15 +130,9 @@ export class StateToSVGMapperService {
 
             case this.generateTransition(
                 "WaitingForEmailAddressInGui0",
-                "SendingEmailAddressToFirebase0",
-            ):
-                return "DifferentEmailAddress0";
-
-            case this.generateTransition(
-                "WaitingForEmailAddressInGui0",
                 "AuthorisingViaFirebase0",
             ):
-                return "SameEmailAddress0";
+                return "UserSubmittedEmailAddressAgain0";
 
             case this.generateTransition(
                 "AuthorisingViaFirebase0",
@@ -156,7 +150,7 @@ export class StateToSVGMapperService {
                 return "Restart0";
 
             case this.generateTransition("SignedIn0", "Idle0"):
-                return "UserClickedLogoutButton0";
+                return "ClearUserData0";
 
             default:
                 return null;

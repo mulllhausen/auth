@@ -140,7 +140,6 @@ export type TFirebaseWrapperStateDTO = {
     userOpenedEmailLinkOnSameBrowser?: boolean;
     userCredentialFoundViaEmail?: boolean;
     emailDataDeleted?: boolean;
-    errorMessage?: string;
 };
 
 export type TDefaultAction = null;
@@ -377,6 +376,7 @@ export class FirebaseAuthService {
             //renderUserData(user, 1);
             // IdP data available using getAdditionalUserInfo(result)
         } catch (error) {
+            // todo - typeguard
             const firebaseError = error as FirebaseError;
             // Handle Errors here.
             const errorCode = firebaseError.code;
@@ -451,6 +451,7 @@ export class FirebaseAuthService {
             case authProviders.Email:
                 this.deleteCachedEmail();
                 this.deleteFirebaseQuerystringParams();
+                this.signedInStatus["Email"] = false;
                 await this.callbackStateChanged?.({ emailDataDeleted: true });
                 break;
         }
@@ -484,17 +485,15 @@ export class FirebaseAuthService {
             await this.callbackStateChanged?.({
                 successfullySentSignInLinkToEmail: true,
             });
-            //this.callEmailAction(emailSignInActions.FirebaseOKResponse);
         } catch (error) {
-            const error_ = error as Error;
-            // this.callEmailAction(emailSignInActions.FirebaseErrorResponse, error);
-            this.log(
-                `firebase failed to send sign-in link. ` +
-                    `error message: "${error_.message}"`,
-            );
+            let errorString = `firebase failed to send sign-in link`;
+            if (error instanceof FirebaseError) {
+                errorString = `${errorString}. code: ${error.code}.`;
+            }
+            errorString = `${errorString}. message: "${(error as Error).message}".`;
+            this.log(errorString);
             await this.callbackStateChanged?.({
                 successfullySentSignInLinkToEmail: false,
-                errorMessage: error_.message,
             });
         }
     }
@@ -571,16 +570,16 @@ export class FirebaseAuthService {
             // result.additionalUserInfo.profile == null
             // You can check if the user is new or existing:
             // result.additionalUserInfo.isNewUser
-
-            // email sign-in step 9/9
-            //this.restoreEmailLoginButtonClicked();
         } catch (error) {
-            this.log((error as Error).message);
+            let errorString = `firebase handleSignInWithEmailLink() error.`;
+            if (error instanceof FirebaseError) {
+                errorString = `${errorString} code: ${error.code}`;
+            }
+            errorString = `${errorString} message: ${(error as Error).message}`;
+            this.log(errorString);
             this.callbackStateChanged?.({
                 userCredentialFoundViaEmail: false,
             });
-            // Some error occurred, you can inspect the code: error.code
-            // Common errors could be invalid email and invalid or expired OTPs.
         }
     }
 

@@ -406,13 +406,43 @@ class SignInLinkOpenedOnSameBrowserState extends EmailSignInState {
 class SignInLinkOpenedOnDifferentBrowserState extends EmailSignInState {
     public override readonly ID = "SignInLinkOpenedOnDifferentBrowser";
 
+    public override async handle(
+        emailStateDTO: TEmailStateDTO,
+    ): Promise<void> {}
+
+    public override async onEnter(): Promise<void> {
+        this.context.callbackEnableEmailInput?.(true);
+        this.context.callbackPopulateEmailInput?.(
+            this.firebaseAuthService.EmailAddress,
+        );
+        this.context.callbackEnablePasswordInput?.(false);
+        this.context.callbackEnableLoginButton?.(true);
+        this.context.callbackShowInstructionsToReEnterEmail?.(true);
+
+        // move straight to the next state. this keeps responsibilities correct.
+        this.context.transitionTo(
+            transitionToken,
+            WaitingForReEnteredEmailState,
+        );
+    }
+}
+
+class WaitingForReEnteredEmailState extends EmailSignInState {
+    public override readonly ID = "WaitingForReEnteredEmail";
+
     public override async handle(emailStateDTO: TEmailStateDTO): Promise<void> {
-        if (emailStateDTO?.isLoginClicked) {
-            await this.context.transitionTo(
-                transitionToken,
-                SendingEmailAddressToFirebaseState,
-            );
-            return;
+        this.setEmail(emailStateDTO?.inputEmailValue);
+
+        if (this.isAnyEmailEntered()) {
+            this.log(`an email was entered`);
+
+            if (emailStateDTO?.isLoginClicked) {
+                await this.context.transitionTo(
+                    transitionToken,
+                    AuthorisingViaFirebaseState,
+                );
+                return;
+            }
         }
     }
 
@@ -423,22 +453,6 @@ class SignInLinkOpenedOnDifferentBrowserState extends EmailSignInState {
         );
         this.context.callbackEnablePasswordInput?.(false);
         this.context.callbackEnableLoginButton?.(true);
-
-        this.context.callbackShowInstructionsToReEnterEmail?.(true);
-    }
-}
-
-class WaitingForReEnteredEmailState extends EmailSignInState {
-    public override readonly ID = "WaitingForReEnteredEmail";
-
-    public override async handle(
-        emailStateDTO: TEmailStateDTO,
-    ): Promise<void> {}
-
-    public override async onEnter(): Promise<void> {
-        this.context.callbackEnableEmailInput?.(false);
-        this.context.callbackEnablePasswordInput?.(false);
-        this.context.callbackEnableLoginButton?.(false);
         this.context.callbackShowInstructionsToReEnterEmail?.(true);
     }
 }
@@ -447,7 +461,6 @@ class AuthorisingViaFirebaseState extends EmailSignInState {
     public override readonly ID = "AuthorisingViaFirebase";
 
     public override async handle(emailStateDTO: TEmailStateDTO): Promise<void> {
-        debugger;
         switch (emailStateDTO.userCredentialFoundViaEmail) {
             case true:
                 this.firebaseAuthService.deleteFirebaseQuerystringParams();

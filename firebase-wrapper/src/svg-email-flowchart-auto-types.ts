@@ -6,7 +6,7 @@ export type TEmailSVGCSSClassKeys = TEmailArrowKey | TEmailStateBoxKey;
 
 export const EmailSVGArrowCSSClass = {
     AutomaticallySubmitToFirebase0: "automatically-submit-to-firebase-0",
-    DifferentEmailAddress0: "different-email-address-0",
+    ClearUserData0: "clear-user-data-0",
     Fail0: "fail-0",
     FirebaseReturnedAnError0: "firebase-returned-an-error-0",
     OkResponse0: "ok-response-0",
@@ -14,14 +14,13 @@ export const EmailSVGArrowCSSClass = {
     RequestEmailAddressFromUserAgain0:
         "request-email-address-from-user-again-0",
     Restart0: "restart-0",
-    SameEmailAddress0: "same-email-address-0",
     UserBeganTyping0: "user-began-typing-0",
     UserClickedLinkInEmail0: "user-clicked-link-in-email-0",
     UserClickedLinkInEmail1: "user-clicked-link-in-email-1",
     UserClickedLoginButton0: "user-clicked-login-button-0",
-    UserClickedLogoutButton0: "user-clicked-logout-button-0",
     UserDeletedAllInputText0: "user-deleted-all-input-text-0",
     UserIsTypingAgain0: "user-is-typing-again-0",
+    UserSubmittedEmailAddressAgain0: "user-submitted-email-address-again-0",
 } as const;
 
 export const EmailSVGStateBoxCSSClass = {
