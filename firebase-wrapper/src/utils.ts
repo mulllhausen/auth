@@ -1,3 +1,23 @@
+export function onSvgReady(props: {
+    svgQuerySelector: string;
+    callback: (svgDoc: Document) => void;
+}) {
+    const svgObj = document.querySelector(
+        props.svgQuerySelector,
+    ) as HTMLObjectElement | null;
+    if (!svgObj) throw new Error(`failed to find svg`);
+
+    if (svgObj.contentDocument) {
+        props.callback(svgObj.contentDocument);
+    } else {
+        svgObj.addEventListener("load", () => {
+            if (svgObj.contentDocument) {
+                props.callback(svgObj.contentDocument);
+            }
+        });
+    }
+}
+
 export function debounce<TFunction extends (...args: any[]) => void>(
     _function: TFunction,
     delayMs: number,

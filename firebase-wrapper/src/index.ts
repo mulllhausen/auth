@@ -65,7 +65,7 @@ import {
     SVGStateStatus,
     TSVGStateStatusValues,
 } from "./svg-flowchart-service";
-import { debounce } from "./utils";
+import { debounce, onSvgReady } from "./utils";
 
 export type TGUIStateDTO = {
     inputEmailValue?: string;
@@ -138,9 +138,13 @@ const emailSignInFSMContext = new EmailSignInFSMContext({
     callbackEnablePasswordInput,
     callbackShowInstructionsToReEnterEmail,
 });
-await emailSignInFSMContext.setup();
 
 document.addEventListener("DOMContentLoaded", () => {
+    onSvgReady({
+        svgQuerySelector: "#emailLinkFSMChart",
+        callback: async () => await emailSignInFSMContext.setup(),
+    });
+
     document
         .querySelector("button#clearCachedUser")
         ?.addEventListener("click", async () => {

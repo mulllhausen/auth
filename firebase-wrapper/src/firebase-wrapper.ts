@@ -486,12 +486,12 @@ export class FirebaseAuthService {
                 successfullySentSignInLinkToEmail: true,
             });
         } catch (error) {
-            let errorString = `firebase failed to send sign-in link`;
-            if (error instanceof FirebaseError) {
-                errorString = `${errorString}. code: ${error.code}.`;
-            }
-            errorString = `${errorString}. message: "${(error as Error).message}".`;
-            this.log(errorString);
+            const errorCodeMessage =
+                error instanceof FirebaseError ? `code: ${error.code}. ` : "";
+            this.log(
+                `firebase failed to send sign-in link with SendSignInLinkToEmail(). ` +
+                    `${errorCodeMessage}message: "${(error as Error).message}".`,
+            );
             await this.callbackStateChanged?.({
                 successfullySentSignInLinkToEmail: false,
             });
@@ -560,36 +560,23 @@ export class FirebaseAuthService {
                 });
             }
 
-            // email sign-in step 8/9
-            // if (this.settings.clearEmailAfterSignInCallback(this)) {
-            //     this.clearEmailCache();
-            // }
-
             // You can access the new user via result.user
             // Additional user info profile not available via:
             // result.additionalUserInfo.profile == null
             // You can check if the user is new or existing:
             // result.additionalUserInfo.isNewUser
         } catch (error) {
-            let errorString = `firebase handleSignInWithEmailLink() error.`;
-            if (error instanceof FirebaseError) {
-                errorString = `${errorString} code: ${error.code}`;
-            }
-            errorString = `${errorString} message: ${(error as Error).message}`;
-            this.log(errorString);
+            const errorCodeMessage =
+                error instanceof FirebaseError ? `code: ${error.code}. ` : "";
+            this.log(
+                `firebase handleSignInWithEmailLink() error. ${errorCodeMessage}` +
+                    `message: "${(error as Error).message}"`,
+            );
             this.callbackStateChanged?.({
                 userCredentialFoundViaEmail: false,
             });
         }
     }
-
-    // /** email sign-in step 9/9 */
-    // private restoreEmailLoginButtonClicked(): void {
-    //     if (this.backedUpEmailLoginButtonClicked === null) return;
-    //     this.settings.authProviderSettings[
-    //         authProviders.Email
-    //     ].loginButtonClicked = this.backedUpEmailLoginButtonClicked;
-    // }
 
     private userAlreadyCached(user: TUserPlus): boolean {
         const cachedUsersJSON: string | null =
