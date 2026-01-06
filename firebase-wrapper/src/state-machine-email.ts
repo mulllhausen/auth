@@ -118,6 +118,10 @@ export class EmailSignInFSMContext {
 
     /** should always be called by an action external to this FSM */
     public async handle(emailStateDTO: TEmailStateDTO): Promise<void> {
+        const skipCurrentStateHandler =
+            await this.currentState?.overrideStateHandler(emailStateDTO);
+        if (skipCurrentStateHandler) return;
+
         await this.currentState?.handle(emailStateDTO);
     }
 
@@ -189,6 +193,22 @@ abstract class EmailSignInState {
 
     protected log(logMessage: string): void {
         this.logger?.({ logMessage });
+    }
+
+    public async overrideStateHandler(
+        emailStateDTO?: TEmailStateDTO,
+    ): Promise<boolean> {
+        let skipCurrentStateLogic = false;
+        if (emailStateDTO?.isLogoutClicked || emailStateDTO?.emailDataDeleted) {
+            debugger;
+            this.log("logout requested");
+            this.firebaseAuthService.logout();
+            this.context.callbackPopulateEmailInput?.("");
+            await this.context.transitionTo(transitionToken, IdleState);
+            skipCurrentStateLogic = true;
+            return skipCurrentStateLogic;
+        }
+        return skipCurrentStateLogic;
     }
 
     protected saveInputValues(emailStateDTO?: TEmailStateDTO): void {
@@ -487,12 +507,9 @@ class AuthorisingViaFirebaseState extends EmailSignInState {
 class SignedInState extends EmailSignInState {
     public override readonly ID = "SignedIn";
 
-    public override async handle(emailStateDTO: TEmailStateDTO): Promise<void> {
-        // this.firebaseAuthService.logout();
-        if (emailStateDTO.isLogoutClicked || emailStateDTO.emailDataDeleted) {
-            await this.context.transitionTo(transitionToken, IdleState);
-        }
-    }
+    public override async handle(
+        emailStateDTO: TEmailStateDTO,
+    ): Promise<void> {}
 
     public override async onEnter(): Promise<void> {
         this.context.callbackEnableEmailInput?.(false);

@@ -340,6 +340,12 @@ export class FirebaseAuthService {
         await this.handleGetRedirectResult();
     }
 
+    public async logout(): Promise<void> {
+        this.clearUserCache();
+        this.EmailAddress = "";
+        this.deleteFirebaseQuerystringParams();
+    }
+
     private async handleGetRedirectResult(): Promise<void> {
         try {
             const redirectResult: UserCredential | null =
