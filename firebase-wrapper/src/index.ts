@@ -285,7 +285,7 @@ async function handleEmailLogin(
     )?.value;
 
     // back to the wrapper to handle the sign-in logic
-    await _firebaseService.Signin(authProviders.Email);
+    await _firebaseService.signin(authProviders.Email);
 }
 
 function signedInCallback(user: TUserPlus) {
@@ -324,7 +324,7 @@ async function emailAddressReentered(
     _firebaseService.EmailAddress = (
         document.querySelector("input.email") as HTMLInputElement
     )?.value;
-    await _firebaseService.Signin(authProviders.Email);
+    await _firebaseService.signin(authProviders.Email);
 }
 
 /** email sign-in step 8/9 */

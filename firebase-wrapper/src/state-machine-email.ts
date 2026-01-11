@@ -350,7 +350,7 @@ class SendingEmailAddressToFirebaseState extends EmailSignInState {
         this.context.callbackEnablePasswordInput?.(false);
         this.context.callbackEnableLoginButton?.(false);
         this.context.callbackShowInstructionsToReEnterEmail?.(false);
-        await this.firebaseAuthService.SendSignInLinkToEmail();
+        await this.firebaseAuthService.sendSignInLinkToEmail();
     }
 }
 

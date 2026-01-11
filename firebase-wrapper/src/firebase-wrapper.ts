@@ -29,8 +29,16 @@ import {
     Unsubscribe,
     User,
     UserCredential,
+    UserInfo,
 } from "firebase/auth";
 import type { TProcessEnv } from "./dotenv";
+import type {
+    TSafeOAuthCredential,
+    TSafeTokenResponse,
+    TSafeUser,
+    TSafeUserCredential,
+    TSafeUserInfo,
+} from "./firebase-safe-types";
 import { TLogItem } from "./gui-logger";
 import { clearQueryParams as deleteQuerystringParams } from "./utils";
 
@@ -122,7 +130,7 @@ export type TWrapperSettings = {
                 | ((self: FirebaseAuthService, e: MouseEvent) => Promise<void>);
         };
     };
-    signedInCallback: (user: TUserPlus) => void;
+    signedInCallback: (user: User) => void;
     signedOutCallback: () => void;
 
     /** email sign-in step 5/9 */
@@ -143,18 +151,6 @@ export type TFirebaseWrapperStateDTO = {
 };
 
 export type TDefaultAction = null;
-
-// a type for undocumented internal properties that are *actually* returned
-// in addition to the User object. note: these could change without warning
-// in future.
-export type TUserPlus = User & {
-    stsTokenManager?: {
-        refreshToken?: unknown;
-        expirationTime: number;
-        accessToken?: unknown;
-    };
-    lastLoginAt?: number;
-};
 
 type TAuthProviderConstructor =
     | typeof GoogleAuthProvider
@@ -190,8 +186,7 @@ export class FirebaseAuthService {
     public EmailActionCodeSettings: ActionCodeSettings;
     private localStorageEmailAddressKey = "emailAddress";
     private localStorageCachedUserKey = "cachedUser";
-    private hiddenMessage: string =
-        "not stored in localStorage to prevent xss attacks";
+    private hiddenMessage = "not stored in localStorage to prevent xss attacks";
     public signedInStatus: Record<keyof typeof authProviders, boolean> = {
         Email: false,
         Google: false,
@@ -220,9 +215,9 @@ export class FirebaseAuthService {
         | null = null;
 
     public set Settings(settings: TWrapperSettings) {
-        this.SetupEvents(this.settings, CRUD.Delete);
+        this.setupEvents(this.settings, CRUD.Delete);
         this.settings = settings;
-        this.SetupEvents(this.settings, CRUD.Create);
+        this.setupEvents(this.settings, CRUD.Create);
     }
 
     public get EmailAddress(): string | null {
@@ -278,14 +273,14 @@ export class FirebaseAuthService {
         this.Auth = getAuth(app);
         this.log(`finished initializing firebase SDK`);
         //this.setupFirebaseListeners();
-        this.SetupEvents(this.settings, CRUD.Create);
+        this.setupEvents(this.settings, CRUD.Create);
     }
 
     private log(logMessage: string) {
         this.logger?.({ logMessage });
     }
 
-    private SetupEvents(
+    private setupEvents(
         settings: TWrapperSettings,
         eventAction: TCRUDValues,
     ): void {
@@ -310,7 +305,7 @@ export class FirebaseAuthService {
                 const mouseEvent = e as HTMLElementEventMap["click"];
                 this.log(`login with ${provider} clicked`);
                 await (action === defaultAction
-                    ? this.Signin(provider)
+                    ? this.signin(provider)
                     : action(this, mouseEvent));
             });
         }
@@ -344,6 +339,36 @@ export class FirebaseAuthService {
         this.clearUserCache();
         this.EmailAddress = "";
         this.deleteFirebaseQuerystringParams();
+    }
+
+    public deleteFirebaseQuerystringParams() {
+        deleteQuerystringParams(this._window, [
+            "apiKey",
+            "oobCode",
+            "mode",
+            "lang",
+        ]);
+    }
+
+    serviceProviderNotFoundAction(self: FirebaseAuthService, e: MouseEvent) {
+        console.error(`Service provider not found`);
+    }
+
+    // #region sign-in oauth providers with redirect
+
+    private authProviderFactory(
+        providerId: TAuthProviders,
+    ): TAuthProviderConstructor {
+        switch (providerId) {
+            case authProviders.Google:
+                return GoogleAuthProvider;
+            case authProviders.Facebook:
+                return FacebookAuthProvider;
+            case authProviders.GitHub:
+                return GithubAuthProvider;
+            default:
+                throw new Error(`unsupported provider ${providerId}`);
+        }
     }
 
     private async handleGetRedirectResult(): Promise<void> {
@@ -403,7 +428,7 @@ export class FirebaseAuthService {
         }
     }
 
-    private afterUserSignedIn(user: TUserPlus): void {
+    private afterUserSignedIn(user: User): void {
         const logMessageStart: string = "firebase auth state changed";
         if (this.userAlreadyCached(user)) {
             this.logger?.({
@@ -425,7 +450,7 @@ export class FirebaseAuthService {
         this.settings.signedInCallback(user);
     }
 
-    public async Signin(providerID: TAuthProviders): Promise<void> {
+    public async signin(providerID: TAuthProviders): Promise<void> {
         if (providerID === authProviders.Email) {
             // this.callEmailAction(
             //     emailSignInActions.UserInputsEmailAddressAndClicksSignInButton,
@@ -463,22 +488,11 @@ export class FirebaseAuthService {
         }
     }
 
-    private authProviderFactory(
-        providerId: TAuthProviders,
-    ): TAuthProviderConstructor {
-        switch (providerId) {
-            case authProviders.Google:
-                return GoogleAuthProvider;
-            case authProviders.Facebook:
-                return FacebookAuthProvider;
-            case authProviders.GitHub:
-                return GithubAuthProvider;
-            default:
-                throw new Error(`unsupported provider ${providerId}`);
-        }
-    }
+    // #endregion sign-in oauth providers with redirect
 
-    public async SendSignInLinkToEmail(): Promise<void> {
+    // #region sign-in with email
+
+    public async sendSignInLinkToEmail(): Promise<void> {
         try {
             this.log(`instructing firebase to send sign-in link`);
             await sendSignInLinkToEmail(
@@ -547,7 +561,7 @@ export class FirebaseAuthService {
             if (userCredentialResult) {
                 this.logger?.({
                     logMessage: "user signed in with email link",
-                    logData: userCredentialResult,
+                    logData: this.safeUserCredential(userCredentialResult),
                     imageURL: userCredentialResult.user.photoURL,
                 });
                 this.cacheUser(userCredentialResult.user);
@@ -559,7 +573,7 @@ export class FirebaseAuthService {
             } else {
                 this.logger?.({
                     logMessage: "user was not signed in with email link",
-                    logData: userCredentialResult,
+                    logData: this.safeUserCredential(userCredentialResult),
                 });
                 this.callbackStateChanged?.({
                     userCredentialFoundViaEmail: false,
@@ -584,19 +598,25 @@ export class FirebaseAuthService {
         }
     }
 
-    private userAlreadyCached(user: TUserPlus): boolean {
+    // #endregion sign-in with email
+
+    // #region user caching
+
+    private userAlreadyCached(user: User): boolean {
         const cachedUsersJSON: string | null =
             this._window.localStorage.getItem(this.localStorageCachedUserKey);
         if (cachedUsersJSON === null) return false;
 
-        const cachedUsers: Record<string, TUserPlus> =
+        const cachedUsers: Record<string, TSafeUser> =
             JSON.parse(cachedUsersJSON);
         const serviceProvider = user.providerData[0].providerId;
         if (!cachedUsers.hasOwnProperty(serviceProvider)) return false;
 
         const cachedUser = cachedUsers[serviceProvider];
         const cachedUserJSON = JSON.stringify(
-            this.safeUserResponse(this.idempotentUserResponse(cachedUser)),
+            this.safeUserResponse(
+                this.idempotentUserResponse(cachedUser as unknown as User),
+            ),
         );
         const userJSON: string = JSON.stringify(
             this.safeUserResponse(this.idempotentUserResponse(user)),
@@ -605,13 +625,13 @@ export class FirebaseAuthService {
         return cachedUserJSON === userJSON;
     }
 
-    private cacheUser(user: TUserPlus): void {
+    private cacheUser(user: User): void {
         // cache the user under service provider since FIREBASE_LINK_ACCOUNTS=false
         const serviceProvider = user.providerData[0].providerId;
         const cachedUserJSON: string | null = this._window.localStorage.getItem(
             this.localStorageCachedUserKey,
         );
-        let cachedUser: Record<string, TUserPlus> = {};
+        let cachedUser: Record<string, TSafeUser> = {};
         if (cachedUserJSON !== null) {
             cachedUser = JSON.parse(cachedUserJSON!);
         }
@@ -633,58 +653,107 @@ export class FirebaseAuthService {
         this._window.localStorage.removeItem(this.localStorageEmailAddressKey);
     }
 
-    public deleteFirebaseQuerystringParams() {
-        deleteQuerystringParams(this._window, [
-            "apiKey",
-            "oobCode",
-            "mode",
-            "lang",
-        ]);
-    }
-
-    serviceProviderNotFoundAction(self: FirebaseAuthService, e: MouseEvent) {
-        console.error(`Service provider not found`);
-    }
-
-    /** use this method to zero out any sensitive fields before saving to localStorage,
-     * since localStorage may be vulnerable to xss attacks.
-     */
-    private safeUserResponse(user: TUserPlus): TUserPlus {
+    /** use for comparing objects */
+    private idempotentUserResponse(user: User): User {
         // deep copy
-        const safeUser = JSON.parse(JSON.stringify(user)) as TUserPlus;
-        if (safeUser.stsTokenManager) {
-            if (safeUser.stsTokenManager.refreshToken) {
-                safeUser.stsTokenManager.refreshToken = this.hiddenMessage;
-            }
-            if (safeUser.stsTokenManager.accessToken) {
-                safeUser.stsTokenManager.accessToken = this.hiddenMessage;
-            }
-        }
-        return safeUser;
-    }
+        const userCopy = JSON.parse(JSON.stringify(user));
 
-    private idempotentUserResponse(user: TUserPlus): TUserPlus {
-        // deep copy
-        const userCopy = JSON.parse(JSON.stringify(user)) as TUserPlus;
-        if (userCopy.stsTokenManager) {
+        if (userCopy.stsTokenManager.expirationTime) {
             userCopy.stsTokenManager.expirationTime = 0;
-            userCopy.lastLoginAt = 0;
+        }
+        if (userCopy.lastLoginAt) {
+            userCopy.lastLoginAt = "0";
+        }
+        if (userCopy.createdAt) {
+            userCopy.createdAt = "0";
         }
         return userCopy;
     }
 
+    // #endregion user caching
+
+    // #region make firebase objects safe for storage (remove pii)
+
+    private safeUserCredential(
+        userCredential: UserCredential,
+    ): TSafeUserCredential {
+        return {
+            user: this.safeUserResponse(userCredential.user),
+            providerId: userCredential.providerId,
+            operationType: userCredential.operationType,
+            _tokenResponse: this.safeTokenResponse(
+                (userCredential as unknown as TSafeUserCredential)
+                    ._tokenResponse,
+            ),
+        };
+    }
+
+    private safeTokenResponse(
+        tokenResponse: TSafeTokenResponse,
+    ): TSafeTokenResponse {
+        return {
+            kind: tokenResponse.kind,
+            idToken: this.hiddenMessage,
+            email: tokenResponse.email,
+            refreshToken: this.hiddenMessage,
+            expiresIn: tokenResponse.expiresIn,
+            localId: tokenResponse.localId,
+            isNewUser: tokenResponse.isNewUser,
+        };
+    }
+
+    private safeUserResponse(user: User): TSafeUser {
+        // _user contains actual fields returned by firebase
+        const _user = user as unknown as TSafeUser;
+        return {
+            uid: _user.uid,
+            email: _user.email,
+            emailVerified: _user.emailVerified,
+            displayName: _user.displayName,
+            isAnonymous: _user.isAnonymous,
+            photoURL: _user.photoURL,
+            providerData: user.providerData.map((eachProviderData) =>
+                this.safeUserInfo(eachProviderData),
+            ),
+            stsTokenManager: {
+                refreshToken: this.hiddenMessage,
+                accessToken: this.hiddenMessage,
+                expirationTime: _user.stsTokenManager?.expirationTime,
+            },
+            createdAt: _user.createdAt,
+            lastLoginAt: _user.lastLoginAt,
+            apiKey: this.hiddenMessage,
+            appName: _user.appName,
+            metadata: _user.metadata,
+            refreshToken: this.hiddenMessage,
+            tenantId: this.hiddenMessage,
+            phoneNumber: _user.phoneNumber,
+            providerId: _user.providerId,
+        };
+    }
+
+    private safeUserInfo(userInfo: UserInfo): TSafeUserInfo {
+        return {
+            providerId: userInfo.providerId,
+            uid: userInfo.uid,
+            displayName: userInfo.displayName,
+            email: userInfo.email,
+            phoneNumber: userInfo.phoneNumber,
+            photoURL: userInfo.photoURL,
+        };
+    }
+
     private safeCredentialResponse(
         credential: OAuthCredential,
-    ): OAuthCredential {
-        const safeCredential = JSON.parse(
-            JSON.stringify(credential),
-        ) as OAuthCredential;
-        if (safeCredential.accessToken) {
-            safeCredential.accessToken = this.hiddenMessage;
-        }
-        if (safeCredential.idToken) {
-            safeCredential.idToken = this.hiddenMessage;
-        }
-        return safeCredential;
+    ): TSafeOAuthCredential {
+        return {
+            idToken: this.hiddenMessage,
+            accessToken: this.hiddenMessage,
+            secret: this.hiddenMessage,
+            nonce: this.hiddenMessage,
+            pendingToken: this.hiddenMessage,
+        };
     }
+
+    // #endregion make firebase objects safe for storage without pii
 }
