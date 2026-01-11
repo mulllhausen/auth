@@ -136,6 +136,7 @@ const emailSignInFSMContext = new EmailSignInFSMContext({
     callbackPopulateEmailInput: populateEmailInput,
     callbackEnableEmailInput,
     callbackEnablePasswordInput,
+    callbackShowInstructionsToClickLinkInEmail,
     callbackShowInstructionsToReEnterEmail,
 });
 
@@ -263,7 +264,13 @@ function callbackEnablePasswordInput(enabled: boolean): void {
 
 function callbackShowInstructionsToReEnterEmail(enabled: boolean): void {
     document.querySelector<HTMLInputElement>(
-        ".re-enter-email-instructions",
+        ".instructions-re-enter-email",
+    )!.style.display = enabled ? "block" : "none";
+}
+
+function callbackShowInstructionsToClickLinkInEmail(enabled: boolean): void {
+    document.querySelector<HTMLInputElement>(
+        ".instructions-click-link-in-email",
     )!.style.display = enabled ? "block" : "none";
 }
 

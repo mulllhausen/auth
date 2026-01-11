@@ -76,6 +76,9 @@ export class EmailSignInFSMContext {
     public callbackPopulateEmailInput?: (value: string | null) => void;
     public callbackEnablePasswordInput?: (enabled: boolean) => void;
     public callbackEnableLoginButton?: (enabled: boolean) => void;
+    public callbackShowInstructionsToClickLinkInEmail?: (
+        enabled: boolean,
+    ) => void;
     public callbackShowInstructionsToReEnterEmail?: (enabled: boolean) => void;
 
     constructor(props: {
@@ -87,6 +90,7 @@ export class EmailSignInFSMContext {
         callbackPopulateEmailInput?: (value: string | null) => void;
         callbackEnablePasswordInput?: (enabled: boolean) => void;
         callbackEnableLoginButton?: (enabled: boolean) => void;
+        callbackShowInstructionsToClickLinkInEmail?: (enabled: boolean) => void;
         callbackShowInstructionsToReEnterEmail?: (enabled: boolean) => void;
     }) {
         this._window = props.window;
@@ -102,6 +106,8 @@ export class EmailSignInFSMContext {
         this.callbackPopulateEmailInput = props.callbackPopulateEmailInput;
         this.callbackEnableEmailInput = props.callbackEnableEmailInput;
         this.callbackEnablePasswordInput = props.callbackEnablePasswordInput;
+        this.callbackShowInstructionsToClickLinkInEmail =
+            props.callbackShowInstructionsToClickLinkInEmail;
         this.callbackShowInstructionsToReEnterEmail =
             props.callbackShowInstructionsToReEnterEmail;
     }
@@ -200,7 +206,6 @@ abstract class EmailSignInState {
     ): Promise<boolean> {
         let skipCurrentStateLogic = false;
         if (emailStateDTO?.isLogoutClicked || emailStateDTO?.emailDataDeleted) {
-            debugger;
             this.log("logout requested");
             this.firebaseAuthService.logout();
             this.context.callbackPopulateEmailInput?.("");
@@ -284,6 +289,7 @@ class IdleState extends EmailSignInState {
             this.isAnyEmailEntered() && this.isAnyPasswordEntered();
         this.context.callbackEnableLoginButton?.(emailAndPasswordEntered);
 
+        this.context.callbackShowInstructionsToClickLinkInEmail?.(false);
         this.context.callbackShowInstructionsToReEnterEmail?.(false);
     }
 }
@@ -320,6 +326,7 @@ class UserInputtingTextState extends EmailSignInState {
         if (this.isAnyEmailEntered() && this.isAnyPasswordEntered()) {
             this.context.callbackEnableLoginButton?.(true);
         }
+        this.context.callbackShowInstructionsToClickLinkInEmail?.(false);
         this.context.callbackShowInstructionsToReEnterEmail?.(false);
     }
 }
@@ -349,6 +356,7 @@ class SendingEmailAddressToFirebaseState extends EmailSignInState {
         this.context.callbackEnableEmailInput?.(false);
         this.context.callbackEnablePasswordInput?.(false);
         this.context.callbackEnableLoginButton?.(false);
+        this.context.callbackShowInstructionsToClickLinkInEmail?.(false);
         this.context.callbackShowInstructionsToReEnterEmail?.(false);
         await this.firebaseAuthService.sendSignInLinkToEmail();
     }
@@ -376,6 +384,7 @@ class WaitingForUserToClickLinkInEmailState extends EmailSignInState {
     }
 
     public override async onEnter(): Promise<void> {
+        this.context.callbackShowInstructionsToClickLinkInEmail?.(true);
         this.context.callbackShowInstructionsToReEnterEmail?.(false);
     }
 }
@@ -401,6 +410,7 @@ class BadEmailAddressState extends EmailSignInState {
         );
         this.context.callbackEnablePasswordInput?.(true);
         this.context.callbackEnableLoginButton?.(false);
+        this.context.callbackShowInstructionsToClickLinkInEmail?.(false);
         this.context.callbackShowInstructionsToReEnterEmail?.(false);
     }
 }
@@ -416,6 +426,7 @@ class SignInLinkOpenedOnSameBrowserState extends EmailSignInState {
         this.context.callbackEnableEmailInput?.(false);
         this.context.callbackEnablePasswordInput?.(false);
         this.context.callbackEnableLoginButton?.(false);
+        this.context.callbackShowInstructionsToClickLinkInEmail?.(false);
         this.context.callbackShowInstructionsToReEnterEmail?.(false);
 
         // move straight to the next state. this keeps responsibilities correct.
@@ -437,6 +448,7 @@ class SignInLinkOpenedOnDifferentBrowserState extends EmailSignInState {
         );
         this.context.callbackEnablePasswordInput?.(false);
         this.context.callbackEnableLoginButton?.(true);
+        this.context.callbackShowInstructionsToClickLinkInEmail?.(false);
         this.context.callbackShowInstructionsToReEnterEmail?.(true);
 
         // move straight to the next state. this keeps responsibilities correct.
@@ -473,6 +485,7 @@ class WaitingForReEnteredEmailState extends EmailSignInState {
         );
         this.context.callbackEnablePasswordInput?.(false);
         this.context.callbackEnableLoginButton?.(true);
+        this.context.callbackShowInstructionsToClickLinkInEmail?.(false);
         this.context.callbackShowInstructionsToReEnterEmail?.(true);
     }
 }
@@ -499,6 +512,7 @@ class AuthorisingViaFirebaseState extends EmailSignInState {
         this.context.callbackEnableEmailInput?.(false);
         this.context.callbackEnablePasswordInput?.(false);
         this.context.callbackEnableLoginButton?.(false);
+        this.context.callbackShowInstructionsToClickLinkInEmail?.(false);
         this.context.callbackShowInstructionsToReEnterEmail?.(false);
         await this.firebaseAuthService.handleSignInWithEmailLink();
     }
@@ -515,6 +529,7 @@ class SignedInState extends EmailSignInState {
         this.context.callbackEnableEmailInput?.(false);
         this.context.callbackEnablePasswordInput?.(false);
         this.context.callbackEnableLoginButton?.(false);
+        this.context.callbackShowInstructionsToClickLinkInEmail?.(false);
         this.context.callbackShowInstructionsToReEnterEmail?.(false);
     }
 }
@@ -532,6 +547,7 @@ class AuthFailedState extends EmailSignInState {
         this.context.callbackEnableEmailInput?.(false);
         this.context.callbackEnablePasswordInput?.(false);
         this.context.callbackEnableLoginButton?.(false);
+        this.context.callbackShowInstructionsToClickLinkInEmail?.(false);
         this.context.callbackShowInstructionsToReEnterEmail?.(false);
 
         this.firebaseAuthService.signoutProvider(authProviders.Email);

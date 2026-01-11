@@ -561,7 +561,9 @@ export class FirebaseAuthService {
             if (userCredentialResult) {
                 this.logger?.({
                     logMessage: "user signed in with email link",
-                    logData: this.safeUserCredential(userCredentialResult),
+                    logData: userCredentialResult,
+                    safeLocalStorageData:
+                        this.safeUserCredential(userCredentialResult),
                     imageURL: userCredentialResult.user.photoURL,
                 });
                 this.cacheUser(userCredentialResult.user);
@@ -613,13 +615,15 @@ export class FirebaseAuthService {
         if (!cachedUsers.hasOwnProperty(serviceProvider)) return false;
 
         const cachedUser = cachedUsers[serviceProvider];
+        const convertToIdempotent = true;
         const cachedUserJSON = JSON.stringify(
             this.safeUserResponse(
-                this.idempotentUserResponse(cachedUser as unknown as User),
+                cachedUser as unknown as User,
+                convertToIdempotent,
             ),
         );
         const userJSON: string = JSON.stringify(
-            this.safeUserResponse(this.idempotentUserResponse(user)),
+            this.safeUserResponse(user, convertToIdempotent),
         );
 
         return cachedUserJSON === userJSON;
@@ -635,8 +639,10 @@ export class FirebaseAuthService {
         if (cachedUserJSON !== null) {
             cachedUser = JSON.parse(cachedUserJSON!);
         }
+        const convertToIdempotent = true;
         cachedUser[serviceProvider] = this.safeUserResponse(
-            this.idempotentUserResponse(user),
+            user,
+            convertToIdempotent,
         );
         this._window.localStorage.setItem(
             this.localStorageCachedUserKey,
@@ -653,57 +659,45 @@ export class FirebaseAuthService {
         this._window.localStorage.removeItem(this.localStorageEmailAddressKey);
     }
 
-    /** use for comparing objects */
-    private idempotentUserResponse(user: User): User {
-        // deep copy
-        const userCopy = JSON.parse(JSON.stringify(user));
-
-        if (userCopy.stsTokenManager.expirationTime) {
-            userCopy.stsTokenManager.expirationTime = 0;
-        }
-        if (userCopy.lastLoginAt) {
-            userCopy.lastLoginAt = "0";
-        }
-        if (userCopy.createdAt) {
-            userCopy.createdAt = "0";
-        }
-        return userCopy;
-    }
-
     // #endregion user caching
 
     // #region make firebase objects safe for storage (remove pii)
 
     private safeUserCredential(
         userCredential: UserCredential,
+        idempotent: boolean = false, // use for comparing objects
     ): TSafeUserCredential {
         return {
-            user: this.safeUserResponse(userCredential.user),
+            user: this.safeUserResponse(userCredential.user, idempotent),
             providerId: userCredential.providerId,
             operationType: userCredential.operationType,
             _tokenResponse: this.safeTokenResponse(
                 (userCredential as unknown as TSafeUserCredential)
                     ._tokenResponse,
+                idempotent,
             ),
         };
     }
 
     private safeTokenResponse(
         tokenResponse: TSafeTokenResponse,
+        idempotent: boolean = false, // use for comparing objects
     ): TSafeTokenResponse {
         return {
             kind: tokenResponse.kind,
             idToken: this.hiddenMessage,
             email: tokenResponse.email,
             refreshToken: this.hiddenMessage,
-            expiresIn: tokenResponse.expiresIn,
+            expiresIn: idempotent ? "0" : tokenResponse.expiresIn,
             localId: tokenResponse.localId,
             isNewUser: tokenResponse.isNewUser,
         };
     }
 
-    private safeUserResponse(user: User): TSafeUser {
-        // _user contains actual fields returned by firebase
+    private safeUserResponse(
+        user: User,
+        idempotent: boolean = false, // use for comparing objects
+    ): TSafeUser {
         const _user = user as unknown as TSafeUser;
         return {
             uid: _user.uid,
@@ -718,10 +712,12 @@ export class FirebaseAuthService {
             stsTokenManager: {
                 refreshToken: this.hiddenMessage,
                 accessToken: this.hiddenMessage,
-                expirationTime: _user.stsTokenManager?.expirationTime,
+                expirationTime: idempotent
+                    ? 0
+                    : _user.stsTokenManager?.expirationTime,
             },
-            createdAt: _user.createdAt,
-            lastLoginAt: _user.lastLoginAt,
+            createdAt: idempotent ? "0" : _user.createdAt,
+            lastLoginAt: idempotent ? "0" : _user.lastLoginAt,
             apiKey: this.hiddenMessage,
             appName: _user.appName,
             metadata: _user.metadata,

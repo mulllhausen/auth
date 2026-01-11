@@ -103,9 +103,9 @@ export class GUILogger {
             logItemInput.logDateTime;
 
         const renderData: any =
-            logItemInput.logData != null
-                ? logItemInput.logData
-                : logItemInput.safeLocalStorageData;
+            logItemInput.logData == null
+                ? logItemInput.safeLocalStorageData
+                : logItemInput.logData;
         if (renderData != null) {
             const dataElement = logItemElement.querySelector(
                 ".log-data",
@@ -129,7 +129,8 @@ export class GUILogger {
 
         //console.log(logItemInput.logMessage, logItemInput.logData);
         if (logItemInput.logData != null) {
-            logItemInput.logData = "pii not saved in localstorage (unsafe)";
+            logItemInput.logData = null;
+            // note: safeLocalStorageData is used instead
         }
         if (!logItemInput.fromLocalStorage) {
             this.saveLogToLocalStorage(logItemInput);
