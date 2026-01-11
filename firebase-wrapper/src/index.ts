@@ -122,7 +122,7 @@ const emailSignInFSMContext = new EmailSignInFSMContext({
     stateToSVGMapperService,
     logger: guiLogger.log.bind(guiLogger),
     callbackEnableLoginButton,
-    callbackPopulateEmailInput: populateEmailInput,
+    callbackPopulateEmailInput,
     callbackEnableEmailInput,
     callbackEnablePasswordInput,
     callbackShowInstructionsToClickLinkInEmail,
@@ -186,7 +186,7 @@ function testEmailFSMSVG(event_: Event) {
     }
 }
 
-function populateEmailInput(emailAddress: string | null): void {
+function callbackPopulateEmailInput(emailAddress: string | null): void {
     const emailInput = document.querySelector(
         "input.email",
     ) as HTMLInputElement;

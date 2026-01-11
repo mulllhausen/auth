@@ -27,3 +27,10 @@ ie state -> wrapper -> state - all initiated by a single state's onEnter(). see 
 this is nice because it allows for code re-use in the authstate's onEnter
 
 the main thing is to avoid infinite loops (one state transitioning to itself)
+
+workflow:
+1. draw the FSM flowchart
+2. export it as svg
+3. `npm run process-svg` to generate the types
+4. write the FSM and firebase wrapper code
+5. iterate from (1) - add more states as necessary

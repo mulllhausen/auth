@@ -8,8 +8,6 @@ import {
 import { SVGEmailFlowChartService } from "./svg-email-flowchart-service";
 import { SVGCSSClassCategory, SVGStateStatus } from "./svg-flowchart-service";
 
-type TStateBox = keyof typeof EmailSVGStateBoxCSSClass;
-
 export class StateToSVGMapperService {
     private svgService: SVGEmailFlowChartService;
     private currentStateBoxCSSClassKey:

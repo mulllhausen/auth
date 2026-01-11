@@ -1,11 +1,15 @@
 // notes:
 // finite state machines transition between states
 
-// the idea with this state machine is that you should pass it a DTO of all the data you currently have
-// and it will decide which state to transition to. all business logic for the login belongs here,
-// including callbacks that control rendering the GUI.
-// it would be nice if the state machine could just be initialised and then take it from there - calling
-// all the methods it needs in the firebase wrapper to decide if it needs to transition
+// the idea with this state machine (service) is that you should pass it a DTO of all the data you
+// currently have and it will decide which state to transition to. all business logic for the login
+// belongs here, including callbacks that control rendering the GUI.
+
+// the state machine sits just above the firebase wrapper in the hierarchy. it calls methods in the
+// firebase wrapper and the firebase wrapper never calls it, except by invoking the callbacks it has
+// been given by this service.
+
+// todo: sign in with password
 
 import type { TGUIStateDTO } from ".";
 import type { TFirebaseWrapperStateDTO } from "./firebase-wrapper";
@@ -54,9 +58,8 @@ export class EmailSignInFSMContext {
     private stateToSVGMapperService?: StateToSVGMapperService;
     private currentState?: EmailSignInState;
     private logger?: (logItemInput: TLogItem) => void;
-    private localStorageEmailState = "emailState";
-
-    public stateMap: Record<TEmailFSMStateID, TEmailSignInStateConstructor> = {
+    private localStorageEmailStateKey = "emailState";
+    private stateMap: Record<TEmailFSMStateID, TEmailSignInStateConstructor> = {
         Idle: IdleState,
         UserInputtingText: UserInputtingTextState,
         SendingEmailAddressToFirebase: SendingEmailAddressToFirebaseState,
@@ -160,9 +163,11 @@ export class EmailSignInFSMContext {
         return this.currentState;
     }
 
+    // localstorage functions
+
     private getStateFromLocalstorage(): TEmailSignInStateConstructor {
         const emailFSMStateID = this._window.localStorage.getItem(
-            this.localStorageEmailState,
+            this.localStorageEmailStateKey,
         ) as TEmailFSMStateID | null;
         if (emailFSMStateID == null) return IdleState;
         return this.stateMap[emailFSMStateID];
@@ -170,13 +175,13 @@ export class EmailSignInFSMContext {
 
     private backupStateToLocalstorage(emailFSMStateID: TEmailFSMStateID): void {
         this._window.localStorage.setItem(
-            this.localStorageEmailState,
+            this.localStorageEmailStateKey,
             emailFSMStateID as string,
         );
     }
 
     public deleteStateFromLocalstorage(): void {
-        this._window.localStorage.removeItem(this.localStorageEmailState);
+        this._window.localStorage.removeItem(this.localStorageEmailStateKey);
     }
 }
 
