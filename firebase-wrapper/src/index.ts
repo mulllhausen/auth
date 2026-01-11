@@ -51,20 +51,14 @@ import {
     authProviders,
     defaultAction,
     FirebaseAuthService,
-    TUserPlus,
 } from "./firebase-wrapper";
-import type { TLogItem } from "./gui-logger";
 import { GUILogger } from "./gui-logger";
 import { HTMLTemplateManager } from "./html-template-manager";
 import "./index.css";
 import { EmailSignInFSMContext, TEmailStateDTO } from "./state-machine-email";
 import { StateToSVGMapperService } from "./state-to-svg-mapper-service";
 import { SVGEmailFlowChartService } from "./svg-email-flowchart-service";
-import {
-    SVGCSSClassCategory,
-    SVGStateStatus,
-    TSVGStateStatusValues,
-} from "./svg-flowchart-service";
+import { SVGStateStatus } from "./svg-flowchart-service";
 import { debounce, onSvgReady } from "./utils";
 
 export type TGUIStateDTO = {
@@ -89,7 +83,6 @@ const guiLogger = new GUILogger({
 const wrapperSettings: TWrapperSettings = {
     logger: guiLogger.log.bind(guiLogger),
     loginButtonCSSClass: "button.login",
-    signedInCallback,
     signedOutCallback,
     authProviderSettings: {
         [authProviders.Google]: {
@@ -106,10 +99,6 @@ const wrapperSettings: TWrapperSettings = {
                 handleEmailLogin(self, e),
         },
     },
-    reenterEmailAddressCallback,
-    clearEmailAfterSignInCallback,
-    //emailStateChangedCallback,
-    //emailActionCallback,
 };
 
 const firebaseAuthService = new FirebaseAuthService({
@@ -295,126 +284,6 @@ async function handleEmailLogin(
     await _firebaseService.signin(authProviders.Email);
 }
 
-function signedInCallback(user: TUserPlus) {
-    if (user.photoURL != null && user.photoURL !== "") {
-        const logItem: TLogItem = {
-            logMessage: "image detected",
-            imageURL: user.photoURL,
-        };
-        guiLogger.log(logItem);
-    }
-    console.log("Signed in");
-}
-
 function signedOutCallback() {
     console.log("Signed out");
 }
-
-function buttonClickCallback() {
-    console.log("Signed in");
-}
-
-/** email sign-in step 5/9 */
-function reenterEmailAddressCallback(_firebaseService: FirebaseAuthService) {
-    // redefine the email login button click event
-    _firebaseService.Settings.authProviderSettings[
-        authProviders.Email
-    ].loginButtonClicked = (self: FirebaseAuthService, e: MouseEvent) =>
-        emailAddressReentered(self, e);
-}
-
-/** email sign-in step 6/9 */
-async function emailAddressReentered(
-    _firebaseService: FirebaseAuthService,
-    e: MouseEvent,
-): Promise<void> {
-    _firebaseService.EmailAddress = (
-        document.querySelector("input.email") as HTMLInputElement
-    )?.value;
-    await _firebaseService.signin(authProviders.Email);
-}
-
-/** email sign-in step 8/9 */
-function clearEmailAfterSignInCallback(
-    _firebaseService: FirebaseAuthService,
-): boolean {
-    const emailInput = document.querySelector(
-        "input.email",
-    ) as HTMLInputElement;
-    emailInput.value = "";
-    return true;
-}
-
-function emailStateChangedCallback(
-    newEmailState: EmailSignInState,
-    emailStateStatus: TSVGStateStatusValues,
-): void {
-    debugger;
-    emailFSMSVGService.UnsetCategory(SVGCSSClassCategory.StateBox);
-
-    const newEmailStateStr: string = ""; // newEmailState.Name;
-    if (!emailStateToCSSBoxClassMappings.hasOwnProperty(newEmailStateStr)) {
-        throw new Error(
-            `emailStateChangedCallback: ${newEmailStateStr} ` +
-                `not found in emailStateToCSSClassMappings`,
-        );
-    }
-    const emailStateCSSClass =
-        emailStateToCSSBoxClassMappings[newEmailStateStr];
-    emailFSMSVGService.SetElementStatus<typeof SVGCSSClassCategory.StateBox>(
-        emailStateCSSClass,
-        emailStateStatus,
-    );
-}
-
-function emailActionCallback(
-    oldEmailState: EmailSignInState | null,
-    action: null, // keyof typeof emailSignInActions | null,
-    newEmailState: EmailSignInState,
-): void {
-    // when successful, the new state will always be different to the old state
-    const emailStateStatus =
-        // oldEmailState?.Name === newEmailState.Name
-        //     ? SVGStateStatus.Failure
-        //:
-        SVGStateStatus.Success;
-
-    emailStateChangedCallback(newEmailState, emailStateStatus);
-
-    emailFSMSVGService.UnsetCategory(SVGCSSClassCategory.Arrow);
-
-    if (action === null || oldEmailState === null) {
-        return;
-    }
-
-    const emailActionStr: string = `${oldEmailState.constructor.name}${action}`;
-    if (!emailStateToCSSArrowClassMappings.hasOwnProperty(emailActionStr)) {
-        throw new Error(
-            `emailActionCallback: ${emailActionStr} ` +
-                `not found in emailStateToCSSClassMappings`,
-        );
-    }
-    const emailStateCSSClass =
-        emailStateToCSSArrowClassMappings[emailActionStr];
-
-    emailFSMSVGService.SetElementStatus<typeof SVGCSSClassCategory.Arrow>(
-        emailStateCSSClass,
-        emailStateStatus,
-    );
-    // class="arrow user-inputs-email"
-    // class="arrow user-clicks-link-in-email1"
-    // class="arrow user-clicks-link-in-email2"
-    // class="arrow automatically-submit-to-firebase"
-    // class="arrow request-email-address-from-user-again"
-    // class="arrow firebase-returns-an-error"
-    // class="arrow user-changes-email-address-and-clicks-sign-in-with-email-button"
-    // class="arrow ok-response1"
-    // class="arrow ok-response2"
-    // class="arrow same-email-address"
-    // class="arrow different-email-address"
-}
-
-// to be able to update the actions in the svg we need to know
-// the previous state and the new state as well as the action that took us there.
-// the new state requires logic to be determined from the current state and the action.
-// an action will always result in a state-update

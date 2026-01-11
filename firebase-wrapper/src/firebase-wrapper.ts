@@ -113,15 +113,6 @@ export type TFirebaseDependencies = {
 
 export type TWrapperSettings = {
     logger?: (logItemInput: TLogItem) => void;
-    //emailStateChangedCallback: (newState: EmailSignInState) => void;
-    // emailStateChangedCallback: (
-    //     newState: keyof typeof emailSignInStates,
-    // ) => void;
-    // emailActionCallback: (
-    //     oldState: /*typeof*/ EmailSignInState | null,
-    //     action: null, // keyof typeof emailSignInActions | null,
-    //     newState: /*typeof*/ EmailSignInState,
-    // ) => void;
     loginButtonCSSClass: string;
     authProviderSettings: {
         [TKey in TAuthProviders]: {
@@ -130,14 +121,7 @@ export type TWrapperSettings = {
                 | ((self: FirebaseAuthService, e: MouseEvent) => Promise<void>);
         };
     };
-    signedInCallback: (user: User) => void;
     signedOutCallback: () => void;
-
-    /** email sign-in step 5/9 */
-    reenterEmailAddressCallback: (self: FirebaseAuthService) => void;
-
-    /** email sign-in step 8/9 */
-    clearEmailAfterSignInCallback: (self: FirebaseAuthService) => boolean;
 };
 
 export type TAuthProviders = (typeof authProviders)[keyof typeof authProviders];
@@ -200,15 +184,6 @@ export class FirebaseAuthService {
     private callbackStateChanged?: (
         dto: TFirebaseWrapperStateDTO,
     ) => Promise<void>;
-    //private emailStateChangedCallback: (newState: EmailSignInState) => void;
-    // private emailStateChangedCallback: (
-    //     newState: keyof typeof emailSignInStates,
-    // ) => void;
-    // private emailActionCallback: (
-    //     oldState: EmailSignInState | null,
-    //     action: keyof typeof emailSignInActions | null,
-    //     newState: EmailSignInState,
-    // ) => void;
     private backedUpEmailLoginButtonClicked:
         | TDefaultAction
         | ((self: FirebaseAuthService, e: MouseEvent) => Promise<void>)
@@ -224,7 +199,8 @@ export class FirebaseAuthService {
         return this.emailAddress;
     }
     public set EmailAddress(emailAddress: string) {
-        this.log("email address cached");
+        const isEmpty = emailAddress == null || emailAddress.length === 0;
+        this.log(`${isEmpty ? "empty " : ""}email address cached`);
         this._window.localStorage.setItem(
             this.localStorageEmailAddressKey,
             emailAddress,
@@ -241,10 +217,6 @@ export class FirebaseAuthService {
         this.env = props.env;
         this.settings = props.settings;
         this.logger = props.settings.logger;
-        //this.emailStateChangedCallback = input.settings.emailStateChangedCallback;
-        //this.emailActionCallback = input.settings.emailActionCallback;
-        //this.initEmailState();
-        //this.setEmailState(EmailSignInFSM.Idle);
 
         if (this.env.FIREBASE_LINK_ACCOUNTS) {
             throw new Error("FIREBASE_LINK_ACCOUNTS=true is not supported yet");
@@ -447,7 +419,7 @@ export class FirebaseAuthService {
         this.cacheUser(user);
         // User is signed in, see docs for a list of available properties
         // https://firebase.google.com/docs/reference/js/firebase.User
-        this.settings.signedInCallback(user);
+        //this.settings.signedInCallback(user);
     }
 
     public async signin(providerID: TAuthProviders): Promise<void> {
