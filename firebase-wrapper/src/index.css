@@ -4,17 +4,25 @@ body {
     margin: 0;
     padding: 10px;
 }
-.graphics-containers {
+.main-row {
     display: flex;
-    width: 100vw;
+    align-items: flex-start;
+    gap: 10px;
 }
 .log-container {
-    order: 1;
+    order: 0;
     width: 500px;
     height: 500px;
     background-color: lightgray;
     padding-top: 2px;
     overflow: auto; /* only show scrollbars if content overflows */
+}
+.graphics-containers {
+    order: 1;
+    display: flex;
+    width: 100vw;
+    flex: 1; /* take remaining width */
+    min-width: 0; /* prevents overflow issues in flex layouts */
 }
 .log-item {
     border-radius: 10px;
@@ -52,10 +60,40 @@ span.log-datetime {
     display: inline-block;
     order: 2;
     border: 1px solid black;
-    width: 50%;
-    max-width: 50%;
+    width: 65%;
+    max-width: 65%;
     height: auto;
 }
 .instructions {
     color: red;
+}
+.tabs-and-panels {
+    display: flex;
+    flex-direction: column; /* tabs above panels */
+    flex: 1;
+    min-width: 0;
+}
+.tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1px;
+    margin-bottom: 5px;
+}
+.tabs a {
+    color: black;
+    text-decoration: none;
+    padding: 10px;
+    background-color: aliceblue;
+}
+.tab-panel {
+    display: none;
+    flex: 1;
+    min-width: 0;
+}
+.tab-panel.active {
+    display: flex;
+    flex-direction: column;
+}
+.tabs a.active {
+    background-color: lightgray;
 }

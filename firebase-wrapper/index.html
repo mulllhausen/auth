@@ -34,15 +34,48 @@
         <span>logstream</span>
         <button id="clearLogstream">clear</button>
         <button id="clearCachedUser">clear user cache</button>
-        <div class="graphics-containers">
+        <div class="main-row">
             <div id="windowLogContainer" class="log-container"></div>
-            <object
-                id="emailLinkFSMChart"
-                class="fsm-chart"
-                data="/images/fsm-email-link-flowchart-cleaned.svg"
-                type="image/svg+xml"
-                aria-label="email-flow finite state machine chart"
-            ></object>
+            <div class="graphics-containers">
+                <div class="tabs-and-panels">
+                    <nav class="tabs">
+                        <a href="#" data-tab="tab-email-fsm">email flowchart</a>
+                        <a href="#" data-tab="tab-facebook-fsm"
+                            >facebook flowchart</a
+                        >
+                        <a href="#" data-tab="tab-google-fsm"
+                            >google flowchart</a
+                        >
+                        <a href="#" data-tab="tab-github-fsm"
+                            >github flowchart</a
+                        >
+                    </nav>
+                    <div class="tab-panel" id="tab-email-fsm">
+                        <object
+                            id="emailLinkFSMChart"
+                            class="fsm-chart"
+                            data="/images/fsm-email-link-flowchart-cleaned.svg"
+                            type="image/svg+xml"
+                            aria-label="email-flow finite state machine chart"
+                        ></object>
+                    </div>
+                    <div class="tab-panel" id="tab-facebook-fsm">
+                        <object
+                            id="facebookFSMChart"
+                            class="fsm-chart"
+                            data="/images/facebook-flowchart-cleaned.svg"
+                            type="image/svg+xml"
+                            aria-label="facebook-flow finite state machine chart"
+                        ></object>
+                    </div>
+                    <div class="tab-panel" id="tab-google-fsm">
+                        Content for tab 3
+                    </div>
+                    <div class="tab-panel" id="tab-github-fsm">
+                        Content for tab 3
+                    </div>
+                </div>
+            </div>
         </div>
         <button id="enableAllSVGElements" data-state="unset">
             enable all SVG elements

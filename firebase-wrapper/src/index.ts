@@ -130,6 +130,17 @@ const emailSignInFSMContext = new EmailSignInFSMContext({
 });
 
 document.addEventListener("DOMContentLoaded", () => {
+    const allTabs = document.querySelectorAll<HTMLAnchorElement>(".tabs a");
+    const allPanels = document.querySelectorAll<HTMLElement>(".tab-panel");
+    allTabs.forEach((tab) =>
+        tab.addEventListener("click", (e) => {
+            e.preventDefault();
+            activateTab(tab, allTabs, allPanels);
+        }),
+    );
+    const defaultTab = 0;
+    activateTab(allTabs[defaultTab], allTabs, allPanels);
+
     onSvgReady({
         svgQuerySelector: "#emailLinkFSMChart",
         callback: async () => await emailSignInFSMContext.setup(),
@@ -168,6 +179,18 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 // callback functions
+
+function activateTab(
+    activeTab: HTMLAnchorElement,
+    allTabs: NodeListOf<HTMLAnchorElement>,
+    allPanels: NodeListOf<HTMLElement>,
+) {
+    allTabs.forEach((eachTab) => eachTab.classList.remove("active"));
+    allPanels.forEach((eachPanel) => eachPanel.classList.remove("active"));
+
+    activeTab.classList.add("active");
+    document.getElementById(activeTab.dataset.tab!)?.classList.add("active");
+}
 
 function testEmailFSMSVG(event_: Event) {
     const buttonEl = event_.target as HTMLButtonElement;
