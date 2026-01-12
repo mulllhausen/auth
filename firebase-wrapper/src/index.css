@@ -84,6 +84,10 @@ span.log-datetime {
     text-decoration: none;
     padding: 10px;
     background-color: aliceblue;
+    user-select: none; /* prevents text selection highlight */
+    -webkit-user-select: none; /* Safari */
+    -ms-user-select: none; /* old Edge */
+    -webkit-user-drag: none; /* Safari/Chrome: prevents drag ghost */
 }
 .tab-panel {
     display: none;
