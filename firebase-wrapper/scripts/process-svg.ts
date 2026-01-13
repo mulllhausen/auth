@@ -1,6 +1,8 @@
 import fs from "fs";
 import { JSDOM } from "jsdom";
 import prettier from "prettier";
+import type { TAuthProvider } from "../src/firebase-wrapper.ts";
+import { authProviders } from "../src/firebase-wrapper.ts";
 import type { TSVGCSSClassCategoryValues } from "../src/svg-flowchart-service.ts";
 import {
     SVGCSSClassCategory,
@@ -14,10 +16,13 @@ import {
 //    generate typescript types.
 // the gui can then interact with the svg.
 
-const INPUT_SVG_FILE: string = "./public/images/fsm-email-link-flowchart.svg";
-const OUTPUT_SVG_FILE: string =
-    "./public/images/fsm-email-link-flowchart-cleaned.svg";
-const OUTPUT_SVG_TYPES_FILE: string = "./src/svg-email-flowchart-auto-types.ts";
+const serviceProvider: TAuthProvider = authProviders.Facebook;
+const { inputSVGFileName, outputSVGTypesFileName } =
+    mapAuthProvider(serviceProvider);
+
+const INPUT_SVG_FILE: string = `./public/images/${inputSVGFileName}.svg`;
+const OUTPUT_SVG_FILE: string = `./public/images/${inputSVGFileName}-cleaned.svg`;
+const OUTPUT_SVG_TYPES_FILE: string = `./src/${outputSVGTypesFileName}.ts`;
 
 // init
 const duplicateClasses: Map<TSVGCSSClassCategoryValues, string[]> = new Map([
@@ -31,6 +36,19 @@ const duplicateClasses: Map<TSVGCSSClassCategoryValues, string[]> = new Map([
 })();
 
 // functions
+
+function mapAuthProvider(serviceProvider: TAuthProvider): {
+    inputSVGFileName: string;
+    outputSVGTypesFileName: string;
+} {
+    const serviceProviderLowercase = serviceProvider
+        .toLowerCase()
+        .replace(".com", "");
+    return {
+        inputSVGFileName: `fsm-${serviceProviderLowercase}-flowchart`,
+        outputSVGTypesFileName: `svg-${serviceProviderLowercase}-flowchart-auto-types`,
+    };
+}
 
 async function cleanSVG(
     inputSVGFile: string,

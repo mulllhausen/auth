@@ -1,4 +1,4 @@
-import { HTMLTemplateManager } from "./html-template-manager";
+import { HTMLTemplateManager } from "./html-template-manager.ts";
 
 export type TLogItem = {
     logMessage: string;

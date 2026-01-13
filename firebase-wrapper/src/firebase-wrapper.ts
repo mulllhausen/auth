@@ -1,46 +1,44 @@
 // #region imports
 
-import {
-    FirebaseApp,
-    FirebaseError,
-    FirebaseOptions,
-    initializeApp,
-} from "firebase/app";
-import {
+import type { FirebaseApp, FirebaseOptions } from "firebase/app";
+import { FirebaseError, initializeApp } from "firebase/app";
+import type {
     ActionCodeSettings,
     Auth,
     AuthProvider,
     CompleteFn,
-    EmailAuthProvider,
     ErrorFn,
+    NextOrObserver,
+    PopupRedirectResolver,
+    Unsubscribe,
+    User,
+    UserCredential,
+    UserInfo,
+} from "firebase/auth";
+import {
+    EmailAuthProvider,
     FacebookAuthProvider,
     getAuth,
     getRedirectResult,
     GithubAuthProvider,
     GoogleAuthProvider,
     isSignInWithEmailLink,
-    NextOrObserver,
     OAuthCredential,
     onAuthStateChanged,
-    PopupRedirectResolver,
     sendSignInLinkToEmail,
     signInWithEmailLink,
     signInWithRedirect,
-    Unsubscribe,
-    User,
-    UserCredential,
-    UserInfo,
 } from "firebase/auth";
-import type { TProcessEnv } from "./dotenv";
+import type { TProcessEnv } from "./dotenv.ts";
 import type {
     TSafeOAuthCredential,
     TSafeTokenResponse,
     TSafeUser,
     TSafeUserCredential,
     TSafeUserInfo,
-} from "./firebase-safe-types";
-import { TLogItem } from "./gui-logger";
-import { clearQueryParams as deleteQuerystringParams } from "./utils";
+} from "./firebase-safe-types.ts";
+import type { TLogItem } from "./gui-logger.ts";
+import { clearQueryParams } from "./utils.ts";
 
 // #endregion imports
 
@@ -55,10 +53,12 @@ export const firebaseDependencies: TFirebaseDependencies = {
     initializeApp,
     isSignInWithEmailLink,
     onAuthStateChanged,
-    sendSignInLinkToEmail,
+    //  sendSignInLinkToEmail,
     signInWithEmailLink,
     signInWithRedirect,
 };
+
+export type TAuthProvider = (typeof authProviders)[keyof typeof authProviders];
 
 export const authProviders = {
     Email: EmailAuthProvider.PROVIDER_ID,
@@ -94,11 +94,11 @@ export type TFirebaseDependencies = {
         error?: ErrorFn,
         completed?: CompleteFn,
     ) => Unsubscribe;
-    sendSignInLinkToEmail: (
-        auth: Auth,
-        email: string,
-        actionCodeSettings: ActionCodeSettings,
-    ) => Promise<void>;
+    // sendSignInLinkToEmail: (
+    //     auth: Auth,
+    //     email: string,
+    //     actionCodeSettings: ActionCodeSettings,
+    // ) => Promise<void>;
     signInWithEmailLink: (
         auth: Auth,
         email: string,
@@ -314,12 +314,7 @@ export class FirebaseAuthService {
     }
 
     public deleteFirebaseQuerystringParams() {
-        deleteQuerystringParams(this._window, [
-            "apiKey",
-            "oobCode",
-            "mode",
-            "lang",
-        ]);
+        clearQueryParams(this._window, ["apiKey", "oobCode", "mode", "lang"]);
     }
 
     serviceProviderNotFoundAction(self: FirebaseAuthService, e: MouseEvent) {
