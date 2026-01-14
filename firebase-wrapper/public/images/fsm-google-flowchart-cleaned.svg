@@ -1,0 +1,739 @@
+<svg
+    version="1.1"
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 1122.0409026044013 694.742291671574"
+    width="1122.0409026044013"
+    height="694.742291671574"
+>
+    <!-- svg-source:excalidraw -->
+    <metadata></metadata>
+    <defs>
+        <style>
+            .state-box {
+                fill: none;
+            }
+            .state-box.failure {
+                fill: red;
+            }
+            .state-box.success {
+                fill: green;
+            }
+
+            text.arrow {
+                fill: black;
+                font-size: 20px;
+            }
+            text.arrow.failure {
+                fill: red;
+            }
+            text.arrow.success {
+                fill: green;
+            }
+
+            path.arrow {
+                stroke: black;
+            }
+            path.arrow.failure {
+                stroke: red;
+            }
+            path.arrow.success {
+                stroke: green;
+            }
+            * {
+                font-family: Arial;
+            }
+        </style>
+    </defs>
+    <g
+        stroke-linecap="round"
+        transform="translate(25.563383348750904 361.38977527904797) rotate(0 134.48668589264958 57.5)"
+    >
+        <path
+            d="M28.75 0 C98.32 0, 167.89 0, 240.22 0 C259.39 0, 268.97 9.58, 268.97 28.75 C268.97 51.54, 268.97 74.33, 268.97 86.25 C268.97 105.42, 259.39 115, 240.22 115 C186.88 115, 133.54 115, 28.75 115 C9.58 115, 0 105.42, 0 86.25 C0 68, 0 49.74, 0 28.75 C0 9.58, 9.58 0, 28.75 0"
+            stroke="none"
+            stroke-width="0"
+            class="state-box redirecting-to-google-0"
+        ></path>
+        <path
+            d="M28.75 0 C76.49 0, 124.22 0, 240.22 0 M28.75 0 C112.7 0, 196.65 0, 240.22 0 M240.22 0 C259.39 0, 268.97 9.58, 268.97 28.75 M240.22 0 C259.39 0, 268.97 9.58, 268.97 28.75 M268.97 28.75 C268.97 43.14, 268.97 57.52, 268.97 86.25 M268.97 28.75 C268.97 49.47, 268.97 70.19, 268.97 86.25 M268.97 86.25 C268.97 105.42, 259.39 115, 240.22 115 M268.97 86.25 C268.97 105.42, 259.39 115, 240.22 115 M240.22 115 C181.82 115, 123.42 115, 28.75 115 M240.22 115 C178.36 115, 116.5 115, 28.75 115 M28.75 115 C9.58 115, 0 105.42, 0 86.25 M28.75 115 C9.58 115, 0 105.42, 0 86.25 M0 86.25 C0 66.91, 0 47.57, 0 28.75 M0 86.25 C0 64.29, 0 42.33, 0 28.75 M0 28.75 C0 9.58, 9.58 0, 28.75 0 M0 28.75 C0 9.58, 9.58 0, 28.75 0"
+            stroke="#1e1e1e"
+            stroke-width="1"
+            fill="none"
+        ></path>
+    </g>
+    <g
+        transform="translate(62.24612179267024 383.88977527904797) rotate(0 97.80394744873047 35)"
+    >
+        <text
+            x="97.80394744873047"
+            y="24.668"
+            font-family="Excalifont, Xiaolai, sans-serif, Segoe UI Emoji"
+            font-size="28px"
+            fill="#1e1e1e"
+            text-anchor="middle"
+            direction="ltr"
+            dominant-baseline="alphabetic"
+        >
+            Redirecting to
+        </text>
+        <text
+            x="97.80394744873047"
+            y="59.668"
+            font-family="Excalifont, Xiaolai, sans-serif, Segoe UI Emoji"
+            font-size="28px"
+            fill="#1e1e1e"
+            text-anchor="middle"
+            direction="ltr"
+            dominant-baseline="alphabetic"
+        >
+            google
+        </text>
+    </g>
+    <g
+        stroke-linecap="round"
+        transform="translate(392.848524061606 356.1275556832967) rotate(0 136.27218319997064 57.5)"
+    >
+        <path
+            d="M28.75 0 C105.01 0, 181.28 0, 243.79 0 C262.96 0, 272.54 9.58, 272.54 28.75 C272.54 51.63, 272.54 74.51, 272.54 86.25 C272.54 105.42, 262.96 115, 243.79 115 C188 115, 132.2 115, 28.75 115 C9.58 115, 0 105.42, 0 86.25 C0 73.27, 0 60.29, 0 28.75 C0 9.58, 9.58 0, 28.75 0"
+            stroke="none"
+            stroke-width="0"
+            class="state-box google-responded-0"
+        ></path>
+        <path
+            d="M28.75 0 C78.09 0, 127.43 0, 243.79 0 M28.75 0 C80.91 0, 133.07 0, 243.79 0 M243.79 0 C262.96 0, 272.54 9.58, 272.54 28.75 M243.79 0 C262.96 0, 272.54 9.58, 272.54 28.75 M272.54 28.75 C272.54 42.69, 272.54 56.62, 272.54 86.25 M272.54 28.75 C272.54 48.68, 272.54 68.61, 272.54 86.25 M272.54 86.25 C272.54 105.42, 262.96 115, 243.79 115 M272.54 86.25 C272.54 105.42, 262.96 115, 243.79 115 M243.79 115 C180 115, 116.2 115, 28.75 115 M243.79 115 C173.18 115, 102.56 115, 28.75 115 M28.75 115 C9.58 115, 0 105.42, 0 86.25 M28.75 115 C9.58 115, 0 105.42, 0 86.25 M0 86.25 C0 68.92, 0 51.59, 0 28.75 M0 86.25 C0 71.73, 0 57.2, 0 28.75 M0 28.75 C0 9.58, 9.58 0, 28.75 0 M0 28.75 C0 9.58, 9.58 0, 28.75 0"
+            stroke="#1e1e1e"
+            stroke-width="1"
+            fill="none"
+        ></path>
+    </g>
+    <g
+        transform="translate(409.0147654891157 396.1275556832967) rotate(0 120.10594177246094 17.5)"
+    >
+        <text
+            x="120.10594177246094"
+            y="24.668"
+            font-family="Excalifont, Xiaolai, sans-serif, Segoe UI Emoji"
+            font-size="28px"
+            fill="#1e1e1e"
+            text-anchor="middle"
+            direction="ltr"
+            dominant-baseline="alphabetic"
+        >
+            Google responded
+        </text>
+    </g>
+    <g
+        stroke-linecap="round"
+        transform="translate(794.2547944128141 345.0369385670707) rotate(0 136.27218319997064 57.5)"
+    >
+        <path
+            d="M28.75 0 C95.35 0, 161.95 0, 243.79 0 C262.96 0, 272.54 9.58, 272.54 28.75 C272.54 50.35, 272.54 71.94, 272.54 86.25 C272.54 105.42, 262.96 115, 243.79 115 C186.96 115, 130.13 115, 28.75 115 C9.58 115, 0 105.42, 0 86.25 C0 71.3, 0 56.36, 0 28.75 C0 9.58, 9.58 0, 28.75 0"
+            stroke="none"
+            stroke-width="0"
+            class="state-box google-is-unavailable-0"
+        ></path>
+        <path
+            d="M28.75 0 C96.02 0, 163.3 0, 243.79 0 M28.75 0 C102.51 0, 176.27 0, 243.79 0 M243.79 0 C262.96 0, 272.54 9.58, 272.54 28.75 M243.79 0 C262.96 0, 272.54 9.58, 272.54 28.75 M272.54 28.75 C272.54 51.53, 272.54 74.31, 272.54 86.25 M272.54 28.75 C272.54 40.42, 272.54 52.08, 272.54 86.25 M272.54 86.25 C272.54 105.42, 262.96 115, 243.79 115 M272.54 86.25 C272.54 105.42, 262.96 115, 243.79 115 M243.79 115 C165.42 115, 87.04 115, 28.75 115 M243.79 115 C191.78 115, 139.77 115, 28.75 115 M28.75 115 C9.58 115, 0 105.42, 0 86.25 M28.75 115 C9.58 115, 0 105.42, 0 86.25 M0 86.25 C0 70.28, 0 54.32, 0 28.75 M0 86.25 C0 65.48, 0 44.72, 0 28.75 M0 28.75 C0 9.58, 9.58 0, 28.75 0 M0 28.75 C0 9.58, 9.58 0, 28.75 0"
+            stroke="#1e1e1e"
+            stroke-width="1"
+            fill="none"
+        ></path>
+    </g>
+    <g
+        transform="translate(859.3650208256754 367.5369385670707) rotate(0 71.16195678710938 35)"
+    >
+        <text
+            x="71.16195678710938"
+            y="24.668"
+            font-family="Excalifont, Xiaolai, sans-serif, Segoe UI Emoji"
+            font-size="28px"
+            fill="#1e1e1e"
+            text-anchor="middle"
+            direction="ltr"
+            dominant-baseline="alphabetic"
+        >
+            Google is
+        </text>
+        <text
+            x="71.16195678710938"
+            y="59.668"
+            font-family="Excalifont, Xiaolai, sans-serif, Segoe UI Emoji"
+            font-size="28px"
+            fill="#1e1e1e"
+            text-anchor="middle"
+            direction="ltr"
+            dominant-baseline="alphabetic"
+        >
+            unavailable
+        </text>
+    </g>
+    <g
+        stroke-linecap="round"
+        transform="translate(47.88673545206257 569.742291671574) rotate(0 136.2721831999704 57.5)"
+    >
+        <path
+            d="M28.75 0 C110.72 0, 192.68 0, 243.79 0 C262.96 0, 272.54 9.58, 272.54 28.75 C272.54 47.48, 272.54 66.22, 272.54 86.25 C272.54 105.42, 262.96 115, 243.79 115 C171.18 115, 98.57 115, 28.75 115 C9.58 115, 0 105.42, 0 86.25 C0 68.92, 0 51.6, 0 28.75 C0 9.58, 9.58 0, 28.75 0"
+            stroke="none"
+            stroke-width="0"
+            class="state-box signed-in-0"
+        ></path>
+        <path
+            d="M28.75 0 C110.8 0, 192.84 0, 243.79 0 M28.75 0 C86.56 0, 144.38 0, 243.79 0 M243.79 0 C262.96 0, 272.54 9.58, 272.54 28.75 M243.79 0 C262.96 0, 272.54 9.58, 272.54 28.75 M272.54 28.75 C272.54 42.46, 272.54 56.17, 272.54 86.25 M272.54 28.75 C272.54 46.21, 272.54 63.68, 272.54 86.25 M272.54 86.25 C272.54 105.42, 262.96 115, 243.79 115 M272.54 86.25 C272.54 105.42, 262.96 115, 243.79 115 M243.79 115 C174.09 115, 104.39 115, 28.75 115 M243.79 115 C166.88 115, 89.97 115, 28.75 115 M28.75 115 C9.58 115, 0 105.42, 0 86.25 M28.75 115 C9.58 115, 0 105.42, 0 86.25 M0 86.25 C0 74.09, 0 61.94, 0 28.75 M0 86.25 C0 71.33, 0 56.41, 0 28.75 M0 28.75 C0 9.58, 9.58 0, 28.75 0 M0 28.75 C0 9.58, 9.58 0, 28.75 0"
+            stroke="#1e1e1e"
+            stroke-width="1"
+            fill="none"
+        ></path>
+    </g>
+    <g
+        transform="translate(124.37895039031446 609.742291671574) rotate(0 59.77996826171875 17.5)"
+    >
+        <text
+            x="59.77996826171875"
+            y="24.668"
+            font-family="Excalifont, Xiaolai, sans-serif, Segoe UI Emoji"
+            font-size="28px"
+            fill="#1e1e1e"
+            text-anchor="middle"
+            direction="ltr"
+            dominant-baseline="alphabetic"
+        >
+            Signed-in
+        </text>
+    </g>
+    <g mask="url(#mask-dBRB1qP6bkcvI_AYK9K7M)" stroke-linecap="round">
+        <g
+            transform="translate(394.6083727512264 467.01715155491524) rotate(0 -41.90224030195054 56.306111991050614)"
+        >
+            <path
+                d="M0 0 C-13.97 18.77, -69.84 93.84, -83.8 112.61 M0 0 C-13.97 18.77, -69.84 93.84, -83.8 112.61"
+                stroke="#1e1e1e"
+                stroke-width="1"
+                fill="none"
+            ></path>
+        </g>
+        <g
+            transform="translate(394.6083727512264 467.01715155491524) rotate(0 -41.90224030195054 56.306111991050614)"
+        >
+            <path
+                d="M-76.64 88.66 C-78.33 94.3, -80.01 99.94, -83.8 112.61 M-76.64 88.66 C-78.42 94.63, -80.21 100.59, -83.8 112.61"
+                stroke="#1e1e1e"
+                stroke-width="1"
+                fill="none"
+            ></path>
+        </g>
+        <g
+            transform="translate(394.6083727512264 467.01715155491524) rotate(0 -41.90224030195054 56.306111991050614)"
+        >
+            <path
+                d="M-62.92 98.87 C-67.84 102.11, -72.75 105.34, -83.8 112.61 M-62.92 98.87 C-68.12 102.29, -73.33 105.72, -83.8 112.61"
+                stroke="#1e1e1e"
+                stroke-width="1"
+                fill="none"
+            ></path>
+        </g>
+    </g>
+    <mask id="mask-dBRB1qP6bkcvI_AYK9K7M">
+        <rect
+            x="0"
+            y="0"
+            fill="#fff"
+            width="578.4128533551275"
+            height="679.6293755370165"
+        ></rect>
+        <rect
+            x="295.2261748687097"
+            y="510.8232635459659"
+            fill="#000"
+            width="114.95991516113281"
+            height="25"
+            opacity="1"
+        ></rect>
+    </mask>
+    <g
+        transform="translate(295.2261748687097 510.82326354596603) rotate(0 57.47995758056618 12.499999999999943)"
+    >
+        <text
+            x="57.479957580566406"
+            y="17.619999999999997"
+            fill="#1e1e1e"
+            text-anchor="middle"
+            direction="ltr"
+            dominant-baseline="alphabetic"
+            class="arrow ok-response-0"
+        >
+            ok response
+        </text>
+    </g>
+    <g mask="url(#mask-_jBM0xn4zXRzigc2xyOJr)" stroke-linecap="round">
+        <g
+            transform="translate(264.95013908749297 360.45338766081943) rotate(0 104.13657445983358 -25.197809274167383)"
+        >
+            <path
+                d="M0 0 C17.3 -8.4, 69.09 -49.44, 103.8 -50.38 C138.51 -51.32, 190.86 -13.11, 208.27 -5.66 M0 0 C17.3 -8.4, 69.09 -49.44, 103.8 -50.38 C138.51 -51.32, 190.86 -13.11, 208.27 -5.66"
+                stroke="#1e1e1e"
+                stroke-width="1"
+                fill="none"
+            ></path>
+        </g>
+        <g
+            transform="translate(264.95013908749297 360.45338766081943) rotate(0 104.13657445983358 -25.197809274167383)"
+        >
+            <path
+                d="M183.58 -9.57 C190.56 -8.46, 197.54 -7.36, 208.27 -5.66 M183.58 -9.57 C192.19 -8.2, 200.8 -6.84, 208.27 -5.66"
+                stroke="#1e1e1e"
+                stroke-width="1"
+                fill="none"
+            ></path>
+        </g>
+        <g
+            transform="translate(264.95013908749297 360.45338766081943) rotate(0 104.13657445983358 -25.197809274167383)"
+        >
+            <path
+                d="M191.87 -24.53 C196.5 -19.19, 201.14 -13.86, 208.27 -5.66 M191.87 -24.53 C197.59 -17.95, 203.31 -11.37, 208.27 -5.66"
+                stroke="#1e1e1e"
+                stroke-width="1"
+                fill="none"
+            ></path>
+        </g>
+    </g>
+    <mask id="mask-_jBM0xn4zXRzigc2xyOJr">
+        <rect
+            x="0"
+            y="0"
+            fill="#fff"
+            width="573.2232880071606"
+            height="510.83183722418454"
+        ></rect>
+        <rect
+            x="311.2715040022417"
+            y="297.5749380974544"
+            fill="#000"
+            width="114.95991516113281"
+            height="25"
+            opacity="1"
+        ></rect>
+    </mask>
+    <g
+        transform="translate(311.2715040022413 297.5749380974544) rotate(0 57.81520954508528 37.680640289197726)"
+    >
+        <text
+            x="57.479957580566406"
+            y="17.619999999999997"
+            fill="#1e1e1e"
+            text-anchor="middle"
+            direction="ltr"
+            dominant-baseline="alphabetic"
+            class="arrow ok-response-1"
+        >
+            ok response
+        </text>
+    </g>
+    <g mask="url(#mask-M0EonnSy34e1POpJgDUsM)" stroke-linecap="round">
+        <g
+            transform="translate(190.2321252826705 360.05589814999826) rotate(0 306.3021750558262 -73.27006847777281)"
+        >
+            <path
+                d="M0 0 C57.35 -24.42, 242.01 -145, 344.11 -146.53 C446.21 -148.05, 567.86 -32.06, 612.6 -9.16 M0 0 C57.35 -24.42, 242.01 -145, 344.11 -146.53 C446.21 -148.05, 567.86 -32.06, 612.6 -9.16"
+                stroke="#1e1e1e"
+                stroke-width="1"
+                fill="none"
+            ></path>
+        </g>
+        <g
+            transform="translate(190.2321252826705 360.05589814999826) rotate(0 306.3021750558262 -73.27006847777281)"
+        >
+            <path
+                d="M588.39 -15.39 C596.19 -13.39, 603.98 -11.38, 612.6 -9.16 M588.39 -15.39 C596.23 -13.37, 604.08 -11.36, 612.6 -9.16"
+                stroke="#1e1e1e"
+                stroke-width="1"
+                fill="none"
+            ></path>
+        </g>
+        <g
+            transform="translate(190.2321252826705 360.05589814999826) rotate(0 306.3021750558262 -73.27006847777281)"
+        >
+            <path
+                d="M598.06 -29.5 C602.74 -22.95, 607.42 -16.41, 612.6 -9.16 M598.06 -29.5 C602.77 -22.91, 607.48 -16.33, 612.6 -9.16"
+                stroke="#1e1e1e"
+                stroke-width="1"
+                fill="none"
+            ></path>
+        </g>
+    </g>
+    <mask id="mask-M0EonnSy34e1POpJgDUsM">
+        <rect
+            x="0"
+            y="0"
+            fill="#fff"
+            width="902.8364753943229"
+            height="606.5810954637959"
+        ></rect>
+        <rect
+            x="450.4946076252495"
+            y="188.53070083620065"
+            fill="#000"
+            width="167.6998748779297"
+            height="50"
+            opacity="1"
+        ></rect>
+    </mask>
+    <g
+        transform="translate(450.49460762524905 188.5307008362007) rotate(0 46.03969271324718 98.2551288360248)"
+    >
+        <text
+            x="83.84993743896484"
+            y="17.619999999999997"
+            fill="#1e1e1e"
+            text-anchor="middle"
+            direction="ltr"
+            dominant-baseline="alphabetic"
+            class="arrow firebase-returned-an-error-0"
+        >
+            firebase
+        </text>
+        <text
+            x="83.84993743896484"
+            y="42.62"
+            fill="#1e1e1e"
+            text-anchor="middle"
+            direction="ltr"
+            dominant-baseline="alphabetic"
+            class="arrow firebase-returned-an-error-0"
+        >
+            returned an error
+        </text>
+    </g>
+    <g
+        stroke-linecap="round"
+        transform="translate(30.22439981871321 67.86578319580443) rotate(0 103.53837618082161 57.5)"
+    >
+        <path
+            d="M28.75 0 C62.98 0, 97.2 0, 178.33 0 C197.49 0, 207.08 9.58, 207.08 28.75 C207.08 49.81, 207.08 70.87, 207.08 86.25 C207.08 105.42, 197.49 115, 178.33 115 C140.02 115, 101.72 115, 28.75 115 C9.58 115, 0 105.42, 0 86.25 C0 65.99, 0 45.72, 0 28.75 C0 9.58, 9.58 0, 28.75 0"
+            stroke="none"
+            stroke-width="0"
+            class="state-box idle-0"
+        ></path>
+        <path
+            d="M28.75 0 C69.41 0, 110.06 0, 178.33 0 M28.75 0 C62.83 0, 96.91 0, 178.33 0 M178.33 0 C197.49 0, 207.08 9.58, 207.08 28.75 M178.33 0 C197.49 0, 207.08 9.58, 207.08 28.75 M207.08 28.75 C207.08 51.32, 207.08 73.89, 207.08 86.25 M207.08 28.75 C207.08 40.77, 207.08 52.79, 207.08 86.25 M207.08 86.25 C207.08 105.42, 197.49 115, 178.33 115 M207.08 86.25 C207.08 105.42, 197.49 115, 178.33 115 M178.33 115 C127.27 115, 76.21 115, 28.75 115 M178.33 115 C120.09 115, 61.85 115, 28.75 115 M28.75 115 C9.58 115, 0 105.42, 0 86.25 M28.75 115 C9.58 115, 0 105.42, 0 86.25 M0 86.25 C0 64.14, 0 42.03, 0 28.75 M0 86.25 C0 64.07, 0 41.89, 0 28.75 M0 28.75 C0 9.58, 9.58 0, 28.75 0 M0 28.75 C0 9.58, 9.58 0, 28.75 0"
+            stroke="#1e1e1e"
+            stroke-width="1"
+            fill="none"
+        ></path>
+    </g>
+    <g
+        transform="translate(106.99479351662467 107.86578319580443) rotate(0 26.767982482910156 17.5)"
+    >
+        <text
+            x="26.767982482910156"
+            y="24.668"
+            font-family="Excalifont, Xiaolai, sans-serif, Segoe UI Emoji"
+            font-size="28px"
+            fill="#1e1e1e"
+            text-anchor="middle"
+            direction="ltr"
+            dominant-baseline="alphabetic"
+        >
+            Idle
+        </text>
+    </g>
+    <g mask="url(#mask-CVrc5wLQHs3bX172iG-gf)" stroke-linecap="round">
+        <g
+            transform="translate(88.19829361652182 181.55819257118603) rotate(0 5.841910041270012 89.90356514775596)"
+        >
+            <path
+                d="M0 0 C0.54 17.48, 1.27 74.9, 3.22 104.87 C5.17 134.84, 10.27 167.32, 11.68 179.81 M0 0 C0.54 17.48, 1.27 74.9, 3.22 104.87 C5.17 134.84, 10.27 167.32, 11.68 179.81"
+                stroke="#1e1e1e"
+                stroke-width="1"
+                fill="none"
+            ></path>
+        </g>
+        <g
+            transform="translate(88.19829361652182 181.55819257118603) rotate(0 5.841910041270012 89.90356514775596)"
+        >
+            <path
+                d="M0.18 157.61 C3.21 163.45, 6.23 169.29, 11.68 179.81 M0.18 157.61 C3.07 163.18, 5.95 168.75, 11.68 179.81"
+                stroke="#1e1e1e"
+                stroke-width="1"
+                fill="none"
+            ></path>
+        </g>
+        <g
+            transform="translate(88.19829361652182 181.55819257118603) rotate(0 5.841910041270012 89.90356514775596)"
+        >
+            <path
+                d="M17.14 155.41 C15.7 161.83, 14.27 168.25, 11.68 179.81 M17.14 155.41 C15.77 161.53, 14.4 167.66, 11.68 179.81"
+                stroke="#1e1e1e"
+                stroke-width="1"
+                fill="none"
+            ></path>
+        </g>
+    </g>
+    <mask id="mask-CVrc5wLQHs3bX172iG-gf">
+        <rect
+            x="0"
+            y="0"
+            fill="#fff"
+            width="199.88211369906185"
+            height="461.36532286669797"
+        ></rect>
+        <rect
+            x="10"
+            y="261.42785594522667"
+            fill="#000"
+            width="162.83985900878906"
+            height="50"
+            opacity="1"
+        ></rect>
+    </mask>
+    <g
+        transform="translate(10 261.4278559452267) rotate(0 84.04020365779184 10.033901773715286)"
+    >
+        <text
+            x="81.41992950439453"
+            y="17.619999999999997"
+            fill="#1e1e1e"
+            text-anchor="middle"
+            direction="ltr"
+            dominant-baseline="alphabetic"
+            class="arrow user-clicked-login-button-0"
+        >
+            user clicked login
+        </text>
+        <text
+            x="81.41992950439453"
+            y="42.62"
+            fill="#1e1e1e"
+            text-anchor="middle"
+            direction="ltr"
+            dominant-baseline="alphabetic"
+            class="arrow user-clicked-login-button-0"
+        >
+            button
+        </text>
+    </g>
+    <g mask="url(#mask-41Rm7YzU-sNw_DWX7DwIt)" stroke-linecap="round">
+        <g
+            transform="translate(949.8129443615348 341.31040567338744) rotate(0 -355.5746980966878 -125.16207509608866)"
+        >
+            <path
+                d="M0 0 C-13.01 -39.4, 40.64 -199.31, -78.08 -236.42 C-196.8 -273.52, -606.63 -224.91, -712.34 -222.61 M0 0 C-13.01 -39.4, 40.64 -199.31, -78.08 -236.42 C-196.8 -273.52, -606.63 -224.91, -712.34 -222.61"
+                stroke="#1e1e1e"
+                stroke-width="1"
+                fill="none"
+            ></path>
+        </g>
+        <g
+            transform="translate(949.8129443615348 341.31040567338744) rotate(0 -355.5746980966878 -125.16207509608866)"
+        >
+            <path
+                d="M-689.48 -232.74 C-694.38 -230.56, -699.28 -228.39, -712.34 -222.61 M-689.48 -232.74 C-695.99 -229.85, -702.49 -226.97, -712.34 -222.61"
+                stroke="#1e1e1e"
+                stroke-width="1"
+                fill="none"
+            ></path>
+        </g>
+        <g
+            transform="translate(949.8129443615348 341.31040567338744) rotate(0 -355.5746980966878 -125.16207509608866)"
+        >
+            <path
+                d="M-688.32 -215.68 C-693.47 -217.16, -698.62 -218.65, -712.34 -222.61 M-688.32 -215.68 C-695.15 -217.65, -701.99 -219.62, -712.34 -222.61"
+                stroke="#1e1e1e"
+                stroke-width="1"
+                fill="none"
+            ></path>
+        </g>
+    </g>
+    <mask id="mask-41Rm7YzU-sNw_DWX7DwIt">
+        <rect
+            x="0"
+            y="0"
+            fill="#fff"
+            width="1762.1508796406447"
+            height="677.7262227185831"
+        ></rect>
+        <rect
+            x="846.1126166282329"
+            y="92.39458862819168"
+            fill="#000"
+            width="51.239959716796875"
+            height="25"
+            opacity="1"
+        ></rect>
+    </mask>
+    <g
+        transform="translate(846.112616628232 92.39458862819163) rotate(0 -251.87437036338542 123.7537419491071)"
+    >
+        <text
+            x="25.619979858398438"
+            y="17.619999999999997"
+            fill="#1e1e1e"
+            text-anchor="middle"
+            direction="ltr"
+            dominant-baseline="alphabetic"
+            class="arrow reset-0"
+        >
+            reset
+        </text>
+    </g>
+    <g
+        stroke-linecap="round"
+        transform="translate(736.2836039465642 569.2693646571167) rotate(0 136.27218319997064 57.5)"
+    >
+        <path
+            d="M28.75 0 C81.28 0, 133.81 0, 243.79 0 C262.96 0, 272.54 9.58, 272.54 28.75 C272.54 41.32, 272.54 53.88, 272.54 86.25 C272.54 105.42, 262.96 115, 243.79 115 C197.98 115, 152.17 115, 28.75 115 C9.58 115, 0 105.42, 0 86.25 C0 73.87, 0 61.49, 0 28.75 C0 9.58, 9.58 0, 28.75 0"
+            stroke="none"
+            stroke-width="0"
+            class="state-box auth-failed-0"
+        ></path>
+        <path
+            d="M28.75 0 C110.84 0, 192.93 0, 243.79 0 M28.75 0 C110.36 0, 191.98 0, 243.79 0 M243.79 0 C262.96 0, 272.54 9.58, 272.54 28.75 M243.79 0 C262.96 0, 272.54 9.58, 272.54 28.75 M272.54 28.75 C272.54 50.62, 272.54 72.48, 272.54 86.25 M272.54 28.75 C272.54 47.66, 272.54 66.56, 272.54 86.25 M272.54 86.25 C272.54 105.42, 262.96 115, 243.79 115 M272.54 86.25 C272.54 105.42, 262.96 115, 243.79 115 M243.79 115 C184.34 115, 124.9 115, 28.75 115 M243.79 115 C200.22 115, 156.65 115, 28.75 115 M28.75 115 C9.58 115, 0 105.42, 0 86.25 M28.75 115 C9.58 115, 0 105.42, 0 86.25 M0 86.25 C0 70.6, 0 54.95, 0 28.75 M0 86.25 C0 68.62, 0 51, 0 28.75 M0 28.75 C0 9.58, 9.58 0, 28.75 0 M0 28.75 C0 9.58, 9.58 0, 28.75 0"
+            stroke="#1e1e1e"
+            stroke-width="1"
+            fill="none"
+        ></path>
+    </g>
+    <g
+        transform="translate(796.5638285283708 609.2693646571167) rotate(0 75.99195861816406 17.5)"
+    >
+        <text
+            x="75.99195861816406"
+            y="24.668"
+            font-family="Excalifont, Xiaolai, sans-serif, Segoe UI Emoji"
+            font-size="28px"
+            fill="#1e1e1e"
+            text-anchor="middle"
+            direction="ltr"
+            dominant-baseline="alphabetic"
+        >
+            Auth failed
+        </text>
+    </g>
+    <g mask="url(#mask-w1CRAUmJBAGQwUlGqFZ85)" stroke-linecap="round">
+        <g
+            transform="translate(659.0323516295052 464.02061477325924) rotate(0 43.908332329913264 55.18548099712834)"
+        >
+            <path
+                d="M0 0 C14.64 18.4, 73.18 91.98, 87.82 110.37 M0 0 C14.64 18.4, 73.18 91.98, 87.82 110.37"
+                stroke="#1e1e1e"
+                stroke-width="1"
+                fill="none"
+            ></path>
+        </g>
+        <g
+            transform="translate(659.0323516295052 464.02061477325924) rotate(0 43.908332329913264 55.18548099712834)"
+        >
+            <path
+                d="M66.5 97.31 C73.72 101.73, 80.94 106.16, 87.82 110.37 M66.5 97.31 C74.45 102.18, 82.4 107.05, 87.82 110.37"
+                stroke="#1e1e1e"
+                stroke-width="1"
+                fill="none"
+            ></path>
+        </g>
+        <g
+            transform="translate(659.0323516295052 464.02061477325924) rotate(0 43.908332329913264 55.18548099712834)"
+        >
+            <path
+                d="M79.88 86.66 C82.57 94.69, 85.26 102.72, 87.82 110.37 M79.88 86.66 C82.84 95.5, 85.8 104.34, 87.82 110.37"
+                stroke="#1e1e1e"
+                stroke-width="1"
+                fill="none"
+            ></path>
+        </g>
+    </g>
+    <mask id="mask-w1CRAUmJBAGQwUlGqFZ85">
+        <rect
+            x="0"
+            y="0"
+            fill="#fff"
+            width="846.8490162893318"
+            height="674.391576767516"
+        ></rect>
+        <rect
+            x="687.5207010492622"
+            y="506.70609577038755"
+            fill="#000"
+            width="30.8399658203125"
+            height="25"
+            opacity="1"
+        ></rect>
+    </mask>
+    <g
+        transform="translate(687.5207010492632 506.7060957703875) rotate(0 15.419982910155795 12.500000000000028)"
+    >
+        <text
+            x="15.41998291015625"
+            y="17.619999999999997"
+            fill="#1e1e1e"
+            text-anchor="middle"
+            direction="ltr"
+            dominant-baseline="alphabetic"
+            class="arrow fail-0"
+        >
+            fail
+        </text>
+    </g>
+    <g mask="url(#mask-X4xVCqoFczZUFWfL8BiAX)" stroke-linecap="round">
+        <g
+            transform="translate(1006.119006401234 582.2483248731177) rotate(0 -340.3475331645909 -285.38511582384626)"
+        >
+            <path
+                d="M0.05 -0.75 C14.53 -22.49, 91.23 -38.42, 86.61 -130.67 C81.98 -222.92, 115.01 -493.72, -27.69 -554.26 C-170.4 -614.8, -645.87 -503.95, -769.6 -493.93 M-1.38 1.48 C13.47 -20.63, 93.15 -40.21, 88.73 -132.65 C84.31 -225.08, 115.11 -493.08, -27.88 -553.13 C-170.86 -613.18, -645.21 -502.83, -769.17 -492.96"
+                stroke="#1e1e1e"
+                stroke-width="1"
+                fill="none"
+            ></path>
+        </g>
+        <g
+            transform="translate(1006.119006401234 582.2483248731177) rotate(0 -340.3475331645909 -285.38511582384626)"
+        >
+            <path
+                d="M-747.24 -504.96 C-754.64 -503.47, -759.07 -496.39, -769.17 -492.96 M-747.24 -504.96 C-753.23 -502.13, -759.01 -498.42, -769.17 -492.96"
+                stroke="#1e1e1e"
+                stroke-width="1"
+                fill="none"
+            ></path>
+        </g>
+        <g
+            transform="translate(1006.119006401234 582.2483248731177) rotate(0 -340.3475331645909 -285.38511582384626)"
+        >
+            <path
+                d="M-744.66 -488.06 C-752.74 -491.29, -757.9 -488.93, -769.17 -492.96 M-744.66 -488.06 C-751.4 -489.8, -757.87 -490.64, -769.17 -492.96"
+                stroke="#1e1e1e"
+                stroke-width="1"
+                fill="none"
+            ></path>
+        </g>
+    </g>
+    <mask id="mask-X4xVCqoFczZUFWfL8BiAX">
+        <rect
+            x="0"
+            y="0"
+            fill="#fff"
+            width="1963.8053829961477"
+            height="1236.1435466937528"
+        ></rect>
+        <rect
+            x="1060.800942887604"
+            y="207.90277459136746"
+            fill="#000"
+            width="51.239959716796875"
+            height="25"
+            opacity="1"
+        ></rect>
+    </mask>
+    <g
+        transform="translate(1060.800942887604 207.90277459136752) rotate(0 -395.02946965096135 88.96043445790394)"
+    >
+        <text
+            x="25.619979858398438"
+            y="17.619999999999997"
+            fill="#1e1e1e"
+            text-anchor="middle"
+            direction="ltr"
+            dominant-baseline="alphabetic"
+            class="arrow reset-1"
+        >
+            reset
+        </text>
+    </g>
+</svg>
