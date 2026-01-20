@@ -58,6 +58,7 @@ import "./index.css";
 import { EmailSignInFSMContext, TEmailStateDTO } from "./state-machine-email";
 import { StateToEmailSVGMapperService } from "./state-to-email-svg-mapper-service";
 import { SVGEmailFlowChartService } from "./svg-email-flowchart-service";
+import { SVGFacebookFlowChartService } from "./svg-facebook-flowchart-service";
 import { SVGStateStatus } from "./svg-flowchart-service";
 import { debounce, onSvgReady } from "./utils";
 
@@ -111,6 +112,10 @@ const emailFSMSVGService = new SVGEmailFlowChartService({
     svgQuerySelector: "#emailLinkFSMChart",
 });
 
+const facebookFSMSVGService = new SVGFacebookFlowChartService({
+    svgQuerySelector: "#facebookLinkFSMChart",
+});
+
 const stateToSVGMapperService = new StateToEmailSVGMapperService({
     svgService: emailFSMSVGService,
     currentStateBoxCSSClassKey: null,
@@ -157,7 +162,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     document
         .querySelector("button#enableAllSVGElements")
-        ?.addEventListener("click", testEmailFSMSVG);
+        ?.addEventListener("click", enableAllSVGElements);
 
     document
         .querySelector<HTMLInputElement>("input.email")
@@ -192,17 +197,19 @@ function activateTab(
     document.getElementById(activeTab.dataset.tab!)?.classList.add("active");
 }
 
-function testEmailFSMSVG(event_: Event) {
+function enableAllSVGElements(event_: Event) {
     const buttonEl = event_.target as HTMLButtonElement;
     let buttonState = buttonEl.dataset.state;
     switch (buttonState) {
         case "unset":
             emailFSMSVGService.SetAllIndividually(SVGStateStatus.Failure);
+            facebookFSMSVGService.SetAllIndividually(SVGStateStatus.Failure);
             buttonEl.innerText = "disable all SVG elements";
             buttonEl.dataset.state = "set";
             break;
         case "set":
             emailFSMSVGService.UnsetAll();
+            facebookFSMSVGService.UnsetAll();
             buttonEl.innerText = "enable all SVG elements";
             buttonEl.dataset.state = "unset";
             break;
