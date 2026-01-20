@@ -65,8 +65,35 @@ export class StateToFacebookSVGMapperService {
         newBox: TFacebookStateBoxKey,
     ): TFacebookArrowKey | null {
         switch (`${oldBox}->${newBox}`) {
-            case this.generateTransition("Idle0", "UserIsInputtingDetails0"):
-                return "UserBeganTyping0";
+            case this.generateTransition("Idle0", "RedirectingToFacebook0"):
+                return "UserClickedLoginButton0";
+
+            case this.generateTransition(
+                "RedirectingToFacebook0",
+                "FacebookResponded0",
+            ):
+                return "OkResponse0";
+
+            case this.generateTransition("FacebookResponded0", "SignedIn0"):
+                return "OkResponse1";
+
+            case this.generateTransition("FacebookResponded0", "AuthFailed0"):
+                return "Fail0";
+
+            case this.generateTransition(
+                "RedirectingToFacebook0",
+                "FacebookIsUnavailable0",
+            ):
+                return "FirebaseReturnedAnError0";
+
+            case this.generateTransition("FacebookIsUnavailable0", "Idle0"):
+                return "Reset0";
+
+            case this.generateTransition("FacebookIsUnavailable0", "Idle0"):
+                return "Reset0";
+
+            case this.generateTransition("AuthFailed0", "Idle0"):
+                return "Reset1";
 
             default:
                 return null;
