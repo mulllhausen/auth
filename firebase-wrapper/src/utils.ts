@@ -61,3 +61,7 @@ export function clearQueryParams(
         window_.history.pushState({}, "", url.toString());
     }
 }
+
+export function capsFirstLetter(str: string): string {
+    return str[0].toUpperCase() + str.slice(1);
+}

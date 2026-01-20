@@ -1,25 +1,26 @@
-import { TEmailFSMStateID } from "./state-machine-email";
+import { TEmailFSMStateID } from "./state-machine-email.ts";
 import {
     EmailSVGStateBoxCSSClass,
     TEmailArrowKey,
     TEmailStateBoxKey,
     TEmailTransition,
 } from "./svg-email-flowchart-auto-types.ts";
-import { SVGEmailFlowChartService } from "./svg-email-flowchart-service";
-import { SVGCSSClassCategory, SVGStateStatus } from "./svg-flowchart-service";
+import { SVGEmailFlowChartService } from "./svg-email-flowchart-service.ts";
+import {
+    SVGCSSClassCategory,
+    SVGStateStatus,
+} from "./svg-flowchart-service.ts";
 
-export class StateToSVGMapperService {
+export class StateToEmailSVGMapperService {
     private svgService: SVGEmailFlowChartService;
     private currentStateBoxCSSClassKey:
         | keyof typeof EmailSVGStateBoxCSSClass
-        //    | keyof TEmailSVGClassesByCategory[typeof SVGCSSClassCategory.StateBox]
         | null = null;
 
     constructor(props: {
         svgService: SVGEmailFlowChartService;
         currentStateBoxCSSClassKey:
             | keyof typeof EmailSVGStateBoxCSSClass
-            //| keyof TEmailSVGClassesByCategory[typeof SVGCSSClassCategory.StateBox]
             | null;
     }) {
         this.svgService = props.svgService;

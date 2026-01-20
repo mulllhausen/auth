@@ -56,7 +56,7 @@ import { GUILogger } from "./gui-logger";
 import { HTMLTemplateManager } from "./html-template-manager";
 import "./index.css";
 import { EmailSignInFSMContext, TEmailStateDTO } from "./state-machine-email";
-import { StateToSVGMapperService } from "./state-to-svg-mapper-service";
+import { StateToEmailSVGMapperService } from "./state-to-email-svg-mapper-service";
 import { SVGEmailFlowChartService } from "./svg-email-flowchart-service";
 import { SVGStateStatus } from "./svg-flowchart-service";
 import { debounce, onSvgReady } from "./utils";
@@ -111,7 +111,7 @@ const emailFSMSVGService = new SVGEmailFlowChartService({
     svgQuerySelector: "#emailLinkFSMChart",
 });
 
-const stateToSVGMapperService = new StateToSVGMapperService({
+const stateToSVGMapperService = new StateToEmailSVGMapperService({
     svgService: emailFSMSVGService,
     currentStateBoxCSSClassKey: null,
 });

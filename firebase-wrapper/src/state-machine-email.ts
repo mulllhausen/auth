@@ -15,7 +15,7 @@ import type { TGUIStateDTO } from ".";
 import type { TFirebaseWrapperStateDTO } from "./firebase-wrapper";
 import { authProviders, FirebaseAuthService } from "./firebase-wrapper";
 import type { TLogItem } from "./gui-logger";
-import { StateToSVGMapperService } from "./state-to-svg-mapper-service";
+import { StateToEmailSVGMapperService } from "./state-to-email-svg-mapper-service";
 
 // #region consts and types
 
@@ -25,7 +25,7 @@ export type TEmailStateDTO = Partial<TGUIStateDTO & TFirebaseWrapperStateDTO>;
 type TEmailSignInStateConstructorProps = {
     firebaseAuthService: FirebaseAuthService;
     context: EmailSignInFSMContext;
-    stateToSVGMapperService?: StateToSVGMapperService;
+    stateToSVGMapperService?: StateToEmailSVGMapperService;
     logger?: (logItem: TLogItem) => void;
 };
 
@@ -55,7 +55,7 @@ const transitionToken: unique symbol = Symbol("transitionToken");
 export class EmailSignInFSMContext {
     private _window: Window & typeof globalThis;
     private firebaseAuthService: FirebaseAuthService;
-    private stateToSVGMapperService?: StateToSVGMapperService;
+    private stateToSVGMapperService?: StateToEmailSVGMapperService;
     private currentState?: EmailSignInState;
     private logger?: (logItemInput: TLogItem) => void;
     private localStorageEmailStateKey = "emailState";
@@ -87,7 +87,7 @@ export class EmailSignInFSMContext {
     constructor(props: {
         window: Window & typeof globalThis;
         firebaseAuthService: FirebaseAuthService;
-        stateToSVGMapperService?: StateToSVGMapperService;
+        stateToSVGMapperService?: StateToEmailSVGMapperService;
         logger?: (logItemInput: TLogItem) => void;
         callbackEnableEmailInput?: (enabled: boolean) => void;
         callbackPopulateEmailInput?: (value: string | null) => void;
@@ -155,7 +155,9 @@ export class EmailSignInFSMContext {
         const newStateID = this.currentState.ID;
         this.backupStateToLocalstorage(newStateID);
         this.logger?.({
-            logMessage: `transitioned email state from <i>${oldStateID}</i> to <i>${newStateID}</i>`,
+            logMessage:
+                `transitioned email state from <i>${oldStateID}</i>` +
+                ` to <i>${newStateID}</i>`,
         });
 
         await this.currentState.onEnter();
@@ -189,7 +191,7 @@ abstract class EmailSignInState {
     public abstract readonly ID: TEmailFSMStateID;
     protected firebaseAuthService: FirebaseAuthService;
     protected context: EmailSignInFSMContext;
-    protected stateToSVGMapperService?: StateToSVGMapperService;
+    protected stateToSVGMapperService?: StateToEmailSVGMapperService;
     protected logger?: (logItem: TLogItem) => void;
 
     constructor(props: TEmailSignInStateConstructorProps) {
