@@ -1,7 +1,7 @@
 import {
     FacebookSVGArrowCSSClass,
     FacebookSVGStateBoxCSSClass,
-} from "./svg-facebook-flowchart-auto-types";
+} from "./svg-flowchart-auto-types-facebook";
 import type { TSVGStateStatusValues } from "./svg-flowchart-service";
 import {
     SVGCSSClassCategory,

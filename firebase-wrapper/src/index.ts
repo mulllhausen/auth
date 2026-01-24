@@ -56,10 +56,12 @@ import { GUILogger } from "./gui-logger";
 import { HTMLTemplateManager } from "./html-template-manager";
 import "./index.css";
 import { EmailSignInFSMContext, TEmailStateDTO } from "./state-machine-email";
-import { StateToEmailSVGMapperService } from "./state-to-email-svg-mapper-service";
-import { SVGEmailFlowChartService } from "./svg-email-flowchart-service";
-import { SVGFacebookFlowChartService } from "./svg-facebook-flowchart-service";
+import { FacebookSignInFSMContext } from "./state-machine-facebook";
+import { StateToEmailSVGMapperService } from "./state-to-svg-mapper-service-email";
+import { StateToFacebookSVGMapperService } from "./state-to-svg-mapper-service-facebook";
 import { SVGStateStatus } from "./svg-flowchart-service";
+import { SVGEmailFlowChartService } from "./svg-flowchart-service-email";
+import { SVGFacebookFlowChartService } from "./svg-flowchart-service-facebook";
 import { debounce, onSvgReady } from "./utils";
 
 export type TGUIStateDTO = {
@@ -113,10 +115,10 @@ const emailFSMSVGService = new SVGEmailFlowChartService({
 });
 
 const facebookFSMSVGService = new SVGFacebookFlowChartService({
-    svgQuerySelector: "#facebookLinkFSMChart",
+    svgQuerySelector: "#facebookFSMChart",
 });
 
-const stateToSVGMapperService = new StateToEmailSVGMapperService({
+const stateToEmailSVGMapperService = new StateToEmailSVGMapperService({
     svgService: emailFSMSVGService,
     currentStateBoxCSSClassKey: null,
 });
@@ -124,7 +126,7 @@ const stateToSVGMapperService = new StateToEmailSVGMapperService({
 const emailSignInFSMContext = new EmailSignInFSMContext({
     window,
     firebaseAuthService,
-    stateToSVGMapperService,
+    stateToSVGMapperService: stateToEmailSVGMapperService,
     logger: guiLogger.log.bind(guiLogger),
     callbackEnableLoginButton,
     callbackPopulateEmailInput,
@@ -132,6 +134,19 @@ const emailSignInFSMContext = new EmailSignInFSMContext({
     callbackEnablePasswordInput,
     callbackShowInstructionsToClickLinkInEmail,
     callbackShowInstructionsToReEnterEmail,
+});
+
+const stateToFacebookSVGMapperService = new StateToFacebookSVGMapperService({
+    svgService: facebookFSMSVGService,
+    currentStateBoxCSSClassKey: null,
+});
+
+const facebookSignInFSMContext = new FacebookSignInFSMContext({
+    window,
+    firebaseAuthService,
+    stateToSVGMapperService: stateToFacebookSVGMapperService,
+    logger: guiLogger.log.bind(guiLogger),
+    callbackEnableLoginButton,
 });
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -149,6 +164,10 @@ document.addEventListener("DOMContentLoaded", () => {
     onSvgReady({
         svgQuerySelector: "#emailLinkFSMChart",
         callback: async () => await emailSignInFSMContext.setup(),
+    });
+    onSvgReady({
+        svgQuerySelector: "#facebookFSMChart",
+        callback: async () => await facebookSignInFSMContext.setup(),
     });
 
     document
@@ -174,7 +193,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     document
         .querySelector<HTMLInputElement>(
-            'button.login[data-service-provider="password"]',
+            'button.login[data-service-provider="email"]',
         )
         ?.addEventListener("click", onEmailLoginClick);
 
@@ -267,7 +286,7 @@ function onEmailLoginClick(e: Event): void {
 
 function callbackEnableLoginButton(enabled: boolean): void {
     document.querySelector<HTMLInputElement>(
-        'button.login[data-service-provider="password"]',
+        'button.login[data-service-provider="email"]',
     )!.disabled = !enabled;
 }
 

@@ -3,9 +3,9 @@ import type {
     TFacebookArrowKey,
     TFacebookStateBoxKey,
     TFacebookTransition,
-} from "./svg-facebook-flowchart-auto-types.ts";
-import { FacebookSVGStateBoxCSSClass } from "./svg-facebook-flowchart-auto-types.ts";
-import { SVGFacebookFlowChartService } from "./svg-facebook-flowchart-service.ts";
+} from "./svg-flowchart-auto-types-facebook.ts";
+import { FacebookSVGStateBoxCSSClass } from "./svg-flowchart-auto-types-facebook.ts";
+import { SVGFacebookFlowChartService } from "./svg-flowchart-service-facebook.ts";
 import {
     SVGCSSClassCategory,
     SVGStateStatus,

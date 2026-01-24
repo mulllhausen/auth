@@ -15,7 +15,7 @@ import type { TGUIStateDTO } from ".";
 import type { TFirebaseWrapperStateDTO } from "./firebase-wrapper";
 import { authProviders, FirebaseAuthService } from "./firebase-wrapper";
 import type { TLogItem } from "./gui-logger";
-import { StateToEmailSVGMapperService } from "./state-to-email-svg-mapper-service";
+import { StateToEmailSVGMapperService } from "./state-to-svg-mapper-service-email";
 
 // #region consts and types
 

@@ -4,8 +4,8 @@ import {
     TEmailArrowKey,
     TEmailStateBoxKey,
     TEmailTransition,
-} from "./svg-email-flowchart-auto-types.ts";
-import { SVGEmailFlowChartService } from "./svg-email-flowchart-service.ts";
+} from "./svg-flowchart-auto-types-email.ts";
+import { SVGEmailFlowChartService } from "./svg-flowchart-service-email.ts";
 import {
     SVGCSSClassCategory,
     SVGStateStatus,

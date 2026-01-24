@@ -21,7 +21,7 @@ const serviceProvider: TAuthProvider = authProviders.Email;
 const { serviceProviderName, inputSVGFileName, outputSVGTypesFileName } =
     mapAuthProvider(serviceProvider);
 
-console.log(`💪 Processing SVG for ${serviceProviderName}`);
+console.log(`💪 Processing ${serviceProviderName} SVG`);
 
 const INPUT_SVG_FILE: string = `./public/images/${inputSVGFileName}.svg`;
 const OUTPUT_SVG_FILE: string = `./public/images/${inputSVGFileName}-cleaned.svg`;
@@ -55,7 +55,7 @@ function mapAuthProvider(serviceProvider: TAuthProvider): {
     return {
         serviceProviderName,
         inputSVGFileName: `fsm-${serviceProviderName}-flowchart`,
-        outputSVGTypesFileName: `svg-${serviceProviderName}-flowchart-auto-types`,
+        outputSVGTypesFileName: `svg-flowchart-auto-types-${serviceProviderName}`,
     };
 }
 

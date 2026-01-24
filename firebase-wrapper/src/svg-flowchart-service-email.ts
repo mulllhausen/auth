@@ -1,7 +1,7 @@
 import {
     EmailSVGArrowCSSClass,
     EmailSVGStateBoxCSSClass,
-} from "./svg-email-flowchart-auto-types";
+} from "./svg-flowchart-auto-types-email";
 import type { TSVGStateStatusValues } from "./svg-flowchart-service";
 import {
     SVGCSSClassCategory,
