@@ -17,9 +17,11 @@ import { capsFirstLetter } from "../src/utils.ts";
 //    generate typescript types.
 // the gui can then interact with the svg.
 
-const serviceProvider: TAuthProvider = authProviders.Facebook;
+const serviceProvider: TAuthProvider = authProviders.Email;
 const { serviceProviderName, inputSVGFileName, outputSVGTypesFileName } =
     mapAuthProvider(serviceProvider);
+
+console.log(`💪 Processing SVG for ${serviceProviderName}`);
 
 const INPUT_SVG_FILE: string = `./public/images/${inputSVGFileName}.svg`;
 const OUTPUT_SVG_FILE: string = `./public/images/${inputSVGFileName}-cleaned.svg`;
@@ -52,8 +54,8 @@ function mapAuthProvider(serviceProvider: TAuthProvider): {
             : capsFirstLetter(serviceProviderLowercase);
     return {
         serviceProviderName,
-        inputSVGFileName: `fsm-${serviceProviderLowercase}-flowchart`,
-        outputSVGTypesFileName: `svg-${serviceProviderLowercase}-flowchart-auto-types`,
+        inputSVGFileName: `fsm-${serviceProviderName}-flowchart`,
+        outputSVGTypesFileName: `svg-${serviceProviderName}-flowchart-auto-types`,
     };
 }
 
