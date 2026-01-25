@@ -113,5 +113,8 @@ export class StateToSVGMapperServiceFacebook {
         keyof typeof FacebookSVGStateBoxCSSClass
     > = {
         Idle: "Idle0",
+        RedirectingToFacebook: "RedirectingToFacebook0",
+        FacebookResponded: "FacebookResponded0",
+        FacebookIsUnavailable: "FacebookIsUnavailable0",
     };
 }

@@ -377,7 +377,6 @@ export class FirebaseAuthService {
     }
 
     public async checkIfURLIsASignInRedirectResult(): Promise<void> {
-        debugger;
         try {
             const redirectResult: UserCredential | null =
                 await getRedirectResult(this.Auth);
@@ -390,6 +389,8 @@ export class FirebaseAuthService {
                 // note: do not call this.callbackStateChanged() here
                 return;
             }
+
+            debugger;
 
             // we only get here once - immediately after login
             // (stackoverflow.com/a/44468387)
