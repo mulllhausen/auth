@@ -37,7 +37,7 @@ type TEmailSVGClassValue<TCat extends TEmailSVGCSSClassCategory> =
 
 // #endregion types
 
-export class SVGEmailFlowChartService extends SVGFlowChartService {
+export class SVGFlowChartServiceEmail extends SVGFlowChartService {
     /** for testing */
     public SetAllIndividually(
         status: TSVGStateStatusValues = SVGStateStatus.Success,

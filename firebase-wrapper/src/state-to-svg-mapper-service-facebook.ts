@@ -5,20 +5,20 @@ import type {
     TFacebookTransition,
 } from "./svg-flowchart-auto-types-facebook.ts";
 import { FacebookSVGStateBoxCSSClass } from "./svg-flowchart-auto-types-facebook.ts";
-import { SVGFacebookFlowChartService } from "./svg-flowchart-service-facebook.ts";
+import { SVGFlowChartServiceFacebook } from "./svg-flowchart-service-facebook.ts";
 import {
     SVGCSSClassCategory,
     SVGStateStatus,
 } from "./svg-flowchart-service.ts";
 
-export class StateToFacebookSVGMapperService {
-    private svgService: SVGFacebookFlowChartService;
+export class StateToSVGMapperServiceFacebook {
+    private svgService: SVGFlowChartServiceFacebook;
     private currentStateBoxCSSClassKey:
         | keyof typeof FacebookSVGStateBoxCSSClass
         | null = null;
 
     constructor(props: {
-        svgService: SVGFacebookFlowChartService;
+        svgService: SVGFlowChartServiceFacebook;
         currentStateBoxCSSClassKey:
             | keyof typeof FacebookSVGStateBoxCSSClass
             | null;

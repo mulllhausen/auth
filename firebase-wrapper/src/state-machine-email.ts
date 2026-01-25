@@ -15,7 +15,7 @@ import type { TGUIStateDTO } from ".";
 import type { TFirebaseWrapperStateDTO } from "./firebase-wrapper";
 import { authProviders, FirebaseAuthService } from "./firebase-wrapper";
 import type { TLogItem } from "./gui-logger";
-import { StateToEmailSVGMapperService } from "./state-to-svg-mapper-service-email";
+import { StateToSVGMapperServiceEmail } from "./state-to-svg-mapper-service-email";
 
 // #region consts and types
 
@@ -25,7 +25,7 @@ export type TEmailStateDTO = Partial<TGUIStateDTO & TFirebaseWrapperStateDTO>;
 type TEmailSignInStateConstructorProps = {
     firebaseAuthService: FirebaseAuthService;
     context: EmailSignInFSMContext;
-    stateToSVGMapperService?: StateToEmailSVGMapperService;
+    stateToSVGMapperService?: StateToSVGMapperServiceEmail;
     logger?: (logItem: TLogItem) => void;
 };
 
@@ -55,7 +55,7 @@ const transitionToken: unique symbol = Symbol("transitionToken");
 export class EmailSignInFSMContext {
     private _window: Window & typeof globalThis;
     private firebaseAuthService: FirebaseAuthService;
-    private stateToSVGMapperService?: StateToEmailSVGMapperService;
+    private stateToSVGMapperService?: StateToSVGMapperServiceEmail;
     private currentState?: EmailSignInState;
     private logger?: (logItemInput: TLogItem) => void;
     private localStorageEmailStateKey = "emailState";
@@ -87,7 +87,7 @@ export class EmailSignInFSMContext {
     constructor(props: {
         window: Window & typeof globalThis;
         firebaseAuthService: FirebaseAuthService;
-        stateToSVGMapperService?: StateToEmailSVGMapperService;
+        stateToSVGMapperService?: StateToSVGMapperServiceEmail;
         logger?: (logItemInput: TLogItem) => void;
         callbackEnableEmailInput?: (enabled: boolean) => void;
         callbackPopulateEmailInput?: (value: string | null) => void;
@@ -191,7 +191,7 @@ abstract class EmailSignInState {
     public abstract readonly ID: TEmailFSMStateID;
     protected firebaseAuthService: FirebaseAuthService;
     protected context: EmailSignInFSMContext;
-    protected stateToSVGMapperService?: StateToEmailSVGMapperService;
+    protected stateToSVGMapperService?: StateToSVGMapperServiceEmail;
     protected logger?: (logItem: TLogItem) => void;
 
     constructor(props: TEmailSignInStateConstructorProps) {
@@ -315,7 +315,7 @@ class UserInputtingTextState extends EmailSignInState {
             this.isAnyEmailEntered() && this.isAnyPasswordEntered(),
         );
 
-        if (emailStateDTO?.isLoginClicked) {
+        if (emailStateDTO?.isEmailLoginClicked) {
             await this.context.transitionTo(
                 transitionToken,
                 SendingEmailAddressToFirebaseState,
@@ -365,7 +365,7 @@ class SendingEmailAddressToFirebaseState extends EmailSignInState {
         this.context.callbackEnableLoginButton?.(false);
         this.context.callbackShowInstructionsToClickLinkInEmail?.(false);
         this.context.callbackShowInstructionsToReEnterEmail?.(false);
-        await this.firebaseAuthService.sendSignInLinkToEmail();
+        await this.firebaseAuthService.signin(authProviders.Email);
     }
 }
 
@@ -475,7 +475,7 @@ class WaitingForReEnteredEmailState extends EmailSignInState {
         if (this.isAnyEmailEntered()) {
             this.log(`an email was entered`);
 
-            if (emailStateDTO?.isLoginClicked) {
+            if (emailStateDTO?.isEmailLoginClicked) {
                 await this.context.transitionTo(
                     transitionToken,
                     AuthorisingViaFirebaseState,

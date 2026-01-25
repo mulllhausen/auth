@@ -9,13 +9,11 @@
 // firebase wrapper and the firebase wrapper never calls it, except by invoking the callbacks it has
 // been given by this service.
 
-// todo: sign in with password
-
 import type { TGUIStateDTO } from ".";
 import type { TFirebaseWrapperStateDTO } from "./firebase-wrapper";
-import { FirebaseAuthService } from "./firebase-wrapper";
+import { authProviders, FirebaseAuthService } from "./firebase-wrapper";
 import type { TLogItem } from "./gui-logger";
-import { StateToFacebookSVGMapperService } from "./state-to-svg-mapper-service-facebook";
+import { StateToSVGMapperServiceFacebook } from "./state-to-svg-mapper-service-facebook";
 
 // #region consts and types
 
@@ -27,7 +25,7 @@ export type TFacebookStateDTO = Partial<
 type TFacebookSignInStateConstructorProps = {
     firebaseAuthService: FirebaseAuthService;
     context: FacebookSignInFSMContext;
-    stateToSVGMapperService?: StateToFacebookSVGMapperService;
+    stateToSVGMapperService?: StateToSVGMapperServiceFacebook;
     logger?: (logItem: TLogItem) => void;
 };
 
@@ -35,7 +33,12 @@ type TFacebookSignInStateConstructor<
     TState extends FacebookSignInState = FacebookSignInState,
 > = new (props: TFacebookSignInStateConstructorProps) => TState;
 
-const facebookFSMStateIDs = ["Idle"] as const;
+const facebookFSMStateIDs = [
+    "Idle",
+    "RedirectingToFacebook",
+    "FacebookResponded",
+    "FacebookIsUnavailable",
+] as const;
 export type TFacebookFSMStateID = (typeof facebookFSMStateIDs)[number];
 
 const transitionToken: unique symbol = Symbol("transitionToken");
@@ -45,7 +48,7 @@ const transitionToken: unique symbol = Symbol("transitionToken");
 export class FacebookSignInFSMContext {
     private _window: Window & typeof globalThis;
     private firebaseAuthService: FirebaseAuthService;
-    private stateToSVGMapperService?: StateToFacebookSVGMapperService;
+    private stateToSVGMapperService?: StateToSVGMapperServiceFacebook;
     private currentState?: FacebookSignInState;
     private logger?: (logItemInput: TLogItem) => void;
     private localStorageFacebookStateKey = "facebookState";
@@ -54,6 +57,9 @@ export class FacebookSignInFSMContext {
         TFacebookSignInStateConstructor
     > = {
         Idle: IdleState,
+        RedirectingToFacebook: RedirectingToFacebookState,
+        FacebookResponded: FacebookRespondedState,
+        FacebookIsUnavailable: FacebookIsUnavailableState,
     };
 
     // callbacks
@@ -62,7 +68,7 @@ export class FacebookSignInFSMContext {
     constructor(props: {
         window: Window & typeof globalThis;
         firebaseAuthService: FirebaseAuthService;
-        stateToSVGMapperService?: StateToFacebookSVGMapperService;
+        stateToSVGMapperService?: StateToSVGMapperServiceFacebook;
         logger?: (logItemInput: TLogItem) => void;
         callbackEnableLoginButton?: (enabled: boolean) => void;
     }) {
@@ -85,7 +91,7 @@ export class FacebookSignInFSMContext {
             transitionToken,
             facebookSignInStateConstructor, // init. a class is required.
         );
-        //await this.firebaseAuthService.checkIfURLIsASignInWithEmailLink();
+        await this.firebaseAuthService.checkIfURLIsASignInRedirectResult();
     }
 
     /** should always be called by an action external to this FSM */
@@ -156,7 +162,7 @@ abstract class FacebookSignInState {
     public abstract readonly ID: TFacebookFSMStateID;
     protected firebaseAuthService: FirebaseAuthService;
     protected context: FacebookSignInFSMContext;
-    protected stateToSVGMapperService?: StateToFacebookSVGMapperService;
+    protected stateToSVGMapperService?: StateToSVGMapperServiceFacebook;
     protected logger?: (logItem: TLogItem) => void;
 
     constructor(props: TFacebookSignInStateConstructorProps) {
@@ -177,7 +183,7 @@ abstract class FacebookSignInState {
         facebookStateDTO?: TFacebookStateDTO,
     ): Promise<boolean> {
         let skipCurrentStateLogic = false;
-        if (facebookStateDTO?.isLogoutClicked) {
+        if (facebookStateDTO?.isFacebookLogoutClicked) {
             this.log("logout requested");
             this.firebaseAuthService.logout();
             await this.context.transitionTo(transitionToken, IdleState);
@@ -192,9 +198,72 @@ class IdleState extends FacebookSignInState {
 
     public override async handle(
         facebookStateDTO: TFacebookStateDTO,
-    ): Promise<void> {}
+    ): Promise<void> {
+        if (facebookStateDTO?.isFacebookLoginClicked) {
+            await this.context.transitionTo(
+                transitionToken,
+                RedirectingToFacebookState,
+            );
+            return;
+        }
+    }
 
     public override async onEnter(): Promise<void> {
         this.context.callbackEnableLoginButton?.(true);
     }
+}
+
+class RedirectingToFacebookState extends FacebookSignInState {
+    public override readonly ID = "RedirectingToFacebook";
+
+    public override async handle(
+        facebookStateDTO: TFacebookStateDTO,
+    ): Promise<void> {
+        if (
+            facebookStateDTO?.redirectedToAuthProvider ===
+            authProviders.Facebook
+        ) {
+            await this.context.transitionTo(
+                transitionToken,
+                FacebookRespondedState,
+            );
+            return;
+        }
+
+        if (
+            facebookStateDTO?.failedToRedirectToAuthProvider ===
+            authProviders.Facebook
+        ) {
+            await this.context.transitionTo(
+                transitionToken,
+                FacebookIsUnavailableState,
+            );
+            return;
+        }
+    }
+
+    public override async onEnter(): Promise<void> {
+        this.context.callbackEnableLoginButton?.(false);
+        await this.firebaseAuthService.signin(authProviders.Facebook);
+    }
+}
+
+class FacebookRespondedState extends FacebookSignInState {
+    public override readonly ID = "FacebookResponded";
+
+    public override async handle(
+        facebookStateDTO: TFacebookStateDTO,
+    ): Promise<void> {}
+
+    public override async onEnter(): Promise<void> {}
+}
+
+class FacebookIsUnavailableState extends FacebookSignInState {
+    public override readonly ID = "FacebookIsUnavailable";
+
+    public override async handle(
+        facebookStateDTO: TFacebookStateDTO,
+    ): Promise<void> {}
+
+    public override async onEnter(): Promise<void> {}
 }

@@ -37,7 +37,7 @@ type TFacebookSVGClassValue<TCat extends TFacebookSVGCSSClassCategory> =
 
 // #endregion types
 
-export class SVGFacebookFlowChartService extends SVGFlowChartService {
+export class SVGFlowChartServiceFacebook extends SVGFlowChartService {
     /** for testing */
     public SetAllIndividually(
         status: TSVGStateStatusValues = SVGStateStatus.Success,

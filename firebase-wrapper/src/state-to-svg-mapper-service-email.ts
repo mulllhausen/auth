@@ -5,20 +5,20 @@ import {
     TEmailStateBoxKey,
     TEmailTransition,
 } from "./svg-flowchart-auto-types-email.ts";
-import { SVGEmailFlowChartService } from "./svg-flowchart-service-email.ts";
+import { SVGFlowChartServiceEmail } from "./svg-flowchart-service-email.ts";
 import {
     SVGCSSClassCategory,
     SVGStateStatus,
 } from "./svg-flowchart-service.ts";
 
-export class StateToEmailSVGMapperService {
-    private svgService: SVGEmailFlowChartService;
+export class StateToSVGMapperServiceEmail {
+    private svgService: SVGFlowChartServiceEmail;
     private currentStateBoxCSSClassKey:
         | keyof typeof EmailSVGStateBoxCSSClass
         | null = null;
 
     constructor(props: {
-        svgService: SVGEmailFlowChartService;
+        svgService: SVGFlowChartServiceEmail;
         currentStateBoxCSSClassKey:
             | keyof typeof EmailSVGStateBoxCSSClass
             | null;

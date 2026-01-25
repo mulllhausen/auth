@@ -53,7 +53,6 @@ export const firebaseDependencies: TFirebaseDependencies = {
     initializeApp,
     isSignInWithEmailLink,
     onAuthStateChanged,
-    //  sendSignInLinkToEmail,
     signInWithEmailLink,
     signInWithRedirect,
 };
@@ -94,11 +93,6 @@ export type TFirebaseDependencies = {
         error?: ErrorFn,
         completed?: CompleteFn,
     ) => Unsubscribe;
-    // sendSignInLinkToEmail: (
-    //     auth: Auth,
-    //     email: string,
-    //     actionCodeSettings: ActionCodeSettings,
-    // ) => Promise<void>;
     signInWithEmailLink: (
         auth: Auth,
         email: string,
@@ -121,7 +115,6 @@ export type TWrapperSettings = {
                 | ((self: FirebaseAuthService, e: MouseEvent) => Promise<void>);
         };
     };
-    signedOutCallback: () => void;
 };
 
 export type TAuthProviders = (typeof authProviders)[keyof typeof authProviders];
@@ -132,6 +125,10 @@ export type TFirebaseWrapperStateDTO = {
     userOpenedEmailLinkOnSameBrowser?: boolean;
     userCredentialFoundViaEmail?: boolean;
     emailDataDeleted?: boolean;
+    redirectedToAuthProvider?: TAuthProviders;
+    failedToRedirectToAuthProvider?: TAuthProviders;
+    nullCredentialAfterSignIn?: TAuthProviders;
+    signedOutUser?: boolean;
 };
 
 export type TDefaultAction = null;
@@ -304,7 +301,6 @@ export class FirebaseAuthService {
 
     public async setupFirebaseListeners(): Promise<void> {
         onAuthStateChanged(this.Auth, this.authStateChanged.bind(this));
-        await this.handleGetRedirectResult();
     }
 
     public async logout(): Promise<void> {
@@ -321,7 +317,49 @@ export class FirebaseAuthService {
         console.error(`Service provider not found`);
     }
 
+    public async signin(providerID: TAuthProviders): Promise<void> {
+        if (providerID === authProviders.Email) {
+            await this.sendSignInLinkToEmail();
+        } else {
+            await this.signInWithRedirect(providerID);
+        }
+    }
+
     // #region sign-in oauth providers with redirect
+
+    private async signInWithRedirect(
+        providerID: TAuthProviders,
+    ): Promise<void> {
+        debugger;
+        try {
+            this.log(`redirecting to ${providerID}`);
+
+            const authProvider: AuthProvider = new (this.authProviderFactory(
+                providerID,
+            ))();
+            signInWithRedirect(this.Auth, authProvider);
+
+            await this.callbackStateChanged?.({
+                redirectedToAuthProvider: providerID,
+            });
+        } catch (error: unknown) {
+            const errorCodeMessage =
+                error instanceof FirebaseError ? `code: ${error.code}. ` : "";
+            const logMessage =
+                errorCodeMessage +
+                (error instanceof Error ? `"${error.message}"` : "error") +
+                ` in signin() for ${providerID}`;
+
+            this.logger?.({
+                logMessage,
+                logData: error,
+            });
+
+            await this.callbackStateChanged?.({
+                failedToRedirectToAuthProvider: providerID,
+            });
+        }
+    }
 
     private authProviderFactory(
         providerId: TAuthProviders,
@@ -338,12 +376,18 @@ export class FirebaseAuthService {
         }
     }
 
-    private async handleGetRedirectResult(): Promise<void> {
+    public async checkIfURLIsASignInRedirectResult(): Promise<void> {
+        debugger;
         try {
             const redirectResult: UserCredential | null =
                 await getRedirectResult(this.Auth);
+
             if (redirectResult == null) {
-                this.log(`redirectResult fired - null`);
+                this.log(
+                    `just checked: the current page url is not a redirect-result ` +
+                        `from a service provider`,
+                );
+                // note: do not call this.callbackStateChanged() here
                 return;
             }
 
@@ -352,28 +396,39 @@ export class FirebaseAuthService {
 
             const providerId = redirectResult.providerId as TAuthProviders;
             const providerClass = this.authProviderFactory(providerId);
+
             const credential =
                 providerClass.credentialFromResult(redirectResult);
             if (credential == null) {
-                this.log(`credential is null immediately after sign-in`);
+                this.log(
+                    `credential is null immediately after sign-in with ${providerId}`,
+                );
+                await this.callbackStateChanged?.({
+                    nullCredentialAfterSignIn: providerId,
+                });
                 return;
             }
+
             this.logger?.({
                 logMessage: `credential immediately after sign-in with ${providerId}`,
                 logData: credential,
                 safeLocalStorageData: this.safeCredentialResponse(credential),
             });
+
             const accessToken: string | undefined = credential.accessToken;
-            if (accessToken === undefined) {
+            if (accessToken == null) {
                 this.log(
                     `accessToken is null immediately after sign-in with ${providerId}`,
                 );
+                await this.callbackStateChanged?.({
+                    nullCredentialAfterSignIn: providerId,
+                });
                 return;
             }
             const user = redirectResult.user;
             //renderUserData(user, 1);
             // IdP data available using getAdditionalUserInfo(result)
-        } catch (error) {
+        } catch (error: unknown) {
             // todo - typeguard
             const firebaseError = error as FirebaseError;
             // Handle Errors here.
@@ -386,16 +441,25 @@ export class FirebaseAuthService {
         }
     }
 
-    private authStateChanged(user: User | null): void {
+    private async authStateChanged(user: User | null): Promise<void> {
         if (user) {
             this.afterUserSignedIn(user);
         } else {
             this.log(`firebase auth state changed - user is signed-out`);
-            this.settings.signedOutCallback();
+            await this.callbackStateChanged?.({
+                signedOutUser: true,
+            });
         }
     }
 
-    private afterUserSignedIn(user: User): void {
+    private async afterUserSignedIn(user: User): Promise<void> {
+        // todo: figure out which service provider changed the state
+        // for (const userInfo in user.providerData) {
+        //     await this.callbackStateChanged?.({
+        //         failedToRedirectToAuthProvider: userInfo.providerId// as TAuthProvider,
+        //     });
+        // }
+        debugger;
         const logMessageStart: string = "firebase auth state changed";
         if (this.userAlreadyCached(user)) {
             this.logger?.({
@@ -417,33 +481,6 @@ export class FirebaseAuthService {
         //this.settings.signedInCallback(user);
     }
 
-    public async signin(providerID: TAuthProviders): Promise<void> {
-        if (providerID === authProviders.Email) {
-            // this.callEmailAction(
-            //     emailSignInActions.UserInputsEmailAddressAndClicksSignInButton,
-            // );
-            return; // this.emailState.UserInputsEmailAddressAndClicksSignInButton();
-            //return await this.emailSignInStateMachine();
-        } else {
-            let authProvider: AuthProvider;
-            try {
-                authProvider = new (this.authProviderFactory(providerID))();
-            } catch (e) {
-                if (e instanceof Error) {
-                    this.log(e.message);
-                } else {
-                    this.logger?.({
-                        logMessage: `unknown error for ${providerID} in Signin()`,
-                        logData: e,
-                    });
-                }
-                return;
-            }
-            this.log(`redirecting to ${providerID}`);
-            signInWithRedirect(this.Auth, authProvider);
-        }
-    }
-
     public async signoutProvider(providerID: TAuthProviders): Promise<void> {
         switch (providerID) {
             case authProviders.Email:
@@ -459,7 +496,7 @@ export class FirebaseAuthService {
 
     // #region sign-in with email
 
-    public async sendSignInLinkToEmail(): Promise<void> {
+    private async sendSignInLinkToEmail(): Promise<void> {
         try {
             this.log(`instructing firebase to send sign-in link`);
             await sendSignInLinkToEmail(
@@ -472,7 +509,7 @@ export class FirebaseAuthService {
             await this.callbackStateChanged?.({
                 successfullySentSignInLinkToEmail: true,
             });
-        } catch (error) {
+        } catch (error: unknown) {
             const errorCodeMessage =
                 error instanceof FirebaseError ? `code: ${error.code}. ` : "";
             this.log(

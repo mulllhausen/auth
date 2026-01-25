@@ -57,18 +57,20 @@ import { HTMLTemplateManager } from "./html-template-manager";
 import "./index.css";
 import { EmailSignInFSMContext, TEmailStateDTO } from "./state-machine-email";
 import { FacebookSignInFSMContext } from "./state-machine-facebook";
-import { StateToEmailSVGMapperService } from "./state-to-svg-mapper-service-email";
-import { StateToFacebookSVGMapperService } from "./state-to-svg-mapper-service-facebook";
+import { StateToSVGMapperServiceEmail } from "./state-to-svg-mapper-service-email";
+import { StateToSVGMapperServiceFacebook } from "./state-to-svg-mapper-service-facebook";
 import { SVGStateStatus } from "./svg-flowchart-service";
-import { SVGEmailFlowChartService } from "./svg-flowchart-service-email";
-import { SVGFacebookFlowChartService } from "./svg-flowchart-service-facebook";
+import { SVGFlowChartServiceEmail } from "./svg-flowchart-service-email";
+import { SVGFlowChartServiceFacebook } from "./svg-flowchart-service-facebook";
 import { debounce, onSvgReady } from "./utils";
 
 export type TGUIStateDTO = {
     inputEmailValue?: string;
     inputPasswordValue?: string;
-    isLoginClicked?: boolean;
+    isEmailLoginClicked?: boolean;
     isLogoutClicked?: boolean;
+    isFacebookLoginClicked?: boolean;
+    isFacebookLogoutClicked?: boolean;
 };
 
 const htmlTemplateManager = new HTMLTemplateManager(document);
@@ -86,7 +88,6 @@ const guiLogger = new GUILogger({
 const wrapperSettings: TWrapperSettings = {
     logger: guiLogger.log.bind(guiLogger),
     loginButtonCSSClass: "button.login",
-    signedOutCallback,
     authProviderSettings: {
         [authProviders.Google]: {
             loginButtonClicked: defaultAction,
@@ -110,15 +111,15 @@ const firebaseAuthService = new FirebaseAuthService({
     settings: wrapperSettings,
 });
 
-const emailFSMSVGService = new SVGEmailFlowChartService({
+const emailFSMSVGService = new SVGFlowChartServiceEmail({
     svgQuerySelector: "#emailLinkFSMChart",
 });
 
-const facebookFSMSVGService = new SVGFacebookFlowChartService({
+const facebookFSMSVGService = new SVGFlowChartServiceFacebook({
     svgQuerySelector: "#facebookFSMChart",
 });
 
-const stateToEmailSVGMapperService = new StateToEmailSVGMapperService({
+const stateToEmailSVGMapperService = new StateToSVGMapperServiceEmail({
     svgService: emailFSMSVGService,
     currentStateBoxCSSClassKey: null,
 });
@@ -128,7 +129,7 @@ const emailSignInFSMContext = new EmailSignInFSMContext({
     firebaseAuthService,
     stateToSVGMapperService: stateToEmailSVGMapperService,
     logger: guiLogger.log.bind(guiLogger),
-    callbackEnableLoginButton,
+    callbackEnableLoginButton: callbackEnableLoginButtonEmail,
     callbackPopulateEmailInput,
     callbackEnableEmailInput,
     callbackEnablePasswordInput,
@@ -136,7 +137,7 @@ const emailSignInFSMContext = new EmailSignInFSMContext({
     callbackShowInstructionsToReEnterEmail,
 });
 
-const stateToFacebookSVGMapperService = new StateToFacebookSVGMapperService({
+const stateToFacebookSVGMapperService = new StateToSVGMapperServiceFacebook({
     svgService: facebookFSMSVGService,
     currentStateBoxCSSClassKey: null,
 });
@@ -146,7 +147,7 @@ const facebookSignInFSMContext = new FacebookSignInFSMContext({
     firebaseAuthService,
     stateToSVGMapperService: stateToFacebookSVGMapperService,
     logger: guiLogger.log.bind(guiLogger),
-    callbackEnableLoginButton,
+    callbackEnableLoginButton: callbackEnableLoginButtonFacebook,
 });
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -180,10 +181,6 @@ document.addEventListener("DOMContentLoaded", () => {
         });
 
     document
-        .querySelector("button#enableAllSVGElements")
-        ?.addEventListener("click", enableAllSVGElements);
-
-    document
         .querySelector<HTMLInputElement>("input.email")
         ?.addEventListener("input", onInputtingEmail);
 
@@ -195,11 +192,21 @@ document.addEventListener("DOMContentLoaded", () => {
         .querySelector<HTMLInputElement>(
             'button.login[data-service-provider="email"]',
         )
-        ?.addEventListener("click", onEmailLoginClick);
+        ?.addEventListener("click", onLoginClickEmail);
+
+    document
+        .querySelector<HTMLInputElement>(
+            `button.login[data-service-provider="${authProviders.Facebook}"]`,
+        )
+        ?.addEventListener("click", onLoginClickFacebook);
 
     document
         .querySelector<HTMLInputElement>("button.logout")
         ?.addEventListener("click", onLogoutClick);
+
+    document
+        .querySelector("button#enableAllSVGElements")
+        ?.addEventListener("click", enableAllSVGElements);
 });
 
 // callback functions
@@ -270,7 +277,7 @@ function onLogoutClick(e: Event): void {
     emailSignInFSMContext.handle({ isLogoutClicked: true });
 }
 
-function onEmailLoginClick(e: Event): void {
+function onLoginClickEmail(e: Event): void {
     const inputEmailValue: string =
         document.querySelector<HTMLInputElement>("input.email")!.value;
 
@@ -281,12 +288,23 @@ function onEmailLoginClick(e: Event): void {
         inputEmailValue,
         inputPasswordValue,
     });
-    emailSignInFSMContext.handle({ isLoginClicked: true });
+    emailSignInFSMContext.handle({ isEmailLoginClicked: true });
 }
 
-function callbackEnableLoginButton(enabled: boolean): void {
+function onLoginClickFacebook(e: Event): void {
+    debugger;
+    facebookSignInFSMContext.handle({ isFacebookLoginClicked: true });
+}
+
+function callbackEnableLoginButtonEmail(enabled: boolean): void {
     document.querySelector<HTMLInputElement>(
         'button.login[data-service-provider="email"]',
+    )!.disabled = !enabled;
+}
+
+function callbackEnableLoginButtonFacebook(enabled: boolean): void {
+    document.querySelector<HTMLInputElement>(
+        `button.login[data-service-provider="${authProviders.Facebook}"]`,
     )!.disabled = !enabled;
 }
 
@@ -331,8 +349,4 @@ async function handleEmailLogin(
 
     // back to the wrapper to handle the sign-in logic
     await _firebaseService.signin(authProviders.Email);
-}
-
-function signedOutCallback() {
-    console.log("Signed out");
 }
