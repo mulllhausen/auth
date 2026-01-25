@@ -1,3 +1,19 @@
+import { baseEnv } from "./dotenv.base";
+import { devEnv } from "./dotenv.dev";
+
+export function getEnv() {
+    let overrideEnv = {};
+    switch (import.meta.env.MODE) {
+        case "development":
+            overrideEnv = devEnv;
+            break;
+    }
+    return {
+        ...baseEnv,
+        ...overrideEnv,
+    };
+}
+
 export function onSvgReady(props: {
     svgQuerySelector: string;
     callback: (svgDoc: Document) => void;

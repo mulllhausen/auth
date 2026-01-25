@@ -45,7 +45,6 @@
 // - you can’t describe the system at a moment in time
 // - Introducing a new state resolves the non-determinism.
 
-import { env } from "./dotenv";
 import type { TWrapperSettings } from "./firebase-wrapper";
 import {
     authProviders,
@@ -62,7 +61,7 @@ import { StateToSVGMapperServiceFacebook } from "./state-to-svg-mapper-service-f
 import { SVGStateStatus } from "./svg-flowchart-service";
 import { SVGFlowChartServiceEmail } from "./svg-flowchart-service-email";
 import { SVGFlowChartServiceFacebook } from "./svg-flowchart-service-facebook";
-import { debounce, onSvgReady } from "./utils";
+import { debounce, getEnv, onSvgReady } from "./utils";
 
 export type TGUIStateDTO = {
     inputEmailValue?: string;
@@ -107,7 +106,7 @@ const wrapperSettings: TWrapperSettings = {
 
 const firebaseAuthService = new FirebaseAuthService({
     window,
-    env,
+    env: getEnv(),
     settings: wrapperSettings,
 });
 

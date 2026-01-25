@@ -1,3 +1,8 @@
+// TODO: delte these comments once implemented
+// take all .env* files
+// generate a singlel dotenv.types.ts
+// generate a dotenv.ts for each .env* file
+
 import * as dotenv from "dotenv";
 import * as fs from "fs";
 import * as path from "path";
