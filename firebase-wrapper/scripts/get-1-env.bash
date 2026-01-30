@@ -15,22 +15,22 @@ if [[ "$environment" != "dev" && "$environment" != "prod" ]]; then
 fi
 
 absolute_filename=$(realpath "$0")
-present_file_path=$(dirname "$absolute_filename")
+current_working_dir=$(dirname "$absolute_filename")
 
 if [[ "$environment" == "dev" ]]; then
-    env_files=(".env.development" ".env")
+    env_files=(".env.development" ".env.base")
 elif [[ "$environment" == "prod" ]]; then
-    env_files=(".env")
+    env_files=(".env.production" ".env.base")
 fi
 
 for env_file in "${env_files[@]}"; do
-    env_file="$present_file_path/../$env_file"
+    env_file="$current_working_dir/../$env_file"
     if [[ ! -f "$env_file" ]]; then
         continue
     fi
 
-    # note: use xargs trims whitespace
-    env_value="$(grep "${environment_variable_name}[[:space:]]*=[[:space:]]*" "$env_file" | cut -d'=' -f2 | xargs)"
+    # note: xargs trims whitespace
+    env_value="$(grep -E "^[[:space:]]*${environment_variable_name}[[:space:]]*=[[:space:]]*" "$env_file" | cut -d'=' -f2 | xargs)"
 
     if [[ "$env_value" == "" ]]; then
         continue

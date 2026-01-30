@@ -1,17 +1,19 @@
-import { baseEnv } from "./dotenv.base";
-import { devEnv } from "./dotenv.dev";
+import { baseEnv } from "./dotenv.base.ts";
+import type { TProcessEnv } from "./dotenv.d.ts";
+import { developmentEnv } from "./dotenv.development.ts";
+import { productionEnv } from "./dotenv.production.ts";
 
-export function getEnv() {
+export function getEnv(): TProcessEnv {
     let overrideEnv = {};
     switch (import.meta.env.MODE) {
         case "development":
-            overrideEnv = devEnv;
+            overrideEnv = developmentEnv;
+            break;
+        case "production":
+            overrideEnv = productionEnv;
             break;
     }
-    return {
-        ...baseEnv,
-        ...overrideEnv,
-    };
+    return { ...baseEnv, ...overrideEnv };
 }
 
 export function onSvgReady(props: {
