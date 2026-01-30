@@ -228,7 +228,10 @@ function getDotenvFileBaseNames(): string[] {
 }
 
 function getEnvironmentVarName(dotenvFilename: string): string {
-    return dotenvFilename.replace(ENV_FILE_PREFIX, "").toLowerCase();
+    return dotenvFilename
+        .replace(ENV_FILE_PREFIX, "")
+        .replace(".secret", "Secret")
+        .toLowerCase();
 }
 
 async function prettyTS(jsFileContent: string): Promise<string> {

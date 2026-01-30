@@ -1,5 +1,6 @@
 import { baseEnv } from "./dotenv.base.ts";
 import type { TProcessEnv } from "./dotenv.d.ts";
+import { developmentsecretEnv } from "./dotenv.development.secret.ts";
 import { developmentEnv } from "./dotenv.development.ts";
 import { productionEnv } from "./dotenv.production.ts";
 
@@ -7,7 +8,7 @@ export function getEnv(): TProcessEnv {
     let overrideEnv = {};
     switch (import.meta.env.MODE) {
         case "development":
-            overrideEnv = developmentEnv;
+            overrideEnv = { ...developmentEnv, ...developmentsecretEnv };
             break;
         case "production":
             overrideEnv = productionEnv;
