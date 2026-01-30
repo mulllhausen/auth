@@ -30,7 +30,11 @@ for env_file in "${env_files[@]}"; do
     fi
 
     # note: xargs trims whitespace
-    env_value="$(grep -E "^[[:space:]]*${environment_variable_name}[[:space:]]*=[[:space:]]*" "$env_file" | cut -d'=' -f2 | xargs)"
+    env_value="$(
+        grep -E "^[[:space:]]*${environment_variable_name}[[:space:]]*=[[:space:]]*" "$env_file" \
+        | cut -d'=' -f2 \
+        | xargs
+    )"
 
     if [[ "$env_value" == "" ]]; then
         continue

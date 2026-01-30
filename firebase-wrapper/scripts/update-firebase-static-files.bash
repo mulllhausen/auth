@@ -4,7 +4,7 @@
 
 environment="$1"
 
-if [[ "$environment" != "development" && "$environment" != "prod" ]]; then
+if [[ "$environment" != "dev" && "$environment" != "prod" ]]; then
     echo "Usage: $0 <dev|prod>" >&2
     exit 1
 fi
