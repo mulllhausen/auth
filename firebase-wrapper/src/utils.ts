@@ -1,14 +1,22 @@
 import { baseEnv } from "./dotenv.base.ts";
 import type { TProcessEnv } from "./dotenv.d.ts";
-import { developmentsecretEnv } from "./dotenv.development.secret.ts";
 import { developmentEnv } from "./dotenv.development.ts";
 import { productionEnv } from "./dotenv.production.ts";
 
 export function getEnv(): TProcessEnv {
-    let overrideEnv = {};
+    let overrideEnv: Partial<TProcessEnv> = {};
     switch (import.meta.env.MODE) {
         case "development":
-            overrideEnv = { ...developmentEnv, ...developmentsecretEnv };
+            const modules = import.meta.glob("./dotenv.development.secret.ts", {
+                eager: true,
+            });
+            const developmentSecrets = modules[
+                "./dotenv.development.secret.ts"
+            ] as { developmentSecretEnv?: Partial<TProcessEnv> } | undefined;
+            overrideEnv = {
+                ...developmentEnv,
+                ...(developmentSecrets?.developmentSecretEnv ?? {}),
+            };
             break;
         case "production":
             overrideEnv = productionEnv;
