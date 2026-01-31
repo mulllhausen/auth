@@ -12,11 +12,25 @@ fi
 present_filename_absolute=$(realpath "$0")
 present_file_path_absolute=$(dirname "$present_filename_absolute")
 
-rel_base_path="$("$present_file_path_absolute"/get-1-env.bash FIREBASE_STATIC_FILES_PATH "$environment")"
-abs_base_path=$(realpath "$present_file_path_absolute/../../$rel_base_path")
+rel_base_path="$(
+    "$present_file_path_absolute"/get-1-env.bash \
+    FIREBASE_STATIC_FILES_PATH \
+    "$environment"
+)"
+abs_base_path="$(
+    realpath "$present_file_path_absolute/../../$rel_base_path"
+)"
 
-api_key="$("$present_file_path_absolute"/get-1-env.bash FIREBASE_API_KEY "$environment")"
-auth_domain="$("$present_file_path_absolute"/get-1-env.bash FIREBASE_AUTH_DOMAIN "$environment")"
+api_key="$(
+    "$present_file_path_absolute"/get-1-env.bash \
+    FIREBASE_API_KEY \
+    "$environment"
+)"
+auth_domain="$(
+    "$present_file_path_absolute"/get-1-env.bash \
+    FIREBASE_AUTH_DOMAIN \
+    "$environment"
+)"
 
 firebase_init_json=$(
     cat <<EOF
@@ -30,4 +44,4 @@ EOF
 abs_output_file="$abs_base_path/__/firebase/init.json"
 mkdir -p "$(dirname "$abs_output_file")"
 echo "$firebase_init_json" >"$abs_output_file"
-echo "successfully updated $abs_output_file with $firebase_init_json"
+echo "✅ successfully updated $abs_output_file with $firebase_init_json"

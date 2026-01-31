@@ -1,16 +1,16 @@
 #!/bin/bash
 
-environment_variable_name="$1"
+env_var_name="$1"
 
-if [[ -z "$environment_variable_name" ]]; then
-    echo "Usage: $0 <environment variable> <dev|prod>" >&2
+if [[ -z "$env_var_name" ]]; then
+    echo "❌ usage: $0 <environment variable> <dev|prod>" >&2
     exit 1
 fi
 
 environment="$2"
 
 if [[ "$environment" != "dev" && "$environment" != "prod" ]]; then
-    echo "Usage: $0 <environment variable> <dev|prod>" >&2
+    echo "❌ usage: $0 <environment variable> <dev|prod>" >&2
     exit 1
 fi
 
@@ -29,11 +29,10 @@ for env_file in "${env_files[@]}"; do
         continue
     fi
 
+    env_var_regex="^[[:space:]]*${env_var_name}[[:space:]]*=[[:space:]]*"
     # note: xargs trims whitespace
     env_value="$(
-        grep -E "^[[:space:]]*${environment_variable_name}[[:space:]]*=[[:space:]]*" "$env_file" \
-        | cut -d'=' -f2 \
-        | xargs
+        grep -E "$env_var_regex" "$env_file" | cut -d'=' -f2 | xargs
     )"
 
     if [[ "$env_value" == "" ]]; then
@@ -45,5 +44,7 @@ for env_file in "${env_files[@]}"; do
 done
 
 env_files_string="${env_files[*]}"
-echo "Environment variable \"$environment_variable_name\" not found in ${env_files_string// / or }" >&2
+error_message="❌ environment variable \"$env_var_name\" not found"
+error_message="$error_message in ${env_files_string// / or }"
+echo "$error_message" >&2
 exit 1
