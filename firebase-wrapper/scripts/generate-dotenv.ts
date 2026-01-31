@@ -90,7 +90,7 @@ export const ${dotenvEnvironmentVarName}Env: Partial<TProcessEnv> = ` +
         await prettyTS(dotenvTsContent),
         "utf8",
     );
-    console.log(`✅ ${outputFileWithPath} has been generated.`);
+    console.log(`✅ successfully generated env file: ${outputFileWithPath}`);
 }
 
 /** the types of the variable are stored on the end of the .env key.

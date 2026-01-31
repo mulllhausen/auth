@@ -44,11 +44,26 @@ url_paths=(
 total_num_files=${#url_paths[@]}
 
 file_i=1
+num_successful_downloads=0
 for url_path in "${url_paths[@]}"; do
     mkdir -p "$abs_base_path/$(dirname "$url_path")"
     echo "💾 downloading file $file_i/$total_num_files"
     echo
-    wget "$schema_and_domain/$url_path" -O "$abs_base_path/$url_path"
+    if wget "$schema_and_domain/$url_path" -O "$abs_base_path/$url_path"; then
+        num_successful_downloads=$((num_successful_downloads + 1))
+    else
+        echo "❌ failed download: $schema_and_domain/$url_path"
+        echo
+    fi
     file_i=$((file_i + 1))
 done
-echo "🏁 🏁 🏁 🏁 🏁"
+
+echo "🏁 🏁 🏁 🏁 🏁 end of file downloads"
+if [[ $num_successful_downloads -ne $total_num_files ]]; then
+    error_message="❌ only $num_successful_downloads of $total_num_files"
+    error_message="$error_message files were downloaded successfully"
+    echo "$error_message" >&2
+    exit 1
+else
+    echo "✅ successfully downloaded all $total_num_files files"
+fi
