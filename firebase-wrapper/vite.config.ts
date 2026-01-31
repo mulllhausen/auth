@@ -1,10 +1,12 @@
 import { defineConfig } from "vite";
-import { env } from "./src/dotenv";
+import { developmentEnv } from "./src/dotenv.development.ts";
+
+// vite is only used for dev
 
 export default defineConfig({
-    base: env.BASE_PATH, // prefix for all assets
+    base: developmentEnv.BASE_PATH, // prefix for all assets
     server: {
-        port: env.VITE_PORT, // localhost only
+        port: developmentEnv.VITE_PORT, // localhost only
     },
     build: {
         outDir: "dist",

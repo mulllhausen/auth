@@ -1,11 +1,11 @@
 import { mock } from "jest-mock-extended";
-import { env } from "../src/dotenv";
 import type { TWrapperSettings } from "../src/firebase-wrapper";
 import {
     authProviders,
     defaultAction,
     FirebaseAuthService,
 } from "../src/firebase-wrapper";
+import { getEnv } from "../src/utils.ts";
 
 // note: returns a concrete instance of FirebaseAuthService, not a mock
 // however the internal settings are mocked
@@ -19,7 +19,6 @@ export const setupFirebaseAuthService = (params: {
 }): FirebaseAuthService => {
     const wrapperSettings = mock<TWrapperSettings>();
     wrapperSettings.loginButtonCSSClass = "button.login";
-    wrapperSettings.clearCachedUserButtonCSSClass = "button#clearCachedUser";
 
     // note: these provider strings are the mock values - not the static values
     // defined by the firebase auth library. eg. mousing over authProviders.Google
@@ -50,7 +49,8 @@ export const setupFirebaseAuthService = (params: {
     };
 
     const firebaseAuthService = new FirebaseAuthService({
-        env, // use real, not mock
+        window, // todo: mock
+        env: getEnv(), // use real, not mock
         settings: wrapperSettings,
     });
     return firebaseAuthService;

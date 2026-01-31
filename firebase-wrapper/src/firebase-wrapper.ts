@@ -29,7 +29,7 @@ import {
     signInWithEmailLink,
     signInWithRedirect,
 } from "firebase/auth";
-import type { TProcessEnv } from "./dotenv.base.ts";
+import type { TProcessEnv } from "./dotenv.d.ts";
 import type {
     TSafeOAuthCredential,
     TSafeTokenResponse,
