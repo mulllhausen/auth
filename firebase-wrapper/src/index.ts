@@ -45,12 +45,7 @@
 // - you can’t describe the system at a moment in time
 // - Introducing a new state resolves the non-determinism.
 
-import type { TWrapperSettings } from "./firebase-wrapper";
-import {
-    authProviders,
-    defaultAction,
-    FirebaseAuthService,
-} from "./firebase-wrapper";
+import { authProviders, FirebaseAuthService } from "./firebase-wrapper";
 import { GUILogger } from "./gui-logger";
 import { HTMLTemplateManager } from "./html-template-manager";
 import "./index.css";
@@ -84,30 +79,10 @@ const guiLogger = new GUILogger({
     .initEvents()
     .initGUIFromLocalStorage();
 
-const wrapperSettings: TWrapperSettings = {
-    logger: guiLogger.log.bind(guiLogger),
-    loginButtonCSSClass: "button.login",
-    authProviderSettings: {
-        [authProviders.Google]: {
-            loginButtonClicked: defaultAction,
-        },
-        [authProviders.Facebook]: {
-            loginButtonClicked: defaultAction,
-        },
-        [authProviders.GitHub]: {
-            loginButtonClicked: defaultAction,
-        },
-        [authProviders.Email]: {
-            loginButtonClicked: (self: FirebaseAuthService, e: MouseEvent) =>
-                handleEmailLogin(self, e),
-        },
-    },
-};
-
 const firebaseAuthService = new FirebaseAuthService({
     window,
     env: getEnv(),
-    settings: wrapperSettings,
+    logger: guiLogger.log.bind(guiLogger),
 });
 
 const emailFSMSVGService = new SVGFlowChartServiceEmail({

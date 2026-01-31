@@ -105,18 +105,6 @@ export type TFirebaseDependencies = {
     ) => Promise<never>;
 };
 
-export type TWrapperSettings = {
-    logger?: (logItemInput: TLogItem) => void;
-    loginButtonCSSClass: string;
-    authProviderSettings: {
-        [TKey in TAuthProviders]: {
-            loginButtonClicked:
-                | TDefaultAction
-                | ((self: FirebaseAuthService, e: MouseEvent) => Promise<void>);
-        };
-    };
-};
-
 export type TAuthProviders = (typeof authProviders)[keyof typeof authProviders];
 
 export type TFirebaseWrapperStateDTO = {
@@ -130,6 +118,8 @@ export type TFirebaseWrapperStateDTO = {
     nullCredentialAfterSignIn?: TAuthProviders;
     signedOutUser?: boolean;
 };
+
+type TStateChangedCallback = (dto: TFirebaseWrapperStateDTO) => Promise<void>;
 
 export type TDefaultAction = null;
 
@@ -151,13 +141,12 @@ export type TCRUDValues = (typeof CRUD)[keyof typeof CRUD];
 // todo: single responsibility principle. this service should not know anything about
 // state machines. it should just contain a bunch of method-wrappers that make taking
 // action more simple and uniform
-// assumption: this class is not a singleton. it should be instantiated per provider.
-// that said, this class holds state data (eg. email address) so the object instances
+// assumption: this class is a singleton. the same instance should be used for all providers.
+// this class holds state data (eg. email address) so the object instances
 // will share user-state, especially via local storage.
-// this class is not a state machine sop it does not hold an enumerated state.
+// this class is not a state machine so it does not hold an enumerated state.
 export class FirebaseAuthService {
     private _window: Window & typeof globalThis;
-    private settings: TWrapperSettings;
     private logger?: (logItem: TLogItem) => void;
     private env: TProcessEnv;
     public Auth: Auth;
@@ -178,19 +167,7 @@ export class FirebaseAuthService {
     // init but may be overriden in constructor
     //private emailState: EmailSignInState = new EmailSignInFSM.Idle();
 
-    private callbackStateChanged?: (
-        dto: TFirebaseWrapperStateDTO,
-    ) => Promise<void>;
-    private backedUpEmailLoginButtonClicked:
-        | TDefaultAction
-        | ((self: FirebaseAuthService, e: MouseEvent) => Promise<void>)
-        | null = null;
-
-    public set Settings(settings: TWrapperSettings) {
-        this.setupEvents(this.settings, CRUD.Delete);
-        this.settings = settings;
-        this.setupEvents(this.settings, CRUD.Create);
-    }
+    private callbacksForStateChanged = new Set<TStateChangedCallback>();
 
     public get EmailAddress(): string | null {
         return this.emailAddress;
@@ -208,12 +185,11 @@ export class FirebaseAuthService {
     constructor(props: {
         window: Window & typeof globalThis;
         env: TProcessEnv;
-        settings: TWrapperSettings;
+        logger?: (logItemInput: TLogItem) => void;
     }) {
         this._window = props.window;
         this.env = props.env;
-        this.settings = props.settings;
-        this.logger = props.settings.logger;
+        this.logger = props.logger;
 
         if (this.env.FIREBASE_LINK_ACCOUNTS) {
             throw new Error("FIREBASE_LINK_ACCOUNTS=true is not supported yet");
@@ -242,61 +218,32 @@ export class FirebaseAuthService {
         this.Auth = getAuth(app);
         this.log(`finished initializing firebase SDK`);
         //this.setupFirebaseListeners();
-        this.setupEvents(this.settings, CRUD.Create);
+        //this.setupEvents(this.settings, CRUD.Create);
     }
 
     private log(logMessage: string) {
         this.logger?.({ logMessage });
     }
 
-    private setupEvents(
-        settings: TWrapperSettings,
-        eventAction: TCRUDValues,
-    ): void {
-        const eventListener = this.getEventListener(eventAction);
+    public subscribeStateChanged(
+        callbackStateChanged: TStateChangedCallback,
+    ): () => void {
+        this.callbacksForStateChanged.add(callbackStateChanged);
 
-        const loginButtons = document.querySelectorAll(
-            settings.loginButtonCSSClass,
+        // unsubscribe function
+        return () => {
+            this.callbacksForStateChanged.delete(callbackStateChanged);
+        };
+    }
+
+    private async publishStateChanged(
+        dto: TFirebaseWrapperStateDTO,
+    ): Promise<void> {
+        await Promise.allSettled(
+            Array.from(this.callbacksForStateChanged).map((callback) =>
+                callback(dto),
+            ),
         );
-        if (!loginButtons || loginButtons.length === 0) {
-            return;
-        }
-        // todo: refactor to use callbacks instead of css (SRP)
-        for (const button of loginButtons) {
-            if (!(button instanceof HTMLButtonElement)) continue; // todo: refactor (runtime has no types)
-            const provider = button.dataset.serviceProvider as TAuthProviders;
-            const foundProvider = settings.authProviderSettings[provider];
-            const action =
-                foundProvider?.loginButtonClicked ??
-                this.serviceProviderNotFoundAction;
-
-            eventListener.call(button, "click", async (e) => {
-                const mouseEvent = e as HTMLElementEventMap["click"];
-                this.log(`login with ${provider} clicked`);
-                await (action === defaultAction
-                    ? this.signin(provider)
-                    : action(this, mouseEvent));
-            });
-        }
-    }
-
-    private getEventListener(action: TCRUDValues): TEventListenerMethod {
-        switch (action) {
-            case CRUD.Create:
-                return Element.prototype.addEventListener;
-            case CRUD.Delete:
-                return Element.prototype.removeEventListener;
-            default:
-                throw new Error(
-                    `action ${action} is not allowed in getEventListener()`,
-                );
-        }
-    }
-
-    public setupCallbackStateChanged(
-        callbackStateChanged: (dto: TFirebaseWrapperStateDTO) => Promise<void>,
-    ) {
-        this.callbackStateChanged = callbackStateChanged;
     }
 
     public async setupFirebaseListeners(): Promise<void> {
@@ -339,7 +286,7 @@ export class FirebaseAuthService {
             ))();
             signInWithRedirect(this.Auth, authProvider);
 
-            await this.callbackStateChanged?.({
+            await this.publishStateChanged?.({
                 redirectedToAuthProvider: providerID,
             });
         } catch (error: unknown) {
@@ -355,7 +302,7 @@ export class FirebaseAuthService {
                 logData: error,
             });
 
-            await this.callbackStateChanged?.({
+            await this.publishStateChanged?.({
                 failedToRedirectToAuthProvider: providerID,
             });
         }
@@ -404,7 +351,7 @@ export class FirebaseAuthService {
                 this.log(
                     `credential is null immediately after sign-in with ${providerId}`,
                 );
-                await this.callbackStateChanged?.({
+                await this.publishStateChanged?.({
                     nullCredentialAfterSignIn: providerId,
                 });
                 return;
@@ -421,7 +368,7 @@ export class FirebaseAuthService {
                 this.log(
                     `accessToken is null immediately after sign-in with ${providerId}`,
                 );
-                await this.callbackStateChanged?.({
+                await this.publishStateChanged?.({
                     nullCredentialAfterSignIn: providerId,
                 });
                 return;
@@ -447,7 +394,7 @@ export class FirebaseAuthService {
             this.afterUserSignedIn(user);
         } else {
             this.log(`firebase auth state changed - user is signed-out`);
-            await this.callbackStateChanged?.({
+            await this.publishStateChanged?.({
                 signedOutUser: true,
             });
         }
@@ -488,7 +435,9 @@ export class FirebaseAuthService {
                 this.deleteCachedEmail();
                 this.deleteFirebaseQuerystringParams();
                 this.signedInStatus["Email"] = false;
-                await this.callbackStateChanged?.({ emailDataDeleted: true });
+                await this.publishStateChanged?.({
+                    emailDataDeleted: true,
+                });
                 break;
         }
     }
@@ -507,7 +456,7 @@ export class FirebaseAuthService {
             );
             this.log(`successfully sent sign-in link`);
 
-            await this.callbackStateChanged?.({
+            await this.publishStateChanged?.({
                 successfullySentSignInLinkToEmail: true,
             });
         } catch (error: unknown) {
@@ -517,7 +466,7 @@ export class FirebaseAuthService {
                 `firebase failed to send sign-in link with SendSignInLinkToEmail(). ` +
                     `${errorCodeMessage}message: "${(error as Error).message}".`,
             );
-            await this.callbackStateChanged?.({
+            await this.publishStateChanged?.({
                 successfullySentSignInLinkToEmail: false,
             });
         }
@@ -541,14 +490,14 @@ export class FirebaseAuthService {
                 `the user has opened the email link on a different browser. ` +
                     `to prevent session fixation attacks, the email address must be entered again.`,
             );
-            this.callbackStateChanged?.({
+            this.publishStateChanged?.({
                 userOpenedEmailLinkOnSameBrowser: false,
             });
             return;
         }
 
         this.log(`the user has opened the email link on the same browser.`);
-        this.callbackStateChanged?.({
+        this.publishStateChanged?.({
             userOpenedEmailLinkOnSameBrowser: true,
         });
         return;
@@ -573,7 +522,7 @@ export class FirebaseAuthService {
                 });
                 this.cacheUser(userCredentialResult.user);
                 this.signedInStatus["Email"] = true;
-                this.callbackStateChanged?.({
+                this.publishStateChanged?.({
                     userCredentialFoundViaEmail: true,
                 });
                 return;
@@ -582,7 +531,7 @@ export class FirebaseAuthService {
                     logMessage: "user was not signed in with email link",
                     logData: this.safeUserCredential(userCredentialResult),
                 });
-                this.callbackStateChanged?.({
+                this.publishStateChanged?.({
                     userCredentialFoundViaEmail: false,
                 });
             }
@@ -599,7 +548,7 @@ export class FirebaseAuthService {
                 `firebase handleSignInWithEmailLink() error. ${errorCodeMessage}` +
                     `message: "${(error as Error).message}"`,
             );
-            this.callbackStateChanged?.({
+            this.publishStateChanged?.({
                 userCredentialFoundViaEmail: false,
             });
         }

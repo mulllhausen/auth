@@ -75,6 +75,7 @@ export class EmailSignInFSMContext {
     };
 
     // callbacks
+    private callbackStateChangedUnsubscribe?: () => void;
     public callbackEnableEmailInput?: (enabled: boolean) => void;
     public callbackPopulateEmailInput?: (value: string | null) => void;
     public callbackEnablePasswordInput?: (enabled: boolean) => void;
@@ -101,9 +102,10 @@ export class EmailSignInFSMContext {
         this.stateToSVGMapperService = props.stateToSVGMapperService;
         this.logger = props.logger;
 
-        this.firebaseAuthService.setupCallbackStateChanged(
-            this.handle.bind(this),
-        );
+        this.callbackStateChangedUnsubscribe =
+            this.firebaseAuthService.subscribeStateChanged(
+                this.handle.bind(this),
+            );
 
         this.callbackEnableLoginButton = props.callbackEnableLoginButton;
         this.callbackPopulateEmailInput = props.callbackPopulateEmailInput;
@@ -127,6 +129,7 @@ export class EmailSignInFSMContext {
 
     /** should always be called by an action external to this FSM */
     public async handle(emailStateDTO: TEmailStateDTO): Promise<void> {
+        debugger;
         const skipCurrentStateHandler =
             await this.currentState?.overrideStateHandler(emailStateDTO);
         if (skipCurrentStateHandler) return;

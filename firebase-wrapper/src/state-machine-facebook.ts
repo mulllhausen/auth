@@ -63,6 +63,7 @@ export class FacebookSignInFSMContext {
     };
 
     // callbacks
+    private callbackStateChangedUnsubscribe?: () => void;
     public callbackEnableLoginButton?: (enabled: boolean) => void;
 
     constructor(props: {
@@ -77,9 +78,10 @@ export class FacebookSignInFSMContext {
         this.stateToSVGMapperService = props.stateToSVGMapperService;
         this.logger = props.logger;
 
-        this.firebaseAuthService.setupCallbackStateChanged(
-            this.handle.bind(this),
-        );
+        this.callbackStateChangedUnsubscribe =
+            this.firebaseAuthService.subscribeStateChanged(
+                this.handle.bind(this),
+            );
 
         this.callbackEnableLoginButton = props.callbackEnableLoginButton;
     }
@@ -96,6 +98,7 @@ export class FacebookSignInFSMContext {
 
     /** should always be called by an action external to this FSM */
     public async handle(facebookStateDTO: TFacebookStateDTO): Promise<void> {
+        debugger;
         const skipCurrentStateHandler =
             await this.currentState?.overrideStateHandler(facebookStateDTO);
         if (skipCurrentStateHandler) return;
