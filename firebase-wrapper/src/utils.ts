@@ -92,3 +92,7 @@ export function clearQueryParams(
 export function capsFirstLetter(str: string): string {
     return str[0].toUpperCase() + str.slice(1);
 }
+
+export function deepCopy<T>(obj: T): T {
+    return JSON.parse(JSON.stringify(obj));
+}

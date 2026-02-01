@@ -38,7 +38,7 @@ import type {
     TSafeUserInfo,
 } from "./firebase-safe-types.ts";
 import type { TLogItem } from "./gui-logger.ts";
-import { clearQueryParams } from "./utils.ts";
+import { clearQueryParams, deepCopy } from "./utils.ts";
 
 // #endregion imports
 
@@ -103,6 +103,7 @@ export type TFirebaseWrapperStateDTO = {
     urlIsAnEmailSignInLink?: boolean;
     userOpenedEmailLinkOnSameBrowser?: boolean;
     userCredentialFoundViaEmail?: boolean;
+    userCredentialFoundViaFacebook?: boolean;
     redirectedToAuthProvider?: TAuthProvider;
     failedToRedirectToAuthProvider?: TAuthProvider;
     nullCredentialAfterSignIn?: TAuthProvider;
@@ -146,11 +147,11 @@ export class FirebaseAuthService {
     private localStorageEmailAddressKey = "emailAddress";
     private localStorageCachedUserKey = "cachedUser";
     private hiddenMessage = "not stored in localStorage to prevent xss attacks";
-    public signedInStatus: Record<keyof typeof authProviders, boolean> = {
-        Email: false,
-        Google: false,
-        Facebook: false,
-        GitHub: false,
+    public signedInStatus: Record<TAuthProvider, boolean> = {
+        [authProviders.Email]: false,
+        [authProviders.Google]: false,
+        [authProviders.Facebook]: false,
+        [authProviders.GitHub]: false,
     };
 
     // init but may be overriden in constructor
@@ -377,6 +378,7 @@ export class FirebaseAuthService {
     }
 
     private async authStateChanged(user: User | null): Promise<void> {
+        debugger;
         if (user) {
             this.afterUserSignedIn(user);
         } else {
@@ -396,6 +398,7 @@ export class FirebaseAuthService {
         // }
         debugger;
         const logMessageStart: string = "firebase auth state changed";
+        const initialStatuses = deepCopy(this.signedInStatus);
         if (this.userAlreadyCached(user)) {
             this.logger?.({
                 logMessage: `${logMessageStart}, but user is already signed-in`,
@@ -403,6 +406,24 @@ export class FirebaseAuthService {
                 safeLocalStorageData: this.safeUserResponse(user),
             });
             return;
+        }
+        {
+            if (
+                !initialStatuses[authProviders.Email] &&
+                this.signedInStatus[authProviders.Email]
+            ) {
+                await this.publishStateChanged?.({
+                    userCredentialFoundViaEmail: true,
+                });
+            }
+            if (
+                !initialStatuses[authProviders.Facebook] &&
+                this.signedInStatus[authProviders.Facebook]
+            ) {
+                await this.publishStateChanged?.({
+                    userCredentialFoundViaFacebook: true,
+                });
+            }
         }
 
         this.logger?.({
@@ -512,7 +533,7 @@ export class FirebaseAuthService {
                     imageURL: userCredentialResult.user.photoURL,
                 });
                 this.cacheUser(userCredentialResult.user);
-                this.signedInStatus["Email"] = true;
+                this.signedInStatus[authProviders.Email] = true;
                 this.publishStateChanged?.({
                     userCredentialFoundViaEmail: true,
                 });
@@ -602,7 +623,7 @@ export class FirebaseAuthService {
 
     private deleteCachedEmail(): void {
         this.EmailAddress = "";
-        this.signedInStatus["Email"] = false;
+        this.signedInStatus[authProviders.Email] = false;
         this._window.localStorage.removeItem(this.localStorageEmailAddressKey);
     }
 

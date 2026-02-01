@@ -10,10 +10,10 @@
 // been given by this service.
 
 import type { TGUIStateDTO } from ".";
-import type { TFirebaseWrapperStateDTO } from "./firebase-wrapper";
-import { authProviders, FirebaseAuthService } from "./firebase-wrapper";
-import type { TLogItem } from "./gui-logger";
-import { StateToSVGMapperServiceFacebook } from "./state-to-svg-mapper-service-facebook";
+import type { TFirebaseWrapperStateDTO } from "./firebase-wrapper.ts";
+import { authProviders, FirebaseAuthService } from "./firebase-wrapper.ts";
+import type { TLogItem } from "./gui-logger.ts";
+import { StateToSVGMapperServiceFacebook } from "./state-to-svg-mapper-service-facebook.ts";
 
 // #region consts and types
 
@@ -38,6 +38,7 @@ const facebookFSMStateIDs = [
     "RedirectingToFacebook",
     "FacebookResponded",
     "FacebookIsUnavailable",
+    "SignedIn",
 ] as const;
 export type TFacebookFSMStateID = (typeof facebookFSMStateIDs)[number];
 
@@ -60,6 +61,7 @@ export class FacebookSignInFSMContext {
         RedirectingToFacebook: RedirectingToFacebookState,
         FacebookResponded: FacebookRespondedState,
         FacebookIsUnavailable: FacebookIsUnavailableState,
+        SignedIn: SignedInState,
     };
 
     // callbacks
@@ -89,6 +91,7 @@ export class FacebookSignInFSMContext {
             facebookSignInStateConstructor, // init. a class is required.
         );
         await this.firebaseAuthService.checkIfURLIsASignInRedirectResult();
+        await this.firebaseAuthService.setupFirebaseListeners();
     }
 
     /** should always be called by an action external to this FSM */
@@ -181,6 +184,11 @@ abstract class FacebookSignInState {
         facebookStateDTO?: TFacebookStateDTO,
     ): Promise<boolean> {
         let skipCurrentStateLogic = false;
+        if (facebookStateDTO?.userCredentialFoundViaFacebook) {
+            this.log("facebook fsm: detected user already signed in");
+            await this.context.transitionTo(transitionToken, SignedInState);
+            skipCurrentStateLogic = true;
+        }
         if (facebookStateDTO?.signedOutUser) {
             this.log("facebook fsm: detected user already signed out");
             await this.context.transitionTo(transitionToken, IdleState);
@@ -257,6 +265,16 @@ class FacebookRespondedState extends FacebookSignInState {
 
 class FacebookIsUnavailableState extends FacebookSignInState {
     public override readonly ID = "FacebookIsUnavailable";
+
+    public override async handle(
+        facebookStateDTO: TFacebookStateDTO,
+    ): Promise<void> {}
+
+    public override async onEnter(): Promise<void> {}
+}
+
+class SignedInState extends FacebookSignInState {
+    public override readonly ID = "SignedIn";
 
     public override async handle(
         facebookStateDTO: TFacebookStateDTO,

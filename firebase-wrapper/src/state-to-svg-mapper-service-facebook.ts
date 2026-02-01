@@ -116,5 +116,6 @@ export class StateToSVGMapperServiceFacebook {
         RedirectingToFacebook: "RedirectingToFacebook0",
         FacebookResponded: "FacebookResponded0",
         FacebookIsUnavailable: "FacebookIsUnavailable0",
+        SignedIn: "SignedIn0",
     };
 }

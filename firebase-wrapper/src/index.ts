@@ -51,7 +51,10 @@ import {
     TAuthProvider,
 } from "./firebase-wrapper.ts";
 import { GUILogger } from "./gui-logger.ts";
-import { mapAuthProviderToNavTabElement } from "./gui-mappers.ts";
+import {
+    authProviderToGUINameMap,
+    mapAuthProviderToNavTabElement,
+} from "./gui-mappers.ts";
 import { HTMLTemplateManager } from "./html-template-manager.ts";
 import "./index.css";
 import {
@@ -194,7 +197,7 @@ function clickTab(authProvider: TAuthProvider) {
 }
 
 function activateTab(activeTab: HTMLAnchorElement) {
-    const activePanel = activeTab.dataset.tab!;
+    const activePanelID = activeTab.dataset.tab!;
 
     const allTabs = document.querySelectorAll<HTMLAnchorElement>("nav.tabs a");
     allTabs.forEach((eachTab) => eachTab.classList.remove("active"));
@@ -203,7 +206,7 @@ function activateTab(activeTab: HTMLAnchorElement) {
     allPanels.forEach((eachPanel) => eachPanel.classList.remove("active"));
 
     activeTab.classList.add("active");
-    document.getElementById(activePanel)?.classList.add("active");
+    document.getElementById(activePanelID)?.classList.add("active");
 }
 
 function enableAllSVGElements(event_: Event) {
@@ -281,14 +284,16 @@ function onLoginClickFacebook(e: Event): void {
 }
 
 function callbackEnableLoginButtonEmail(enabled: boolean): void {
+    const guiName = authProviderToGUINameMap[authProviders.Email];
     document.querySelector<HTMLInputElement>(
-        'button.login[data-service-provider="email"]',
+        `button.login[data-service-provider="${guiName}"]`,
     )!.disabled = !enabled;
 }
 
 function callbackEnableLoginButtonFacebook(enabled: boolean): void {
+    const guiName = authProviderToGUINameMap[authProviders.Facebook];
     document.querySelector<HTMLInputElement>(
-        `button.login[data-service-provider="${authProviders.Facebook}"]`, // todo: use a mapper here
+        `button.login[data-service-provider="${guiName}"]`,
     )!.disabled = !enabled;
 }
 
@@ -320,25 +325,4 @@ async function clearCachedUser() {
     emailSignInFSMContext.deleteStateFromLocalstorage();
     await facebookSignInFSMContext.handle({});
     await emailSignInFSMContext.handle({});
-}
-
-async function handleEmailLogin(
-    _firebaseService: FirebaseAuthService,
-    e: MouseEvent,
-): Promise<void> {
-    // user-flow logic to get email and password
-    _firebaseService.EmailAddress = (
-        document.querySelector("input.email") as HTMLInputElement
-    )?.value;
-
-    _firebaseService.UseLinkInsteadOfPassword =
-        (document.querySelector("input.no-password") as HTMLInputElement)
-            ?.checked ?? console.error(`Password checkbox not found`);
-
-    _firebaseService.EmailPassword = (
-        document.querySelector("input.password") as HTMLInputElement
-    )?.value;
-
-    // back to the wrapper to handle the sign-in logic
-    await _firebaseService.signin(authProviders.Email);
 }
