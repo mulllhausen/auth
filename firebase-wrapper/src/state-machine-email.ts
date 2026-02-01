@@ -87,7 +87,6 @@ export class EmailSignInFSMContext {
     constructor(props: {
         window: Window & typeof globalThis;
         firebaseAuthService: FirebaseAuthService;
-        stateToSVGMapperService?: StateToSVGMapperServiceEmail;
         logger?: (logItemInput: TLogItem) => void;
         callbackEnableEmailInput?: (enabled: boolean) => void;
         callbackPopulateEmailInput?: (value: string | null) => void;
@@ -98,7 +97,6 @@ export class EmailSignInFSMContext {
     }) {
         this._window = props.window;
         this.firebaseAuthService = props.firebaseAuthService;
-        this.stateToSVGMapperService = props.stateToSVGMapperService;
         this.logger = props.logger;
         this.callbackEnableLoginButton = props.callbackEnableLoginButton;
         this.callbackPopulateEmailInput = props.callbackPopulateEmailInput;
@@ -120,6 +118,21 @@ export class EmailSignInFSMContext {
             emailSignInStateConstructor, // init. a class is required.
         );
         await this.firebaseAuthService.checkIfURLIsASignInWithEmailLink();
+    }
+
+    public attachView(
+        stateToSVGMapperServiceEmail: StateToSVGMapperServiceEmail,
+    ): void {
+        this.stateToSVGMapperService = stateToSVGMapperServiceEmail;
+        if (this.currentState) {
+            this.stateToSVGMapperService.updateSvg(this.currentState.ID);
+        }
+    }
+
+    private notifyViewStateChanged(): void {
+        if (!this.stateToSVGMapperService) return; // view not attached yet
+        if (!this.currentState) return;
+        this.stateToSVGMapperService.updateSvg(this.currentState.ID);
     }
 
     /** should always be called by an action external to this FSM */
@@ -148,7 +161,7 @@ export class EmailSignInFSMContext {
             logger: this.logger,
         });
 
-        this.stateToSVGMapperService?.updateSvg(this.currentState.ID);
+        this.notifyViewStateChanged();
 
         const newStateID = this.currentState.ID;
         this.backupStateToLocalstorage(newStateID);

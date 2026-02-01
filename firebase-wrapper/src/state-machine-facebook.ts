@@ -70,13 +70,11 @@ export class FacebookSignInFSMContext {
     constructor(props: {
         window: Window & typeof globalThis;
         firebaseAuthService: FirebaseAuthService;
-        stateToSVGMapperService?: StateToSVGMapperServiceFacebook;
         logger?: (logItemInput: TLogItem) => void;
         callbackEnableLoginButton?: (enabled: boolean) => void;
     }) {
         this._window = props.window;
         this.firebaseAuthService = props.firebaseAuthService;
-        this.stateToSVGMapperService = props.stateToSVGMapperService;
         this.logger = props.logger;
         this.callbackEnableLoginButton = props.callbackEnableLoginButton;
 
@@ -91,7 +89,21 @@ export class FacebookSignInFSMContext {
             facebookSignInStateConstructor, // init. a class is required.
         );
         await this.firebaseAuthService.checkIfURLIsASignInRedirectResult();
-        await this.firebaseAuthService.setupFirebaseListeners();
+    }
+
+    public attachView(
+        stateToSVGMapperService: StateToSVGMapperServiceFacebook,
+    ): void {
+        this.stateToSVGMapperService = stateToSVGMapperService;
+        if (this.currentState) {
+            this.stateToSVGMapperService.updateSvg(this.currentState.ID);
+        }
+    }
+
+    private notifyViewStateChanged(): void {
+        if (!this.stateToSVGMapperService) return; // view not attached yet
+        if (!this.currentState) return;
+        this.stateToSVGMapperService.updateSvg(this.currentState.ID);
     }
 
     /** should always be called by an action external to this FSM */
@@ -120,7 +132,7 @@ export class FacebookSignInFSMContext {
             logger: this.logger,
         });
 
-        this.stateToSVGMapperService?.updateSvg(this.currentState.ID);
+        this.notifyViewStateChanged();
 
         const newStateID = this.currentState.ID;
         this.backupStateToLocalstorage(newStateID);

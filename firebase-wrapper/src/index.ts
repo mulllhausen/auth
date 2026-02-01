@@ -57,6 +57,7 @@ import {
 } from "./gui-mappers.ts";
 import { HTMLTemplateManager } from "./html-template-manager.ts";
 import "./index.css";
+import { FSMCoordinator } from "./state-machine-coordinator.ts";
 import {
     EmailSignInFSMContext,
     TEmailStateDTO,
@@ -94,23 +95,12 @@ const firebaseAuthService = new FirebaseAuthService({
     logger: guiLogger.log.bind(guiLogger),
 });
 
-const emailFSMSVGService = new SVGFlowChartServiceEmail({
-    svgQuerySelector: "#emailLinkFSMChart",
-});
-
-const facebookFSMSVGService = new SVGFlowChartServiceFacebook({
-    svgQuerySelector: "#facebookFSMChart",
-});
-
-const stateToEmailSVGMapperService = new StateToSVGMapperServiceEmail({
-    svgService: emailFSMSVGService,
-    currentStateBoxCSSClassKey: null,
-});
+let emailFSMSVGService: SVGFlowChartServiceEmail;
+let facebookFSMSVGService: SVGFlowChartServiceFacebook;
 
 const emailSignInFSMContext = new EmailSignInFSMContext({
     window,
     firebaseAuthService,
-    stateToSVGMapperService: stateToEmailSVGMapperService,
     logger: guiLogger.log.bind(guiLogger),
     callbackEnableLoginButton: callbackEnableLoginButtonEmail,
     callbackPopulateEmailInput,
@@ -120,18 +110,19 @@ const emailSignInFSMContext = new EmailSignInFSMContext({
     callbackShowInstructionsToReEnterEmail,
 });
 
-const stateToFacebookSVGMapperService = new StateToSVGMapperServiceFacebook({
-    svgService: facebookFSMSVGService,
-    currentStateBoxCSSClassKey: null,
-});
-
 const facebookSignInFSMContext = new FacebookSignInFSMContext({
     window,
     firebaseAuthService,
-    stateToSVGMapperService: stateToFacebookSVGMapperService,
     logger: guiLogger.log.bind(guiLogger),
     callbackEnableLoginButton: callbackEnableLoginButtonFacebook,
 });
+
+const fsmCoordinator = new FSMCoordinator({
+    facebookSignInFSMContext,
+    firebaseAuthService,
+    emailSignInFSMContext,
+});
+await fsmCoordinator.setup();
 
 document.addEventListener("DOMContentLoaded", () => {
     const allTabs = document.querySelectorAll<HTMLAnchorElement>(".tabs a");
@@ -147,11 +138,35 @@ document.addEventListener("DOMContentLoaded", () => {
 
     onSvgReady({
         svgQuerySelector: "#emailLinkFSMChart",
-        callback: async () => await emailSignInFSMContext.setup(),
+        callback: async () => {
+            emailFSMSVGService = new SVGFlowChartServiceEmail({
+                svgQuerySelector: "#emailLinkFSMChart",
+            });
+            const stateToEmailSVGMapperService =
+                new StateToSVGMapperServiceEmail({
+                    svgService: emailFSMSVGService,
+                    currentStateBoxCSSClassKey: null,
+                });
+            await emailSignInFSMContext.attachView(
+                stateToEmailSVGMapperService,
+            );
+        },
     });
     onSvgReady({
         svgQuerySelector: "#facebookFSMChart",
-        callback: async () => await facebookSignInFSMContext.setup(),
+        callback: async () => {
+            facebookFSMSVGService = new SVGFlowChartServiceFacebook({
+                svgQuerySelector: "#facebookFSMChart",
+            });
+            const stateToFacebookSVGMapperService =
+                new StateToSVGMapperServiceFacebook({
+                    svgService: facebookFSMSVGService,
+                    currentStateBoxCSSClassKey: null,
+                });
+            await facebookSignInFSMContext.attachView(
+                stateToFacebookSVGMapperService,
+            );
+        },
     });
 
     document
