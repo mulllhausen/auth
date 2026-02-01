@@ -28,6 +28,7 @@ import {
     sendSignInLinkToEmail,
     signInWithEmailLink,
     signInWithRedirect,
+    signOut,
 } from "firebase/auth";
 import type { TProcessEnv } from "./dotenv.d.ts";
 import type {
@@ -207,7 +208,6 @@ export class FirebaseAuthService {
         const app = initializeApp(firebaseOptions);
         this.Auth = getAuth(app);
         this.log(`finished initializing firebase SDK`);
-        //this.setupFirebaseListeners();
     }
 
     private log(logMessage: string) {
@@ -240,10 +240,8 @@ export class FirebaseAuthService {
     }
 
     public async logout(): Promise<void> {
-        this.clearUserCache();
-        this.deleteFirebaseQuerystringParams();
-        this.deleteCachedEmail();
-        await this.publishStateChanged?.({ signedOutUser: true });
+        signOut(this.Auth); // will trigger authStateChanged
+        //await this.publishStateChanged?.({ signedOutUser: true });
     }
 
     public deleteFirebaseQuerystringParams() {
@@ -383,6 +381,9 @@ export class FirebaseAuthService {
             this.afterUserSignedIn(user);
         } else {
             this.log(`firebase auth state changed - user is signed-out`);
+            this.clearUserCache();
+            this.deleteFirebaseQuerystringParams();
+            this.deleteCachedEmail();
             await this.publishStateChanged?.({
                 signedOutUser: true,
             });
