@@ -63,7 +63,6 @@ export class FacebookSignInFSMContext {
     };
 
     // callbacks
-    private callbackStateChangedUnsubscribe?: () => void;
     public callbackEnableLoginButton?: (enabled: boolean) => void;
 
     constructor(props: {
@@ -77,13 +76,9 @@ export class FacebookSignInFSMContext {
         this.firebaseAuthService = props.firebaseAuthService;
         this.stateToSVGMapperService = props.stateToSVGMapperService;
         this.logger = props.logger;
-
-        this.callbackStateChangedUnsubscribe =
-            this.firebaseAuthService.subscribeStateChanged(
-                this.handle.bind(this),
-            );
-
         this.callbackEnableLoginButton = props.callbackEnableLoginButton;
+
+        this.firebaseAuthService.subscribeStateChanged(this.handle.bind(this));
     }
 
     /** note: call setup() once immediately after the constructor */
@@ -186,9 +181,8 @@ abstract class FacebookSignInState {
         facebookStateDTO?: TFacebookStateDTO,
     ): Promise<boolean> {
         let skipCurrentStateLogic = false;
-        if (facebookStateDTO?.isFacebookLogoutClicked) {
-            this.log("logout requested");
-            this.firebaseAuthService.logout();
+        if (facebookStateDTO?.signedOutUser) {
+            this.log("facebook fsm: detected user already signed out");
             await this.context.transitionTo(transitionToken, IdleState);
             skipCurrentStateLogic = true;
         }

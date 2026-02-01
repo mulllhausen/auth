@@ -6,11 +6,11 @@ import type { TProcessEnv } from "./dotenv.d.ts";
 export const developmentEnv: Partial<TProcessEnv> = {
     PROJECT_DOMAIN: "something.ngrok-free.app",
     BASE_PATH: "/",
-    FIREBASE_AUTH_DOMAIN: "auth.null.place",
-    NGROK_DEV_TUNNEL_NAME: "must match your ngrok tunnel name",
+    NGROK_DEV_TUNNEL_NAME: "stored in .env.development.secret",
     VITE_PORT: 3000,
     FIREBASE_STATIC_FILES_PATH: "/",
     FIREBASE_API_KEY: "AIzaSyB95EOVd6k5ItdhRVDKmPuAJ8zBwVXtKxc",
+    FIREBASE_AUTH_DOMAIN: "auth-94762.firebaseapp.com",
     FIREBASE_PROJECT_ID: "auth-94762",
     FIREBASE_MESSAGING_SENDER_ID: "190381967079",
     FIREBASE_APP_ID: "1:190381967079:web:9436046b42e133ebf18442",

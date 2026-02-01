@@ -68,13 +68,6 @@ export const authProviders = {
 
 export const defaultAction: TDefaultAction = null;
 
-export const CRUD: Record<string, string> = {
-    Create: "Create",
-    Read: "Read",
-    Update: "Update",
-    Delete: "Delete",
-};
-
 export type TFirebaseDependencies = {
     FacebookAuthProvider: typeof FacebookAuthProvider;
     GithubAuthProvider: typeof GithubAuthProvider;
@@ -105,17 +98,15 @@ export type TFirebaseDependencies = {
     ) => Promise<never>;
 };
 
-export type TAuthProviders = (typeof authProviders)[keyof typeof authProviders];
-
 export type TFirebaseWrapperStateDTO = {
     successfullySentSignInLinkToEmail?: boolean;
     urlIsAnEmailSignInLink?: boolean;
     userOpenedEmailLinkOnSameBrowser?: boolean;
     userCredentialFoundViaEmail?: boolean;
+    redirectedToAuthProvider?: TAuthProvider;
+    failedToRedirectToAuthProvider?: TAuthProvider;
+    nullCredentialAfterSignIn?: TAuthProvider;
     emailDataDeleted?: boolean;
-    redirectedToAuthProvider?: TAuthProviders;
-    failedToRedirectToAuthProvider?: TAuthProviders;
-    nullCredentialAfterSignIn?: TAuthProviders;
     signedOutUser?: boolean;
 };
 
@@ -133,8 +124,6 @@ type TEventListenerMethod = <TKey extends keyof HTMLElementEventMap>(
     listener: (this: HTMLElement, ev: HTMLElementEventMap[TKey]) => any,
     options?: boolean | AddEventListenerOptions,
 ) => void;
-
-export type TCRUDValues = (typeof CRUD)[keyof typeof CRUD];
 
 // #endregion consts and types
 
@@ -218,7 +207,6 @@ export class FirebaseAuthService {
         this.Auth = getAuth(app);
         this.log(`finished initializing firebase SDK`);
         //this.setupFirebaseListeners();
-        //this.setupEvents(this.settings, CRUD.Create);
     }
 
     private log(logMessage: string) {
@@ -230,10 +218,10 @@ export class FirebaseAuthService {
     ): () => void {
         this.callbacksForStateChanged.add(callbackStateChanged);
 
-        // unsubscribe function
-        return () => {
+        const unsubscribeFunction = () => {
             this.callbacksForStateChanged.delete(callbackStateChanged);
         };
+        return unsubscribeFunction;
     }
 
     private async publishStateChanged(
@@ -252,8 +240,9 @@ export class FirebaseAuthService {
 
     public async logout(): Promise<void> {
         this.clearUserCache();
-        this.EmailAddress = "";
         this.deleteFirebaseQuerystringParams();
+        this.deleteCachedEmail();
+        await this.publishStateChanged?.({ signedOutUser: true });
     }
 
     public deleteFirebaseQuerystringParams() {
@@ -264,7 +253,7 @@ export class FirebaseAuthService {
         console.error(`Service provider not found`);
     }
 
-    public async signin(providerID: TAuthProviders): Promise<void> {
+    public async signin(providerID: TAuthProvider): Promise<void> {
         if (providerID === authProviders.Email) {
             await this.sendSignInLinkToEmail();
         } else {
@@ -274,9 +263,7 @@ export class FirebaseAuthService {
 
     // #region sign-in oauth providers with redirect
 
-    private async signInWithRedirect(
-        providerID: TAuthProviders,
-    ): Promise<void> {
+    private async signInWithRedirect(providerID: TAuthProvider): Promise<void> {
         debugger;
         try {
             this.log(`redirecting to ${providerID}`);
@@ -309,7 +296,7 @@ export class FirebaseAuthService {
     }
 
     private authProviderFactory(
-        providerId: TAuthProviders,
+        providerId: TAuthProvider,
     ): TAuthProviderConstructor {
         switch (providerId) {
             case authProviders.Google:
@@ -330,7 +317,7 @@ export class FirebaseAuthService {
 
             if (redirectResult == null) {
                 this.log(
-                    `just checked: the current page url is not a redirect-result ` +
+                    `just checked: the current page url is not a redirect ` +
                         `from a service provider`,
                 );
                 // note: do not call this.callbackStateChanged() here
@@ -342,7 +329,7 @@ export class FirebaseAuthService {
             // we only get here once - immediately after login
             // (stackoverflow.com/a/44468387)
 
-            const providerId = redirectResult.providerId as TAuthProviders;
+            const providerId = redirectResult.providerId as TAuthProvider;
             const providerClass = this.authProviderFactory(providerId);
 
             const credential =
@@ -429,12 +416,16 @@ export class FirebaseAuthService {
         //this.settings.signedInCallback(user);
     }
 
-    public async signoutProvider(providerID: TAuthProviders): Promise<void> {
+    /**
+     * useful when sign-in fails and we want to roll back a single provider.
+     * but do not use this in place of logout(), since logout() applies to all
+     * providers at once.
+     * */
+    public async signoutProvider(providerID: TAuthProvider): Promise<void> {
+        this.deleteFirebaseQuerystringParams();
         switch (providerID) {
             case authProviders.Email:
                 this.deleteCachedEmail();
-                this.deleteFirebaseQuerystringParams();
-                this.signedInStatus["Email"] = false;
                 await this.publishStateChanged?.({
                     emailDataDeleted: true,
                 });
@@ -610,6 +601,8 @@ export class FirebaseAuthService {
     }
 
     private deleteCachedEmail(): void {
+        this.EmailAddress = "";
+        this.signedInStatus["Email"] = false;
         this._window.localStorage.removeItem(this.localStorageEmailAddressKey);
     }
 

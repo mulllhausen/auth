@@ -45,26 +45,32 @@
 // - you can’t describe the system at a moment in time
 // - Introducing a new state resolves the non-determinism.
 
-import { authProviders, FirebaseAuthService } from "./firebase-wrapper";
-import { GUILogger } from "./gui-logger";
-import { HTMLTemplateManager } from "./html-template-manager";
+import {
+    authProviders,
+    FirebaseAuthService,
+    TAuthProvider,
+} from "./firebase-wrapper.ts";
+import { GUILogger } from "./gui-logger.ts";
+import { mapAuthProviderToNavTabElement } from "./gui-mappers.ts";
+import { HTMLTemplateManager } from "./html-template-manager.ts";
 import "./index.css";
-import { EmailSignInFSMContext, TEmailStateDTO } from "./state-machine-email";
-import { FacebookSignInFSMContext } from "./state-machine-facebook";
-import { StateToSVGMapperServiceEmail } from "./state-to-svg-mapper-service-email";
-import { StateToSVGMapperServiceFacebook } from "./state-to-svg-mapper-service-facebook";
-import { SVGStateStatus } from "./svg-flowchart-service";
-import { SVGFlowChartServiceEmail } from "./svg-flowchart-service-email";
-import { SVGFlowChartServiceFacebook } from "./svg-flowchart-service-facebook";
-import { debounce, getEnv, onSvgReady } from "./utils";
+import {
+    EmailSignInFSMContext,
+    TEmailStateDTO,
+} from "./state-machine-email.ts";
+import { FacebookSignInFSMContext } from "./state-machine-facebook.ts";
+import { StateToSVGMapperServiceEmail } from "./state-to-svg-mapper-service-email.ts";
+import { StateToSVGMapperServiceFacebook } from "./state-to-svg-mapper-service-facebook.ts";
+import { SVGFlowChartServiceEmail } from "./svg-flowchart-service-email.ts";
+import { SVGFlowChartServiceFacebook } from "./svg-flowchart-service-facebook.ts";
+import { SVGStateStatus } from "./svg-flowchart-service.ts";
+import { debounce, getEnv, onSvgReady } from "./utils.ts";
 
 export type TGUIStateDTO = {
     inputEmailValue?: string;
     inputPasswordValue?: string;
     isEmailLoginClicked?: boolean;
-    isLogoutClicked?: boolean;
     isFacebookLoginClicked?: boolean;
-    isFacebookLogoutClicked?: boolean;
 };
 
 const htmlTemplateManager = new HTMLTemplateManager(document);
@@ -130,11 +136,11 @@ document.addEventListener("DOMContentLoaded", () => {
     allTabs.forEach((tab) =>
         tab.addEventListener("click", (e) => {
             e.preventDefault();
-            activateTab(tab, allTabs, allPanels);
+            activateTab(tab);
         }),
     );
-    const defaultTab = 0;
-    activateTab(allTabs[defaultTab], allTabs, allPanels);
+    const defaultTab = authProviders.Email;
+    clickTab(defaultTab);
 
     onSvgReady({
         svgQuerySelector: "#emailLinkFSMChart",
@@ -147,12 +153,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     document
         .querySelector("button#clearCachedUser")
-        ?.addEventListener("click", async () => {
-            firebaseAuthService.clearUserCache.bind(firebaseAuthService);
-            firebaseAuthService.deleteFirebaseQuerystringParams();
-            emailSignInFSMContext.deleteStateFromLocalstorage();
-            await emailSignInFSMContext.handle({ emailDataDeleted: true });
-        });
+        ?.addEventListener("click", clearCachedUser);
 
     document
         .querySelector<HTMLInputElement>("input.email")
@@ -185,16 +186,24 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // callback functions
 
-function activateTab(
-    activeTab: HTMLAnchorElement,
-    allTabs: NodeListOf<HTMLAnchorElement>,
-    allPanels: NodeListOf<HTMLElement>,
-) {
+function clickTab(authProvider: TAuthProvider) {
+    const activeTab: HTMLAnchorElement =
+        mapAuthProviderToNavTabElement(authProvider);
+
+    activateTab(activeTab);
+}
+
+function activateTab(activeTab: HTMLAnchorElement) {
+    const activePanel = activeTab.dataset.tab!;
+
+    const allTabs = document.querySelectorAll<HTMLAnchorElement>("nav.tabs a");
     allTabs.forEach((eachTab) => eachTab.classList.remove("active"));
+
+    const allPanels = document.querySelectorAll<HTMLElement>(".tab-panel");
     allPanels.forEach((eachPanel) => eachPanel.classList.remove("active"));
 
     activeTab.classList.add("active");
-    document.getElementById(activeTab.dataset.tab!)?.classList.add("active");
+    document.getElementById(activePanel)?.classList.add("active");
 }
 
 function enableAllSVGElements(event_: Event) {
@@ -247,11 +256,12 @@ function onInputtingPassword(e: Event): void {
     debouncedEmailSignInFSMContextHandler.call({ inputPasswordValue });
 }
 
-function onLogoutClick(e: Event): void {
-    emailSignInFSMContext.handle({ isLogoutClicked: true });
+async function onLogoutClick(e: Event): Promise<void> {
+    await firebaseAuthService.logout();
 }
 
 function onLoginClickEmail(e: Event): void {
+    clickTab(authProviders.Email);
     const inputEmailValue: string =
         document.querySelector<HTMLInputElement>("input.email")!.value;
 
@@ -262,11 +272,11 @@ function onLoginClickEmail(e: Event): void {
         inputEmailValue,
         inputPasswordValue,
     });
-    emailSignInFSMContext.handle({ isEmailLoginClicked: true });
+    emailSignInFSMContext.handle({ isEmailLoginClicked: true }); // todo: can this be combined into the above command?
 }
 
 function onLoginClickFacebook(e: Event): void {
-    debugger;
+    clickTab(authProviders.Facebook);
     facebookSignInFSMContext.handle({ isFacebookLoginClicked: true });
 }
 
@@ -278,7 +288,7 @@ function callbackEnableLoginButtonEmail(enabled: boolean): void {
 
 function callbackEnableLoginButtonFacebook(enabled: boolean): void {
     document.querySelector<HTMLInputElement>(
-        `button.login[data-service-provider="${authProviders.Facebook}"]`,
+        `button.login[data-service-provider="${authProviders.Facebook}"]`, // todo: use a mapper here
     )!.disabled = !enabled;
 }
 
@@ -302,6 +312,14 @@ function callbackShowInstructionsToClickLinkInEmail(enabled: boolean): void {
     document.querySelector<HTMLInputElement>(
         ".instructions-click-link-in-email",
     )!.style.display = enabled ? "block" : "none";
+}
+
+async function clearCachedUser() {
+    await firebaseAuthService.logout();
+    facebookSignInFSMContext.deleteStateFromLocalstorage();
+    emailSignInFSMContext.deleteStateFromLocalstorage();
+    await facebookSignInFSMContext.handle({});
+    await emailSignInFSMContext.handle({});
 }
 
 async function handleEmailLogin(

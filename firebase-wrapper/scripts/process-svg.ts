@@ -3,6 +3,7 @@ import { JSDOM } from "jsdom";
 import prettier from "prettier";
 import type { TAuthProvider } from "../src/firebase-wrapper.ts";
 import { authProviders } from "../src/firebase-wrapper.ts";
+import { authProviderToGUINameMap } from "../src/gui-mappers.ts";
 import type { TSVGCSSClassCategoryValues } from "../src/svg-flowchart-service.ts";
 import {
     SVGCSSClassCategory,
@@ -45,13 +46,9 @@ function mapAuthProvider(serviceProvider: TAuthProvider): {
     inputSVGFileName: string;
     outputSVGTypesFileName: string;
 } {
-    const serviceProviderLowercase = serviceProvider
-        .toLowerCase()
-        .replace(".com", "");
-    const serviceProviderName =
-        serviceProviderLowercase == authProviders.Email
-            ? "Email"
-            : capsFirstLetter(serviceProviderLowercase);
+    const serviceProviderName = capsFirstLetter(
+        authProviderToGUINameMap[serviceProvider],
+    );
     return {
         serviceProviderName,
         inputSVGFileName: `fsm-${serviceProviderName}-flowchart`,

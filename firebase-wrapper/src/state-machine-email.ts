@@ -75,7 +75,6 @@ export class EmailSignInFSMContext {
     };
 
     // callbacks
-    private callbackStateChangedUnsubscribe?: () => void;
     public callbackEnableEmailInput?: (enabled: boolean) => void;
     public callbackPopulateEmailInput?: (value: string | null) => void;
     public callbackEnablePasswordInput?: (enabled: boolean) => void;
@@ -101,12 +100,6 @@ export class EmailSignInFSMContext {
         this.firebaseAuthService = props.firebaseAuthService;
         this.stateToSVGMapperService = props.stateToSVGMapperService;
         this.logger = props.logger;
-
-        this.callbackStateChangedUnsubscribe =
-            this.firebaseAuthService.subscribeStateChanged(
-                this.handle.bind(this),
-            );
-
         this.callbackEnableLoginButton = props.callbackEnableLoginButton;
         this.callbackPopulateEmailInput = props.callbackPopulateEmailInput;
         this.callbackEnableEmailInput = props.callbackEnableEmailInput;
@@ -115,6 +108,8 @@ export class EmailSignInFSMContext {
             props.callbackShowInstructionsToClickLinkInEmail;
         this.callbackShowInstructionsToReEnterEmail =
             props.callbackShowInstructionsToReEnterEmail;
+
+        this.firebaseAuthService.subscribeStateChanged(this.handle.bind(this));
     }
 
     /** note: call setup() once immediately after the constructor */
@@ -215,9 +210,13 @@ abstract class EmailSignInState {
         emailStateDTO?: TEmailStateDTO,
     ): Promise<boolean> {
         let skipCurrentStateLogic = false;
-        if (emailStateDTO?.isLogoutClicked || emailStateDTO?.emailDataDeleted) {
-            this.log("logout requested");
-            this.firebaseAuthService.logout();
+        if (emailStateDTO?.signedOutUser) {
+            this.log("email fsm: detected user already signed out");
+        }
+        if (emailStateDTO?.emailDataDeleted) {
+            this.log("email fsm: detected user email data deleted");
+        }
+        if (emailStateDTO?.signedOutUser || emailStateDTO?.emailDataDeleted) {
             this.context.callbackPopulateEmailInput?.("");
             await this.context.transitionTo(transitionToken, IdleState);
             skipCurrentStateLogic = true;
