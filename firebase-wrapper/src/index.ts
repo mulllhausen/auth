@@ -57,6 +57,7 @@ import {
 } from "./gui-mappers.ts";
 import { HTMLTemplateManager } from "./html-template-manager.ts";
 import "./index.css";
+import { FSMCoordinator } from "./state-machine-coordinator.ts";
 import {
     EmailSignInFSMContext,
     TEmailStateDTO,
@@ -121,7 +122,6 @@ const emailSignInFSMContext = new EmailSignInFSMContext({
     callbackShowInstructionsToClickLinkInEmail,
     callbackShowInstructionsToReEnterEmail,
 });
-await emailSignInFSMContext.setup();
 
 const stateToFacebookSVGMapperService = new StateToSVGMapperServiceFacebook({
     svgService: facebookFSMSVGService,
@@ -135,10 +135,14 @@ const facebookSignInFSMContext = new FacebookSignInFSMContext({
     logger: guiLogger.log.bind(guiLogger),
     callbackEnableLoginButton: callbackEnableLoginButtonFacebook,
 });
-await facebookSignInFSMContext.setup();
+
+const fsmCoordinator = new FSMCoordinator({
+    firebaseAuthService,
+    emailSignInFSMContext,
+    facebookSignInFSMContext,
+});
 
 onReady(() => {
-    debugger;
     const allTabs = document.querySelectorAll<HTMLAnchorElement>(".tabs a");
     allTabs.forEach((tab) =>
         tab.addEventListener("click", (e) => {
@@ -151,7 +155,9 @@ onReady(() => {
 
     document
         .querySelector("button#clearCachedUser")
-        ?.addEventListener("click", clearCachedUser);
+        ?.addEventListener("click", async () => {
+            await fsmCoordinator.clearCachedUser();
+        });
 
     document
         .querySelector<HTMLInputElement>("input.email")
@@ -175,7 +181,9 @@ onReady(() => {
 
     document
         .querySelector<HTMLInputElement>("button.logout")
-        ?.addEventListener("click", onLogoutClick);
+        ?.addEventListener("click", async () => {
+            fsmCoordinator.logout();
+        });
 
     document
         .querySelector("button#enableAllSVGElements")
@@ -254,11 +262,7 @@ function onInputtingPassword(e: Event): void {
     debouncedEmailSignInFSMContextHandler.call({ inputPasswordValue });
 }
 
-async function onLogoutClick(e: Event): Promise<void> {
-    await firebaseAuthService.logout();
-}
-
-function onLoginClickEmail(e: Event): void {
+async function onLoginClickEmail(e: Event): Promise<void> {
     clickTab(authProviders.Email);
     const inputEmailValue: string =
         document.querySelector<HTMLInputElement>("input.email")!.value;
@@ -270,12 +274,12 @@ function onLoginClickEmail(e: Event): void {
         inputEmailValue,
         inputPasswordValue,
     });
-    emailSignInFSMContext.handle({ isEmailLoginClicked: true }); // todo: can this be combined into the above command?
+    await fsmCoordinator.loginEmail();
 }
 
-function onLoginClickFacebook(e: Event): void {
+async function onLoginClickFacebook(e: Event): Promise<void> {
     clickTab(authProviders.Facebook);
-    facebookSignInFSMContext.handle({ isFacebookLoginClicked: true });
+    await fsmCoordinator.loginFacebook();
 }
 
 function callbackEnableLoginButtonEmail(enabled: boolean): void {
@@ -312,12 +316,4 @@ function callbackShowInstructionsToClickLinkInEmail(enabled: boolean): void {
     document.querySelector<HTMLInputElement>(
         ".instructions-click-link-in-email",
     )!.style.display = enabled ? "block" : "none";
-}
-
-async function clearCachedUser() {
-    await firebaseAuthService.logout();
-    facebookSignInFSMContext.deleteStateFromLocalstorage();
-    emailSignInFSMContext.deleteStateFromLocalstorage();
-    await facebookSignInFSMContext.handle({});
-    await emailSignInFSMContext.handle({});
 }

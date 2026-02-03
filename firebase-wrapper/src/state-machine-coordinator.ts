@@ -7,6 +7,7 @@ export class FSMCoordinator {
     private firebaseAuthService: FirebaseAuthService;
     private facebookSignInFSMContext: FacebookSignInFSMContext;
     private emailSignInFSMContext: EmailSignInFSMContext;
+    private isSetup: boolean = false;
 
     constructor(props: {
         firebaseAuthService: FirebaseAuthService;
@@ -18,29 +19,30 @@ export class FSMCoordinator {
         this.facebookSignInFSMContext = props.facebookSignInFSMContext;
     }
 
-    public async setup() {
+    public async setup(): Promise<void> {
+        if (this.isSetup) return;
+        this.isSetup = true;
+
         await this.facebookSignInFSMContext.setup();
         await this.emailSignInFSMContext.setup();
-
-        // note: must run once only after all other setup methods
         await this.firebaseAuthService.setupFirebaseListeners();
     }
 
-    public async loginEmail() {
+    public async loginEmail(): Promise<void> {
         await this.emailSignInFSMContext.handle({ isEmailLoginClicked: true }); // todo: can this be combined into the above command?
     }
 
-    public async loginFacebook() {
+    public async loginFacebook(): Promise<void> {
         await this.facebookSignInFSMContext.handle({
             isFacebookLoginClicked: true,
         });
     }
 
-    public async logout() {
+    public async logout(): Promise<void> {
         await this.firebaseAuthService.logout();
     }
 
-    public async clearCachedUser() {
+    public async clearCachedUser(): Promise<void> {
         await this.firebaseAuthService.logout();
         this.facebookSignInFSMContext.deleteStateFromLocalstorage();
         this.emailSignInFSMContext.deleteStateFromLocalstorage();
