@@ -67,7 +67,7 @@ import { StateToSVGMapperServiceFacebook } from "./state-to-svg-mapper-service-f
 import { SVGFlowChartServiceEmail } from "./svg-flowchart-service-email.ts";
 import { SVGFlowChartServiceFacebook } from "./svg-flowchart-service-facebook.ts";
 import { SVGStateStatus } from "./svg-flowchart-service.ts";
-import { debounce, getEnv, onSvgReady } from "./utils.ts";
+import { debounce, getEnv, onReady } from "./utils.ts";
 
 export type TGUIStateDTO = {
     inputEmailValue?: string;
@@ -95,10 +95,12 @@ const firebaseAuthService = new FirebaseAuthService({
 });
 
 const emailFSMSVGService = new SVGFlowChartServiceEmail({
+    document,
     svgQuerySelector: "#emailLinkFSMChart",
 });
 
 const facebookFSMSVGService = new SVGFlowChartServiceFacebook({
+    document,
     svgQuerySelector: "#facebookFSMChart",
 });
 
@@ -119,6 +121,7 @@ const emailSignInFSMContext = new EmailSignInFSMContext({
     callbackShowInstructionsToClickLinkInEmail,
     callbackShowInstructionsToReEnterEmail,
 });
+await emailSignInFSMContext.setup();
 
 const stateToFacebookSVGMapperService = new StateToSVGMapperServiceFacebook({
     svgService: facebookFSMSVGService,
@@ -132,10 +135,11 @@ const facebookSignInFSMContext = new FacebookSignInFSMContext({
     logger: guiLogger.log.bind(guiLogger),
     callbackEnableLoginButton: callbackEnableLoginButtonFacebook,
 });
+await facebookSignInFSMContext.setup();
 
-document.addEventListener("DOMContentLoaded", () => {
+onReady(() => {
+    debugger;
     const allTabs = document.querySelectorAll<HTMLAnchorElement>(".tabs a");
-    const allPanels = document.querySelectorAll<HTMLElement>(".tab-panel");
     allTabs.forEach((tab) =>
         tab.addEventListener("click", (e) => {
             e.preventDefault();
@@ -144,15 +148,6 @@ document.addEventListener("DOMContentLoaded", () => {
     );
     const defaultTab = authProviders.Email;
     clickTab(defaultTab);
-
-    onSvgReady({
-        svgQuerySelector: "#emailLinkFSMChart",
-        callback: async () => await emailSignInFSMContext.setup(),
-    });
-    onSvgReady({
-        svgQuerySelector: "#facebookFSMChart",
-        callback: async () => await facebookSignInFSMContext.setup(),
-    });
 
     document
         .querySelector("button#clearCachedUser")

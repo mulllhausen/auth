@@ -25,23 +25,17 @@ export function getEnv(): TProcessEnv {
     return { ...baseEnv, ...overrideEnv };
 }
 
-export function onSvgReady(props: {
-    svgQuerySelector: string;
-    callback: (svgDoc: Document) => void;
-}) {
-    const svgObj = document.querySelector(
-        props.svgQuerySelector,
-    ) as HTMLObjectElement | null;
-    if (!svgObj) throw new Error(`failed to find svg`);
-
-    if (svgObj.contentDocument) {
-        props.callback(svgObj.contentDocument);
-    } else {
-        svgObj.addEventListener("load", () => {
-            if (svgObj.contentDocument) {
-                props.callback(svgObj.contentDocument);
-            }
-        });
+export function onReady(callback: () => void): void {
+    switch (document.readyState) {
+        case "loading":
+            document.addEventListener("DOMContentLoaded", callback, {
+                once: true,
+            });
+            break;
+        case "complete":
+        case "interactive":
+            callback();
+            break;
     }
 }
 

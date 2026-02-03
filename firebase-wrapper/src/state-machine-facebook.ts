@@ -120,7 +120,7 @@ export class FacebookSignInFSMContext {
             logger: this.logger,
         });
 
-        this.stateToSVGMapperService?.updateSvg(this.currentState.ID);
+        this.stateToSVGMapperService?.enqueue(this.currentState.ID);
 
         const newStateID = this.currentState.ID;
         this.backupStateToLocalstorage(newStateID);

@@ -263,7 +263,7 @@ export class FirebaseAuthService {
     // #region sign-in oauth providers with redirect
 
     private async signInWithRedirect(providerID: TAuthProvider): Promise<void> {
-        debugger;
+        //debugger;
         try {
             this.log(`redirecting to ${providerID}`);
 
@@ -323,7 +323,7 @@ export class FirebaseAuthService {
                 return;
             }
 
-            debugger;
+            //debugger;
 
             // we only get here once - immediately after login
             // (stackoverflow.com/a/44468387)
@@ -376,7 +376,7 @@ export class FirebaseAuthService {
     }
 
     private async authStateChanged(user: User | null): Promise<void> {
-        debugger;
+        //debugger;
         if (user) {
             this.afterUserSignedIn(user);
         } else {
@@ -397,7 +397,7 @@ export class FirebaseAuthService {
         //         failedToRedirectToAuthProvider: userInfo.providerId// as TAuthProvider,
         //     });
         // }
-        debugger;
+        //debugger;
         const logMessageStart: string = "firebase auth state changed";
         const initialStatuses = deepCopy(this.signedInStatus);
         if (this.userAlreadyCached(user)) {

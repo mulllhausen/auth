@@ -13,34 +13,61 @@ import {
 
 export class StateToSVGMapperServiceEmail {
     private svgService: SVGFlowChartServiceEmail;
-    private currentStateBoxCSSClassKey:
-        | keyof typeof EmailSVGStateBoxCSSClass
-        | null = null;
+    private queue: TEmailStateBoxKey[] = [];
 
     constructor(props: {
         svgService: SVGFlowChartServiceEmail;
-        currentStateBoxCSSClassKey:
-            | keyof typeof EmailSVGStateBoxCSSClass
-            | null;
+        currentStateBoxCSSClassKey: TEmailFSMStateID | null;
     }) {
         this.svgService = props.svgService;
-        this.currentStateBoxCSSClassKey = props.currentStateBoxCSSClassKey;
+        if (props.currentStateBoxCSSClassKey != null) {
+            this.enqueue(props.currentStateBoxCSSClassKey);
+        }
+        this.svgService.setupOnReady({ callback: this.onSVGReady.bind(this) });
     }
 
-    public updateSvg(newStateClassKey: TEmailFSMStateID): void {
-        const oldStateBoxCSSClassKey = this.currentStateBoxCSSClassKey;
+    private onSVGReady() {
+        this.updateSvg();
+    }
+
+    private getPreviousState(): TEmailStateBoxKey | null {
+        if (this.queue.length < 2) return null;
+        return this.queue[this.queue.length - 2];
+    }
+
+    private getCurrentState(): TEmailStateBoxKey | null {
+        if (this.queue.length < 1) return null;
+        return this.queue[this.queue.length - 1];
+    }
+
+    private chopQueueToLength2(): void {
+        if (this.queue.length <= 2) return;
+        this.queue = [this.getPreviousState()!, this.getCurrentState()!];
+    }
+
+    public enqueue(newStateClassKey: TEmailFSMStateID): void {
+        this.queue.push(this.stateBoxMappings[newStateClassKey]);
+        this.chopQueueToLength2();
+        this.updateSvg();
+    }
+
+    public updateSvg(): void {
+        if (!this.svgService.isSVGReady) return;
+
+        const newStateBoxCSSClassKey = this.getCurrentState();
+        if (newStateBoxCSSClassKey == null) return;
+
+        const oldStateBoxCSSClassKey = this.getPreviousState();
         if (oldStateBoxCSSClassKey != null) {
             this.svgService.Unset<typeof SVGCSSClassCategory.StateBox>(
                 oldStateBoxCSSClassKey,
             );
         }
 
-        const newStateBoxCSSClassKey = this.stateBoxMappings[newStateClassKey];
         this.svgService.SetElementStatus<typeof SVGCSSClassCategory.StateBox>(
             newStateBoxCSSClassKey,
             SVGStateStatus.Success,
         );
-        this.currentStateBoxCSSClassKey = newStateBoxCSSClassKey;
 
         this.svgService.UnsetCategory(
             SVGCSSClassCategory.Arrow,
