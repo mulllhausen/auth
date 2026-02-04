@@ -270,11 +270,7 @@ export class FirebaseAuthService {
             const authProvider: AuthProvider = new (this.authProviderFactory(
                 providerID,
             ))();
-            signInWithRedirect(this.Auth, authProvider);
-
-            await this.publishStateChanged?.({
-                redirectedToAuthProvider: providerID,
-            });
+            await signInWithRedirect(this.Auth, authProvider);
         } catch (error: unknown) {
             const errorCodeMessage =
                 error instanceof FirebaseError ? `code: ${error.code}. ` : "";
@@ -319,7 +315,7 @@ export class FirebaseAuthService {
                     `just checked: the current page url is not a redirect ` +
                         `from a service provider`,
                 );
-                // note: do not call this.callbackStateChanged() here
+                // note: do not call this.publishStateChanged() here
                 return;
             }
 
@@ -343,6 +339,9 @@ export class FirebaseAuthService {
                 return;
             }
 
+            await this.publishStateChanged?.({
+                redirectedToAuthProvider: providerId,
+            });
             this.logger?.({
                 logMessage: `credential immediately after sign-in with ${providerId}`,
                 logData: credential,
@@ -376,11 +375,11 @@ export class FirebaseAuthService {
     }
 
     private async authStateChanged(user: User | null): Promise<void> {
-        //debugger;
+        debugger;
         if (user) {
             this.afterUserSignedIn(user);
         } else {
-            this.log(`firebase auth state changed - user is signed-out`);
+            this.log(`firebase auth event: user is signed-out`);
             this.clearUserCache();
             this.deleteFirebaseQuerystringParams();
             this.deleteCachedEmail();
@@ -398,11 +397,11 @@ export class FirebaseAuthService {
         //     });
         // }
         //debugger;
-        const logMessageStart: string = "firebase auth state changed";
+        const logMessageStart: string = "firebase auth event";
         const initialStatuses = deepCopy(this.signedInStatus);
         if (this.userAlreadyCached(user)) {
             this.logger?.({
-                logMessage: `${logMessageStart}, but user is already signed-in`,
+                logMessage: `${logMessageStart}. user is already signed-in`,
                 logData: user,
                 safeLocalStorageData: this.safeUserResponse(user),
             });
@@ -428,7 +427,7 @@ export class FirebaseAuthService {
         }
 
         this.logger?.({
-            logMessage: `${logMessageStart} - user is signed-in`,
+            logMessage: `${logMessageStart}. user was just signed-in`,
             logData: user,
             safeLocalStorageData: this.safeUserResponse(user),
         });
@@ -461,7 +460,7 @@ export class FirebaseAuthService {
 
     private async sendSignInLinkToEmail(): Promise<void> {
         try {
-            this.log(`instructing firebase to send sign-in link`);
+            this.log(`instructing firebase to send an email sign-in link`);
             await sendSignInLinkToEmail(
                 this.Auth,
                 this.EmailAddress!,
@@ -476,7 +475,7 @@ export class FirebaseAuthService {
             const errorCodeMessage =
                 error instanceof FirebaseError ? `code: ${error.code}. ` : "";
             this.log(
-                `firebase failed to send sign-in link with SendSignInLinkToEmail(). ` +
+                `firebase failed to send the email sign-in link. ` +
                     `${errorCodeMessage}message: "${(error as Error).message}".`,
             );
             await this.publishStateChanged?.({

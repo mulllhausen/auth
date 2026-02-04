@@ -96,7 +96,6 @@ export class FacebookSignInFSMContext {
 
     /** should always be called by an action external to this FSM */
     public async handle(facebookStateDTO: TFacebookStateDTO): Promise<void> {
-        debugger;
         const skipCurrentStateHandler =
             await this.currentState?.overrideStateHandler(facebookStateDTO);
         if (skipCurrentStateHandler) return;
@@ -106,23 +105,31 @@ export class FacebookSignInFSMContext {
 
     public async transitionTo<TState extends FacebookSignInState>(
         token: typeof transitionToken, // prevent external access
-        stateClass: TFacebookSignInStateConstructor<TState>,
+        newStateClass: TFacebookSignInStateConstructor<TState>,
     ): Promise<FacebookSignInState> {
         if (token !== transitionToken) {
             throw new Error(`incorrect transition token`);
         }
         const oldStateID = this.currentState ? this.currentState.ID : "null";
 
-        this.currentState = new stateClass({
+        this.currentState = new newStateClass({
             firebaseAuthService: this.firebaseAuthService,
             context: this,
             stateToSVGMapperService: this.stateToSVGMapperService,
             logger: this.logger,
         });
 
-        this.stateToSVGMapperService?.enqueue(this.currentState.ID);
-
         const newStateID = this.currentState.ID;
+        if (newStateID === oldStateID) {
+            this.logger?.({
+                logMessage:
+                    `old & new facebook state: <i>${oldStateID}</i>.` +
+                    ` no transition needed.`,
+            });
+            return this.currentState;
+        }
+
+        this.stateToSVGMapperService?.enqueue(newStateID);
         this.backupStateToLocalstorage(newStateID);
         this.logger?.({
             logMessage:

@@ -141,6 +141,7 @@ const fsmCoordinator = new FSMCoordinator({
     emailSignInFSMContext,
     facebookSignInFSMContext,
 });
+await fsmCoordinator.setup();
 
 onReady(() => {
     const allTabs = document.querySelectorAll<HTMLAnchorElement>(".tabs a");
@@ -169,13 +170,15 @@ onReady(() => {
 
     document
         .querySelector<HTMLInputElement>(
-            'button.login[data-service-provider="email"]',
+            `button.login[data-service-provider` +
+                `="${authProviderToGUINameMap[authProviders.Email]}"]`,
         )
         ?.addEventListener("click", onLoginClickEmail);
 
     document
         .querySelector<HTMLInputElement>(
-            `button.login[data-service-provider="${authProviders.Facebook}"]`,
+            `button.login[data-service-provider` +
+                `="${authProviderToGUINameMap[authProviders.Facebook]}"]`,
         )
         ?.addEventListener("click", onLoginClickFacebook);
 

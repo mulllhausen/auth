@@ -102,10 +102,10 @@ export class StateToSVGMapperServiceFacebook {
                 "RedirectingToFacebook0",
                 "FacebookResponded0",
             ):
-                return "OkResponse0";
+                return "OkResponse1";
 
             case this.generateTransition("FacebookResponded0", "SignedIn0"):
-                return "OkResponse1";
+                return "OkResponse0";
 
             case this.generateTransition("FacebookResponded0", "AuthFailed0"):
                 return "Fail0";
