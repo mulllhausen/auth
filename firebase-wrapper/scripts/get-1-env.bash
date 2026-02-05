@@ -18,7 +18,7 @@ absolute_filename=$(realpath "$0")
 current_working_dir=$(dirname "$absolute_filename")
 
 if [[ "$environment" == "dev" ]]; then
-    env_files=(".env.development" ".env.base")
+    env_files=(".env.development.secret" ".env.development" ".env.base")
 elif [[ "$environment" == "prod" ]]; then
     env_files=(".env.production" ".env.base")
 fi
