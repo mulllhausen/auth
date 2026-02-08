@@ -16,6 +16,7 @@ import type {
     UserInfo,
 } from "firebase/auth";
 import {
+    browserLocalPersistence,
     EmailAuthProvider,
     FacebookAuthProvider,
     getAuth,
@@ -26,6 +27,7 @@ import {
     OAuthCredential,
     onAuthStateChanged,
     sendSignInLinkToEmail,
+    setPersistence,
     signInWithEmailLink,
     signInWithRedirect,
     signOut,
@@ -108,8 +110,9 @@ export type TFirebaseWrapperStateDTO = {
     redirectedToAuthProvider?: TAuthProvider;
     failedToRedirectToAuthProvider?: TAuthProvider;
     nullCredentialAfterSignIn?: TAuthProvider;
+    nullCredentialAfterRedirect?: boolean;
     emailDataDeleted?: boolean;
-    signedOutUser?: boolean;
+    userNotsignedIn?: boolean;
 };
 
 type TStateChangedCallback = (dto: TFirebaseWrapperStateDTO) => Promise<void>;
@@ -236,6 +239,7 @@ export class FirebaseAuthService {
     }
 
     public async setupFirebaseListeners(): Promise<void> {
+        await setPersistence(this.Auth, browserLocalPersistence);
         onAuthStateChanged(this.Auth, this.authStateChanged.bind(this));
     }
 
@@ -267,9 +271,10 @@ export class FirebaseAuthService {
         try {
             this.log(`redirecting to ${providerID}`);
 
-            const authProvider: AuthProvider = new (this.authProviderFactory(
-                providerID,
-            ))();
+            // const authProvider: AuthProvider = new (this.authProviderFactory(
+            //     providerID,
+            // ))();
+            const authProvider = new FacebookAuthProvider();
             await signInWithRedirect(this.Auth, authProvider);
         } catch (error: unknown) {
             const errorCodeMessage =
@@ -306,6 +311,7 @@ export class FirebaseAuthService {
     }
 
     public async checkIfURLIsASignInRedirectResult(): Promise<void> {
+        debugger;
         try {
             const redirectResult: UserCredential | null =
                 await getRedirectResult(this.Auth);
@@ -315,6 +321,9 @@ export class FirebaseAuthService {
                     `just checked: the current page url is not a redirect ` +
                         `from a service provider`,
                 );
+                await this.publishStateChanged?.({
+                    nullCredentialAfterRedirect: true,
+                });
                 // note: do not call this.publishStateChanged() here
                 return;
             }
@@ -379,13 +388,13 @@ export class FirebaseAuthService {
         if (user) {
             this.afterUserSignedIn(user);
         } else {
-            this.log(`firebase auth event: user is signed-out`);
-            this.clearUserCache();
-            this.deleteFirebaseQuerystringParams();
-            this.deleteCachedEmail();
-            await this.publishStateChanged?.({
-                signedOutUser: true,
-            });
+            this.log(`firebase auth event: user is not signed in`);
+            // this.clearUserCache();
+            // this.deleteFirebaseQuerystringParams();
+            // this.deleteCachedEmail();
+            // await this.publishStateChanged?.({
+            //     userNotsignedIn: true,
+            // });
         }
     }
 

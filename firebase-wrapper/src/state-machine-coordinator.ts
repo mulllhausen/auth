@@ -24,7 +24,8 @@ export class FSMCoordinator {
         this.isSetup = true;
 
         await this.facebookSignInFSMContext.setup();
-        await this.emailSignInFSMContext.setup();
+        //await this.emailSignInFSMContext.setup();
+        await this.firebaseAuthService.checkIfURLIsASignInRedirectResult();
         await this.firebaseAuthService.setupFirebaseListeners();
     }
 

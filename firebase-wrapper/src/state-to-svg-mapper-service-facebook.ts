@@ -119,8 +119,8 @@ export class StateToSVGMapperServiceFacebook {
             case this.generateTransition("FacebookIsUnavailable0", "Idle0"):
                 return "Reset0";
 
-            case this.generateTransition("FacebookIsUnavailable0", "Idle0"):
-                return "Reset0";
+            case this.generateTransition("FacebookResponded0", "AuthFailed0"):
+                return "Fail0";
 
             case this.generateTransition("AuthFailed0", "Idle0"):
                 return "Reset1";
@@ -146,6 +146,7 @@ export class StateToSVGMapperServiceFacebook {
         RedirectingToFacebook: "RedirectingToFacebook0",
         FacebookResponded: "FacebookResponded0",
         FacebookIsUnavailable: "FacebookIsUnavailable0",
+        FacebookAuthFailed: "AuthFailed0",
         SignedIn: "SignedIn0",
     };
 }

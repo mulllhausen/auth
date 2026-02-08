@@ -217,13 +217,13 @@ abstract class EmailSignInState {
         emailStateDTO?: TEmailStateDTO,
     ): Promise<boolean> {
         let skipCurrentStateLogic = false;
-        if (emailStateDTO?.signedOutUser) {
+        if (emailStateDTO?.userNotsignedIn) {
             this.log("email fsm: detected user already signed out");
         }
         if (emailStateDTO?.emailDataDeleted) {
             this.log("email fsm: detected user email data deleted");
         }
-        if (emailStateDTO?.signedOutUser || emailStateDTO?.emailDataDeleted) {
+        if (emailStateDTO?.userNotsignedIn || emailStateDTO?.emailDataDeleted) {
             this.context.callbackPopulateEmailInput?.("");
             await this.context.transitionTo(transitionToken, IdleState);
             skipCurrentStateLogic = true;

@@ -38,6 +38,7 @@ const facebookFSMStateIDs = [
     "RedirectingToFacebook",
     "FacebookResponded",
     "FacebookIsUnavailable",
+    "FacebookAuthFailed",
     "SignedIn",
 ] as const;
 export type TFacebookFSMStateID = (typeof facebookFSMStateIDs)[number];
@@ -50,7 +51,7 @@ export class FacebookSignInFSMContext {
     private _window: Window & typeof globalThis;
     private firebaseAuthService: FirebaseAuthService;
     private stateToSVGMapperService?: StateToSVGMapperServiceFacebook;
-    private currentState?: FacebookSignInState;
+    private currentState?: FacebookSignInState; // todo - prevent setting except via transitionTo()
     private logger?: (logItemInput: TLogItem) => void;
     private localStorageFacebookStateKey = "facebookState";
     private stateMap: Record<
@@ -61,6 +62,7 @@ export class FacebookSignInFSMContext {
         RedirectingToFacebook: RedirectingToFacebookState,
         FacebookResponded: FacebookRespondedState,
         FacebookIsUnavailable: FacebookIsUnavailableState,
+        FacebookAuthFailed: FacebookAuthFailedState,
         SignedIn: SignedInState,
     };
 
@@ -85,17 +87,21 @@ export class FacebookSignInFSMContext {
 
     /** note: call setup() once immediately after the constructor */
     public async setup(): Promise<void> {
-        const facebookSignInStateConstructor = this.getStateFromLocalstorage();
-        this.currentState = await this.transitionTo(
+        debugger;
+        const facebookFSMStateID = this.getStateFromLocalstorage();
+        const facebookSignInStateConstructor = facebookFSMStateID
+            ? this.stateMap[facebookFSMStateID]
+            : IdleState;
+
+        await this.transitionTo(
             transitionToken,
             facebookSignInStateConstructor, // init. a class is required.
         );
-        await this.firebaseAuthService.checkIfURLIsASignInRedirectResult();
-        await this.firebaseAuthService.setupFirebaseListeners();
     }
 
     /** should always be called by an action external to this FSM */
     public async handle(facebookStateDTO: TFacebookStateDTO): Promise<void> {
+        debugger;
         const skipCurrentStateHandler =
             await this.currentState?.overrideStateHandler(facebookStateDTO);
         if (skipCurrentStateHandler) return;
@@ -110,15 +116,11 @@ export class FacebookSignInFSMContext {
         if (token !== transitionToken) {
             throw new Error(`incorrect transition token`);
         }
-        const oldStateID = this.currentState ? this.currentState.ID : "null";
+        const oldStateID = this.currentState
+            ? this.currentState.ID
+            : (this.getStateFromLocalstorage() ?? "null");
 
-        this.currentState = new newStateClass({
-            firebaseAuthService: this.firebaseAuthService,
-            context: this,
-            stateToSVGMapperService: this.stateToSVGMapperService,
-            logger: this.logger,
-        });
-
+        this.currentState = await this.setState(newStateClass);
         const newStateID = this.currentState.ID;
         if (newStateID === oldStateID) {
             this.logger?.({
@@ -129,8 +131,6 @@ export class FacebookSignInFSMContext {
             return this.currentState;
         }
 
-        this.stateToSVGMapperService?.enqueue(newStateID);
-        this.backupStateToLocalstorage(newStateID);
         this.logger?.({
             logMessage:
                 `transitioned facebook state from <i>${oldStateID}</i>` +
@@ -142,14 +142,27 @@ export class FacebookSignInFSMContext {
         return this.currentState;
     }
 
+    private async setState<TState extends FacebookSignInState>(
+        newStateClass: TFacebookSignInStateConstructor<TState>,
+    ): Promise<FacebookSignInState> {
+        this.currentState = new newStateClass({
+            firebaseAuthService: this.firebaseAuthService,
+            context: this,
+            stateToSVGMapperService: this.stateToSVGMapperService,
+            logger: this.logger,
+        });
+        const newStateID = this.currentState.ID;
+        this.stateToSVGMapperService?.enqueue(newStateID);
+        this.backupStateToLocalstorage(newStateID);
+        return this.currentState;
+    }
+
     // localstorage functions
 
-    private getStateFromLocalstorage(): TFacebookSignInStateConstructor {
-        const facebookFSMStateID = this._window.localStorage.getItem(
+    private getStateFromLocalstorage(): TFacebookFSMStateID | null {
+        return this._window.localStorage.getItem(
             this.localStorageFacebookStateKey,
         ) as TFacebookFSMStateID | null;
-        if (facebookFSMStateID == null) return IdleState;
-        return this.stateMap[facebookFSMStateID];
     }
 
     private backupStateToLocalstorage(
@@ -196,11 +209,11 @@ abstract class FacebookSignInState {
             await this.context.transitionTo(transitionToken, SignedInState);
             skipCurrentStateLogic = true;
         }
-        if (facebookStateDTO?.signedOutUser) {
-            this.log("facebook fsm: detected user already signed out");
-            await this.context.transitionTo(transitionToken, IdleState);
-            skipCurrentStateLogic = true;
-        }
+        // if (facebookStateDTO?.userNotsignedIn) {
+        //     this.log("facebook fsm: detected user already signed out");
+        //     await this.context.transitionTo(transitionToken, IdleState);
+        //     skipCurrentStateLogic = true;
+        // }
         return skipCurrentStateLogic;
     }
 }
@@ -231,6 +244,13 @@ class RedirectingToFacebookState extends FacebookSignInState {
     public override async handle(
         facebookStateDTO: TFacebookStateDTO,
     ): Promise<void> {
+        if (facebookStateDTO?.nullCredentialAfterRedirect) {
+            await this.context.transitionTo(
+                transitionToken,
+                FacebookAuthFailedState,
+            );
+            return;
+        }
         if (
             facebookStateDTO?.redirectedToAuthProvider ===
             authProviders.Facebook
@@ -268,6 +288,19 @@ class FacebookRespondedState extends FacebookSignInState {
     ): Promise<void> {}
 
     public override async onEnter(): Promise<void> {}
+}
+
+class FacebookAuthFailedState extends FacebookSignInState {
+    public override readonly ID = "FacebookAuthFailed";
+
+    public override async handle(
+        facebookStateDTO: TFacebookStateDTO,
+    ): Promise<void> {}
+
+    public override async onEnter(): Promise<void> {
+        await this.context.transitionTo(transitionToken, IdleState);
+        return;
+    }
 }
 
 class FacebookIsUnavailableState extends FacebookSignInState {
