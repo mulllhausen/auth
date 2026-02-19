@@ -16,7 +16,6 @@ import type {
     UserInfo,
 } from "firebase/auth";
 import {
-    browserLocalPersistence,
     EmailAuthProvider,
     FacebookAuthProvider,
     getAuth,
@@ -27,7 +26,6 @@ import {
     OAuthCredential,
     onAuthStateChanged,
     sendSignInLinkToEmail,
-    setPersistence,
     signInWithEmailLink,
     signInWithRedirect,
     signOut,
@@ -157,9 +155,7 @@ export class FirebaseAuthService {
         [authProviders.Facebook]: false,
         [authProviders.GitHub]: false,
     };
-
-    // init but may be overriden in constructor
-    //private emailState: EmailSignInState = new EmailSignInFSM.Idle();
+    public user?: Partial<Record<TAuthProvider, User>>;
 
     private callbacksForStateChanged = new Set<TStateChangedCallback>();
 
@@ -239,7 +235,6 @@ export class FirebaseAuthService {
     }
 
     public async setupFirebaseListeners(): Promise<void> {
-        await setPersistence(this.Auth, browserLocalPersistence);
         onAuthStateChanged(this.Auth, this.authStateChanged.bind(this));
     }
 
@@ -252,8 +247,19 @@ export class FirebaseAuthService {
         clearQueryParams(this._window, ["apiKey", "oobCode", "mode", "lang"]);
     }
 
-    serviceProviderNotFoundAction(self: FirebaseAuthService, e: MouseEvent) {
-        console.error(`Service provider not found`);
+    private setSignedInStatus(providerID: TAuthProvider, status: boolean) {
+        this.signedInStatus[providerID] = status;
+    }
+
+    private saveUser(user: User) {
+        for (const userInfo of user.providerData) {
+            const providerID = userInfo.providerId as TAuthProvider;
+            if (this.user == null) {
+                this.user = { [providerID]: user };
+            } else {
+                this.user[providerID] = user;
+            }
+        }
     }
 
     public async signin(providerID: TAuthProvider): Promise<void> {
@@ -271,10 +277,9 @@ export class FirebaseAuthService {
         try {
             this.log(`redirecting to ${providerID}`);
 
-            // const authProvider: AuthProvider = new (this.authProviderFactory(
-            //     providerID,
-            // ))();
-            const authProvider = new FacebookAuthProvider();
+            const authProvider: AuthProvider = new (this.authProviderFactory(
+                providerID,
+            ))();
             await signInWithRedirect(this.Auth, authProvider);
         } catch (error: unknown) {
             const errorCodeMessage =
@@ -310,7 +315,7 @@ export class FirebaseAuthService {
         }
     }
 
-    public async checkIfURLIsASignInRedirectResult(): Promise<void> {
+    public async checkIfRedirectResult(): Promise<void> {
         debugger;
         try {
             const redirectResult: UserCredential | null =
@@ -321,14 +326,12 @@ export class FirebaseAuthService {
                     `just checked: the current page url is not a redirect ` +
                         `from a service provider`,
                 );
-                await this.publishStateChanged?.({
-                    nullCredentialAfterRedirect: true,
-                });
+                // await this.publishStateChanged?.({
+                //     nullCredentialAfterRedirect: true,
+                // });
                 // note: do not call this.publishStateChanged() here
                 return;
             }
-
-            //debugger;
 
             // we only get here once - immediately after login
             // (stackoverflow.com/a/44468387)
@@ -348,9 +351,6 @@ export class FirebaseAuthService {
                 return;
             }
 
-            await this.publishStateChanged?.({
-                redirectedToAuthProvider: providerId,
-            });
             this.logger?.({
                 logMessage: `credential immediately after sign-in with ${providerId}`,
                 logData: credential,
@@ -367,8 +367,12 @@ export class FirebaseAuthService {
                 });
                 return;
             }
-            const user = redirectResult.user;
-            //renderUserData(user, 1);
+            this.setSignedInStatus(providerId, true);
+            this.saveUser(redirectResult.user);
+            await this.publishStateChanged?.({
+                userCredentialFoundViaFacebook: true,
+            });
+            return;
             // IdP data available using getAdditionalUserInfo(result)
         } catch (error: unknown) {
             // todo - typeguard
@@ -389,12 +393,12 @@ export class FirebaseAuthService {
             this.afterUserSignedIn(user);
         } else {
             this.log(`firebase auth event: user is not signed in`);
-            // this.clearUserCache();
-            // this.deleteFirebaseQuerystringParams();
-            // this.deleteCachedEmail();
-            // await this.publishStateChanged?.({
-            //     userNotsignedIn: true,
-            // });
+            this.clearUserCache();
+            this.deleteFirebaseQuerystringParams();
+            this.deleteCachedEmail();
+            await this.publishStateChanged?.({
+                userNotsignedIn: true,
+            });
         }
     }
 

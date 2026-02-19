@@ -209,11 +209,11 @@ abstract class FacebookSignInState {
             await this.context.transitionTo(transitionToken, SignedInState);
             skipCurrentStateLogic = true;
         }
-        // if (facebookStateDTO?.userNotsignedIn) {
-        //     this.log("facebook fsm: detected user already signed out");
-        //     await this.context.transitionTo(transitionToken, IdleState);
-        //     skipCurrentStateLogic = true;
-        // }
+        if (facebookStateDTO?.userNotsignedIn) {
+            this.log("facebook fsm: detected user already signed out");
+            await this.context.transitionTo(transitionToken, IdleState);
+            skipCurrentStateLogic = true;
+        }
         return skipCurrentStateLogic;
     }
 }

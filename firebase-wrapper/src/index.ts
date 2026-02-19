@@ -77,10 +77,6 @@ export type TGUIStateDTO = {
     isFacebookLoginClicked?: boolean;
 };
 
-console.log("BOOT URL", window.location.href);
-console.log("BOOT search:", location.search);
-console.log("BOOT hash:", location.hash);
-
 const htmlTemplateManager = new HTMLTemplateManager(document);
 
 const guiLogger = new GUILogger({
