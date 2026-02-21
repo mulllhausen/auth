@@ -115,6 +115,7 @@ const emailSignInFSMContext = new EmailSignInFSMContext({
     firebaseAuthService,
     stateToSVGMapperService: stateToEmailSVGMapperService,
     logger: guiLogger.log.bind(guiLogger),
+    callbackSetTab,
     callbackEnableLoginButton: callbackEnableLoginButtonEmail,
     callbackPopulateEmailInput,
     callbackEnableEmailInput,
@@ -133,6 +134,7 @@ const facebookSignInFSMContext = new FacebookSignInFSMContext({
     firebaseAuthService,
     stateToSVGMapperService: stateToFacebookSVGMapperService,
     logger: guiLogger.log.bind(guiLogger),
+    callbackSetTab,
     callbackEnableLoginButton: callbackEnableLoginButtonFacebook,
 });
 
@@ -283,6 +285,10 @@ async function onLoginClickEmail(e: Event): Promise<void> {
 async function onLoginClickFacebook(e: Event): Promise<void> {
     clickTab(authProviders.Facebook);
     await fsmCoordinator.loginFacebook();
+}
+
+function callbackSetTab(authProvider: TAuthProvider): void {
+    clickTab(authProvider);
 }
 
 function callbackEnableLoginButtonEmail(enabled: boolean): void {

@@ -119,6 +119,9 @@ export class StateToSVGMapperServiceFacebook {
             case this.generateTransition("AuthFailed0", "Idle0"):
                 return "Reset1";
 
+            case this.generateTransition("SignedIn0", "Idle0"):
+                return "LogoutButtonClicked0";
+
             default:
                 return null;
         }

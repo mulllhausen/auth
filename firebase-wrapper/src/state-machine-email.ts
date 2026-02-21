@@ -12,7 +12,10 @@
 // todo: sign in with password
 
 import type { TGUIStateDTO } from ".";
-import type { TFirebaseWrapperStateDTO } from "./firebase-wrapper";
+import type {
+    TAuthProvider,
+    TFirebaseWrapperStateDTO,
+} from "./firebase-wrapper";
 import { authProviders, FirebaseAuthService } from "./firebase-wrapper";
 import type { TLogItem } from "./gui-logger";
 import { StateToSVGMapperServiceEmail } from "./state-to-svg-mapper-service-email";
@@ -75,6 +78,7 @@ export class EmailSignInFSMContext {
     };
 
     // callbacks
+    public callbackSetTab?: (authProvider: TAuthProvider) => void;
     public callbackEnableEmailInput?: (enabled: boolean) => void;
     public callbackPopulateEmailInput?: (value: string | null) => void;
     public callbackEnablePasswordInput?: (enabled: boolean) => void;
@@ -89,6 +93,7 @@ export class EmailSignInFSMContext {
         firebaseAuthService: FirebaseAuthService;
         stateToSVGMapperService?: StateToSVGMapperServiceEmail;
         logger?: (logItemInput: TLogItem) => void;
+        callbackSetTab?: (authProvider: TAuthProvider) => void;
         callbackEnableEmailInput?: (enabled: boolean) => void;
         callbackPopulateEmailInput?: (value: string | null) => void;
         callbackEnablePasswordInput?: (enabled: boolean) => void;
@@ -100,6 +105,7 @@ export class EmailSignInFSMContext {
         this.firebaseAuthService = props.firebaseAuthService;
         this.stateToSVGMapperService = props.stateToSVGMapperService;
         this.logger = props.logger;
+        this.callbackSetTab = props.callbackSetTab;
         this.callbackEnableLoginButton = props.callbackEnableLoginButton;
         this.callbackPopulateEmailInput = props.callbackPopulateEmailInput;
         this.callbackEnableEmailInput = props.callbackEnableEmailInput;
@@ -157,6 +163,8 @@ export class EmailSignInFSMContext {
             return this.currentState;
         }
 
+        // todo: move into setState()
+        this.callbackSetTab?.(authProviders.Email);
         this.stateToSVGMapperService?.enqueue(this.currentState.ID);
         this.backupStateToLocalstorage(newStateID);
         this.logger?.({
@@ -217,13 +225,13 @@ abstract class EmailSignInState {
         emailStateDTO?: TEmailStateDTO,
     ): Promise<boolean> {
         let skipCurrentStateLogic = false;
-        if (emailStateDTO?.userNotsignedIn) {
+        if (emailStateDTO?.userNotSignedIn) {
             this.log("email fsm: detected user already signed out");
         }
         if (emailStateDTO?.emailDataDeleted) {
             this.log("email fsm: detected user email data deleted");
         }
-        if (emailStateDTO?.userNotsignedIn || emailStateDTO?.emailDataDeleted) {
+        if (emailStateDTO?.userNotSignedIn || emailStateDTO?.emailDataDeleted) {
             this.context.callbackPopulateEmailInput?.("");
             await this.context.transitionTo(transitionToken, IdleState);
             skipCurrentStateLogic = true;

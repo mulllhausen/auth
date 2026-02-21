@@ -10,7 +10,10 @@
 // been given by this service.
 
 import type { TGUIStateDTO } from ".";
-import type { TFirebaseWrapperStateDTO } from "./firebase-wrapper.ts";
+import type {
+    TAuthProvider,
+    TFirebaseWrapperStateDTO,
+} from "./firebase-wrapper.ts";
 import { authProviders, FirebaseAuthService } from "./firebase-wrapper.ts";
 import type { TLogItem } from "./gui-logger.ts";
 import { StateToSVGMapperServiceFacebook } from "./state-to-svg-mapper-service-facebook.ts";
@@ -65,6 +68,7 @@ export class FacebookSignInFSMContext {
     };
 
     // callbacks
+    public callbackSetTab?: (authProvider: TAuthProvider) => void;
     public callbackEnableLoginButton?: (enabled: boolean) => void;
 
     constructor(props: {
@@ -72,12 +76,14 @@ export class FacebookSignInFSMContext {
         firebaseAuthService: FirebaseAuthService;
         stateToSVGMapperService?: StateToSVGMapperServiceFacebook;
         logger?: (logItemInput: TLogItem) => void;
+        callbackSetTab?: (authProvider: TAuthProvider) => void;
         callbackEnableLoginButton?: (enabled: boolean) => void;
     }) {
         this._window = props.window;
         this.firebaseAuthService = props.firebaseAuthService;
         this.stateToSVGMapperService = props.stateToSVGMapperService;
         this.logger = props.logger;
+        this.callbackSetTab = props.callbackSetTab;
         this.callbackEnableLoginButton = props.callbackEnableLoginButton;
 
         this.firebaseAuthService.subscribeStateChanged(this.handle.bind(this));
@@ -143,6 +149,7 @@ export class FacebookSignInFSMContext {
     private async setState<TState extends FacebookSignInState>(
         newStateClass: TFacebookSignInStateConstructor<TState>,
     ): Promise<FacebookSignInState> {
+        this.callbackSetTab?.(authProviders.Facebook);
         this.currentState = new newStateClass({
             firebaseAuthService: this.firebaseAuthService,
             context: this,
@@ -207,7 +214,7 @@ abstract class FacebookSignInState {
             await this.context.transitionTo(transitionToken, SignedInState);
             skipCurrentStateLogic = true;
         }
-        if (facebookStateDTO?.userNotsignedIn) {
+        if (facebookStateDTO?.userNotSignedIn) {
             this.log("facebook fsm: detected user already signed out");
             await this.context.transitionTo(transitionToken, IdleState);
             skipCurrentStateLogic = true;

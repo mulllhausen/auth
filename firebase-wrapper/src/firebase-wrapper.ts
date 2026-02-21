@@ -58,7 +58,8 @@ export const firebaseDependencies: TFirebaseDependencies = {
     signInWithRedirect,
 };
 
-export type TAuthProvider = (typeof authProviders)[keyof typeof authProviders];
+type TAuthProviderName = keyof typeof authProviders;
+export type TAuthProvider = (typeof authProviders)[TAuthProviderName];
 
 export const authProviders = {
     Email: EmailAuthProvider.PROVIDER_ID,
@@ -109,8 +110,9 @@ export type TFirebaseWrapperStateDTO = {
     failedToRedirectToAuthProvider?: TAuthProvider;
     nullCredentialAfterSignIn?: TAuthProvider;
     nullCredentialAfterRedirect?: boolean;
-    userNotsignedIn?: boolean;
     userCredentialFoundViaFacebook?: boolean;
+
+    userNotSignedIn?: boolean;
 };
 
 type TStateChangedCallback = (dto: TFirebaseWrapperStateDTO) => Promise<void>;
@@ -262,7 +264,7 @@ export class FirebaseAuthService {
 
     private setupSignedInStatus() {
         debugger;
-        for (const providerID in this.user) {
+        for (const providerID in this.User) {
             this.signedInStatus[providerID as TAuthProvider] = true;
         }
     }
@@ -297,8 +299,7 @@ export class FirebaseAuthService {
     }
 
     public async logout(): Promise<void> {
-        signOut(this.Auth); // will trigger authStateChanged
-        //await this.publishStateChanged?.({ signedOutUser: true });
+        await signOut(this.Auth); // will trigger authStateChanged
     }
 
     public deleteFirebaseQuerystringParams() {
@@ -443,7 +444,7 @@ export class FirebaseAuthService {
             this.deleteFirebaseQuerystringParams();
             this.deleteCachedEmail();
             await this.publishStateChanged?.({
-                userNotsignedIn: true,
+                userNotSignedIn: true,
             });
         }
     }
@@ -454,17 +455,13 @@ export class FirebaseAuthService {
         const initialStatuses = deepCopy(this.signedInStatus);
         this.upsertUser(user);
 
-        for (const providerID in authProviders) {
-            if (
-                this.isAlreadySignedInWith(
-                    providerID as TAuthProvider,
-                    initialStatuses,
-                )
-            ) {
+        for (const providerName in authProviders) {
+            const providerID = authProviders[providerName as TAuthProviderName];
+            if (this.isAlreadySignedInWith(providerID, initialStatuses)) {
                 this.logger?.({
                     logMessage:
                         logMessageStart +
-                        `user is already signed-in with ${providerID}`,
+                        `user is already signed-in with ${providerName}`,
                     logData: user,
                     safeLocalStorageData: this.safeUserResponse(user),
                     imageURL: user.photoURL,
