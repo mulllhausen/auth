@@ -1,4 +1,5 @@
-import { authProviders, TAuthProvider } from "./firebase-wrapper";
+import type { TAuthProvider } from "./firebase-wrapper.ts";
+import { authProviders } from "./firebase-wrapper.ts";
 
 export type TGUIAuthProviderNames =
     (typeof authProviderToGUINameMap)[TAuthProvider];

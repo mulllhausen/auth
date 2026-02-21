@@ -104,13 +104,13 @@ export type TFirebaseWrapperStateDTO = {
     urlIsAnEmailSignInLink?: boolean;
     userOpenedEmailLinkOnSameBrowser?: boolean;
     userCredentialFoundViaEmail?: boolean;
-    userCredentialFoundViaFacebook?: boolean;
-    redirectedToAuthProvider?: TAuthProvider;
+    emailDataDeleted?: boolean;
+
     failedToRedirectToAuthProvider?: TAuthProvider;
     nullCredentialAfterSignIn?: TAuthProvider;
     nullCredentialAfterRedirect?: boolean;
-    emailDataDeleted?: boolean;
     userNotsignedIn?: boolean;
+    userCredentialFoundViaFacebook?: boolean;
 };
 
 type TStateChangedCallback = (dto: TFirebaseWrapperStateDTO) => Promise<void>;
@@ -155,22 +155,8 @@ export class FirebaseAuthService {
         [authProviders.Facebook]: false,
         [authProviders.GitHub]: false,
     };
-    public user?: Partial<Record<TAuthProvider, User>>;
-
+    private user: Partial<Record<TAuthProvider, TSafeUser>> = {};
     private callbacksForStateChanged = new Set<TStateChangedCallback>();
-
-    public get EmailAddress(): string | null {
-        return this.emailAddress;
-    }
-    public set EmailAddress(emailAddress: string) {
-        const isEmpty = emailAddress == null || emailAddress.length === 0;
-        this.log(`${isEmpty ? "empty " : ""}email address cached`);
-        this._window.localStorage.setItem(
-            this.localStorageEmailAddressKey,
-            emailAddress,
-        );
-        this.emailAddress = emailAddress;
-    }
 
     constructor(props: {
         window: Window & typeof globalThis;
@@ -204,9 +190,81 @@ export class FirebaseAuthService {
             url: this._window.location.href,
             handleCodeInApp: true,
         };
+        this.setupSignedInStatus();
         const app = initializeApp(firebaseOptions);
         this.Auth = getAuth(app);
         this.log(`finished initializing firebase SDK`);
+    }
+
+    public get EmailAddress(): string | null {
+        return this.emailAddress;
+    }
+
+    public set EmailAddress(emailAddress: string) {
+        const isEmpty = emailAddress == null || emailAddress.length === 0;
+        this.log(`${isEmpty ? "empty " : ""}email address cached`);
+        this._window.localStorage.setItem(
+            this.localStorageEmailAddressKey,
+            emailAddress,
+        );
+        this.emailAddress = emailAddress;
+    }
+
+    public get User(): Partial<Record<TAuthProvider, TSafeUser>> | null {
+        if (Object.keys(this.user).length > 0) {
+            return this.user;
+        }
+
+        const cachedUserJSON: string | null = this._window.localStorage.getItem(
+            this.localStorageCachedUserKey,
+        );
+        if (cachedUserJSON == null) {
+            return null;
+        }
+
+        this.user = JSON.parse(cachedUserJSON);
+        return this.user;
+    }
+
+    private set User(user: Partial<Record<TAuthProvider, TSafeUser>>) {
+        if (Object.keys(user).length === 0) {
+            this.user = {};
+            this._window.localStorage.removeItem(
+                this.localStorageCachedUserKey,
+            );
+            return;
+        }
+
+        this.user = user;
+        this._window.localStorage.setItem(
+            this.localStorageCachedUserKey,
+            JSON.stringify(user),
+        );
+    }
+
+    private upsertUser(user: User) {
+        const cachedUser: Record<string, TSafeUser> = this.User ?? {};
+
+        for (const userInfo of user.providerData) {
+            const providerID = userInfo.providerId as TAuthProvider;
+
+            // todo: remove data for any other service provider from user object
+
+            const convertToIdempotent = true;
+            cachedUser[providerID] = this.safeUserResponse(
+                user,
+                convertToIdempotent,
+            );
+            this.signedInStatus[providerID] = true;
+        }
+        this.User = cachedUser;
+    }
+
+    private setupSignedInStatus() {
+        debugger;
+        for (const providerID in this.user) {
+            this.signedInStatus[providerID as TAuthProvider] = true;
+        }
     }
 
     private log(logMessage: string) {
@@ -249,17 +307,6 @@ export class FirebaseAuthService {
 
     private setSignedInStatus(providerID: TAuthProvider, status: boolean) {
         this.signedInStatus[providerID] = status;
-    }
-
-    private saveUser(user: User) {
-        for (const userInfo of user.providerData) {
-            const providerID = userInfo.providerId as TAuthProvider;
-            if (this.user == null) {
-                this.user = { [providerID]: user };
-            } else {
-                this.user[providerID] = user;
-            }
-        }
     }
 
     public async signin(providerID: TAuthProvider): Promise<void> {
@@ -368,7 +415,7 @@ export class FirebaseAuthService {
                 return;
             }
             this.setSignedInStatus(providerId, true);
-            this.saveUser(redirectResult.user);
+            this.upsertUser(redirectResult.user);
             await this.publishStateChanged?.({
                 userCredentialFoundViaFacebook: true,
             });
@@ -388,7 +435,6 @@ export class FirebaseAuthService {
     }
 
     private async authStateChanged(user: User | null): Promise<void> {
-        debugger;
         if (user) {
             this.afterUserSignedIn(user);
         } else {
@@ -403,51 +449,79 @@ export class FirebaseAuthService {
     }
 
     private async afterUserSignedIn(user: User): Promise<void> {
-        // todo: figure out which service provider changed the state
-        // for (const userInfo in user.providerData) {
-        //     await this.callbackStateChanged?.({
-        //         failedToRedirectToAuthProvider: userInfo.providerId// as TAuthProvider,
-        //     });
-        // }
-        //debugger;
-        const logMessageStart: string = "firebase auth event";
+        debugger;
+        const logMessageStart: string = "firebase auth event.";
         const initialStatuses = deepCopy(this.signedInStatus);
-        if (this.userAlreadyCached(user)) {
-            this.logger?.({
-                logMessage: `${logMessageStart}. user is already signed-in`,
-                logData: user,
-                safeLocalStorageData: this.safeUserResponse(user),
-            });
-            return;
-        }
-        {
+        this.upsertUser(user);
+
+        for (const providerID in authProviders) {
             if (
-                !initialStatuses[authProviders.Email] &&
-                this.signedInStatus[authProviders.Email]
+                this.isAlreadySignedInWith(
+                    providerID as TAuthProvider,
+                    initialStatuses,
+                )
             ) {
-                await this.publishStateChanged?.({
-                    userCredentialFoundViaEmail: true,
-                });
-            }
-            if (
-                !initialStatuses[authProviders.Facebook] &&
-                this.signedInStatus[authProviders.Facebook]
-            ) {
-                await this.publishStateChanged?.({
-                    userCredentialFoundViaFacebook: true,
+                this.logger?.({
+                    logMessage:
+                        logMessageStart +
+                        `user is already signed-in with ${providerID}`,
+                    logData: user,
+                    safeLocalStorageData: this.safeUserResponse(user),
+                    imageURL: user.photoURL,
                 });
             }
         }
 
-        this.logger?.({
-            logMessage: `${logMessageStart}. user was just signed-in`,
-            logData: user,
-            safeLocalStorageData: this.safeUserResponse(user),
-        });
-        this.cacheUser(user);
+        if (this.isJustSignedInWith(authProviders.Email, initialStatuses)) {
+            this.logger?.({
+                logMessage:
+                    logMessageStart + ` user was just signed in via email`,
+                logData: user,
+                safeLocalStorageData: this.safeUserResponse(user),
+                imageURL: user.photoURL,
+            });
+
+            await this.publishStateChanged?.({
+                userCredentialFoundViaEmail: true,
+            });
+        }
+
+        if (this.isJustSignedInWith(authProviders.Facebook, initialStatuses)) {
+            this.logger?.({
+                logMessage:
+                    logMessageStart + ` user was just signed in via facebook`,
+                logData: user,
+                safeLocalStorageData: this.safeUserResponse(user),
+                imageURL: user.photoURL,
+            });
+
+            await this.publishStateChanged?.({
+                userCredentialFoundViaFacebook: true,
+            });
+        }
+
         // User is signed in, see docs for a list of available properties
         // https://firebase.google.com/docs/reference/js/firebase.User
-        //this.settings.signedInCallback(user);
+    }
+
+    private isJustSignedInWith(
+        serviceProvider: TAuthProvider,
+        initialStatuses: Record<TAuthProvider, boolean>,
+    ): boolean {
+        return (
+            !initialStatuses[serviceProvider] &&
+            this.signedInStatus[serviceProvider]
+        );
+    }
+
+    private isAlreadySignedInWith(
+        serviceProvider: TAuthProvider,
+        initialStatuses: Record<TAuthProvider, boolean>,
+    ): boolean {
+        return (
+            initialStatuses[serviceProvider] &&
+            this.signedInStatus[serviceProvider]
+        );
     }
 
     /**
@@ -545,7 +619,7 @@ export class FirebaseAuthService {
                         this.safeUserCredential(userCredentialResult),
                     imageURL: userCredentialResult.user.photoURL,
                 });
-                this.cacheUser(userCredentialResult.user);
+                this.upsertUser(userCredentialResult.user);
                 this.signedInStatus[authProviders.Email] = true;
                 this.publishStateChanged?.({
                     userCredentialFoundViaEmail: true,
@@ -584,16 +658,14 @@ export class FirebaseAuthService {
     // #region user caching
 
     private userAlreadyCached(user: User): boolean {
-        const cachedUsersJSON: string | null =
-            this._window.localStorage.getItem(this.localStorageCachedUserKey);
-        if (cachedUsersJSON === null) return false;
+        if (this.User == null) return false;
 
-        const cachedUsers: Record<string, TSafeUser> =
-            JSON.parse(cachedUsersJSON);
-        const serviceProvider = user.providerData[0].providerId;
-        if (!cachedUsers.hasOwnProperty(serviceProvider)) return false;
+        // todo: loop through providers
 
-        const cachedUser = cachedUsers[serviceProvider];
+        const providerID = user.providerData[0].providerId as TAuthProvider;
+        if (!this.User.hasOwnProperty(providerID)) return false;
+
+        const cachedUser = this.User[providerID];
         const convertToIdempotent = true;
         const cachedUserJSON = JSON.stringify(
             this.safeUserResponse(
@@ -608,29 +680,43 @@ export class FirebaseAuthService {
         return cachedUserJSON === userJSON;
     }
 
-    private cacheUser(user: User): void {
-        // cache the user under service provider since FIREBASE_LINK_ACCOUNTS=false
-        const serviceProvider = user.providerData[0].providerId;
-        const cachedUserJSON: string | null = this._window.localStorage.getItem(
-            this.localStorageCachedUserKey,
-        );
-        let cachedUser: Record<string, TSafeUser> = {};
-        if (cachedUserJSON !== null) {
-            cachedUser = JSON.parse(cachedUserJSON!);
-        }
-        const convertToIdempotent = true;
-        cachedUser[serviceProvider] = this.safeUserResponse(
-            user,
-            convertToIdempotent,
-        );
-        this._window.localStorage.setItem(
-            this.localStorageCachedUserKey,
-            JSON.stringify(cachedUser),
-        );
-    }
+    // private saveUser(user: User) {
+    //     for (const userInfo of user.providerData) {
+    //         const providerID = userInfo.providerId as TAuthProvider;
+    //         if (this.user == null) {
+    //             this.user = { [providerID]: user };
+    //         } else {
+    //             this.user[providerID] = user;
+    //         }
+    //     }
+    // }
+
+    // private cacheUser(user: User): void {
+    //     // cache the user under service provider since FIREBASE_LINK_ACCOUNTS=false
+    //     for (const userInfo of user.providerData) {
+    //         const providerID = userInfo.providerId as TAuthProvider;
+    //         const cachedUserJSON: string | null =
+    //             this._window.localStorage.getItem(
+    //                 this.localStorageCachedUserKey,
+    //             );
+    //         let cachedUser: Record<string, TSafeUser> = {};
+    //         if (cachedUserJSON !== null) {
+    //             cachedUser = JSON.parse(cachedUserJSON!);
+    //         }
+    //         const convertToIdempotent = true;
+    //         cachedUser[providerID] = this.safeUserResponse(
+    //             user,
+    //             convertToIdempotent,
+    //         );
+    //         this._window.localStorage.setItem(
+    //             this.localStorageCachedUserKey,
+    //             JSON.stringify(cachedUser),
+    //         );
+    //     }
+    // }
 
     public clearUserCache(): void {
-        this._window.localStorage.removeItem(this.localStorageCachedUserKey);
+        this.User = {};
         this.deleteCachedEmail();
     }
 

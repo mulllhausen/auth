@@ -9,7 +9,6 @@ export const FacebookSVGArrowCSSClass = {
     Fail0: "fail-0",
     FirebaseReturnedAnError0: "firebase-returned-an-error-0",
     OkResponse0: "ok-response-0",
-    OkResponse1: "ok-response-1",
     Reset0: "reset-0",
     Reset1: "reset-1",
     UserClickedLoginButton0: "user-clicked-login-button-0",
@@ -18,7 +17,6 @@ export const FacebookSVGArrowCSSClass = {
 export const FacebookSVGStateBoxCSSClass = {
     AuthFailed0: "auth-failed-0",
     FacebookIsUnavailable0: "facebook-is-unavailable-0",
-    FacebookResponded0: "facebook-responded-0",
     Idle0: "idle-0",
     RedirectingToFacebook0: "redirecting-to-facebook-0",
     SignedIn0: "signed-in-0",

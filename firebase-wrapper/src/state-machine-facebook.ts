@@ -36,7 +36,6 @@ type TFacebookSignInStateConstructor<
 const facebookFSMStateIDs = [
     "Idle",
     "RedirectingToFacebook",
-    "FacebookResponded",
     "FacebookIsUnavailable",
     "FacebookAuthFailed",
     "SignedIn",
@@ -60,7 +59,6 @@ export class FacebookSignInFSMContext {
     > = {
         Idle: IdleState,
         RedirectingToFacebook: RedirectingToFacebookState,
-        FacebookResponded: FacebookRespondedState,
         FacebookIsUnavailable: FacebookIsUnavailableState,
         FacebookAuthFailed: FacebookAuthFailedState,
         SignedIn: SignedInState,
@@ -251,16 +249,6 @@ class RedirectingToFacebookState extends FacebookSignInState {
             );
             return;
         }
-        if (
-            facebookStateDTO?.redirectedToAuthProvider ===
-            authProviders.Facebook
-        ) {
-            await this.context.transitionTo(
-                transitionToken,
-                FacebookRespondedState,
-            );
-            return;
-        }
 
         if (
             facebookStateDTO?.failedToRedirectToAuthProvider ===
@@ -278,16 +266,6 @@ class RedirectingToFacebookState extends FacebookSignInState {
         this.context.callbackEnableLoginButton?.(false);
         await this.firebaseAuthService.signin(authProviders.Facebook);
     }
-}
-
-class FacebookRespondedState extends FacebookSignInState {
-    public override readonly ID = "FacebookResponded";
-
-    public override async handle(
-        facebookStateDTO: TFacebookStateDTO,
-    ): Promise<void> {}
-
-    public override async onEnter(): Promise<void> {}
 }
 
 class FacebookAuthFailedState extends FacebookSignInState {
@@ -310,7 +288,10 @@ class FacebookIsUnavailableState extends FacebookSignInState {
         facebookStateDTO: TFacebookStateDTO,
     ): Promise<void> {}
 
-    public override async onEnter(): Promise<void> {}
+    public override async onEnter(): Promise<void> {
+        await this.context.transitionTo(transitionToken, IdleState);
+        return;
+    }
 }
 
 class SignedInState extends FacebookSignInState {
