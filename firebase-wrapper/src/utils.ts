@@ -90,3 +90,7 @@ export function capsFirstLetter(str: string): string {
 export function deepCopy<T>(obj: T): T {
     return JSON.parse(JSON.stringify(obj));
 }
+
+export function objIsNullOrEmpty<T>(obj: T): boolean {
+    return obj == null || Object.keys(obj).length === 0;
+}

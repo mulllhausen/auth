@@ -30,6 +30,8 @@ import {
     signInWithRedirect,
     signOut,
 } from "firebase/auth";
+import type { TDBUserDTO } from "./db-user.ts";
+import { dbDeleteUser, dbGetUser, dbSaveUser } from "./db-user.ts";
 import type { TProcessEnv } from "./dotenv.d.ts";
 import type {
     TSafeOAuthCredential,
@@ -39,7 +41,8 @@ import type {
     TSafeUserInfo,
 } from "./firebase-safe-types.ts";
 import type { TLogItem } from "./gui-logger.ts";
-import { clearQueryParams, deepCopy } from "./utils.ts";
+import { mapFirebaseUser2DBUserDTO, mapMergeUserDTOs } from "./mappers-user.ts";
+import { clearQueryParams, deepCopy, objIsNullOrEmpty } from "./utils.ts";
 
 // #endregion imports
 
@@ -132,13 +135,21 @@ type TEventListenerMethod = <TKey extends keyof HTMLElementEventMap>(
 
 // #endregion consts and types
 
-// todo: single responsibility principle. this service should not know anything about
-// state machines. it should just contain a bunch of method-wrappers that make taking
-// action more simple and uniform
-// assumption: this class is a singleton. the same instance should be used for all providers.
-// this class holds state data (eg. email address) so the object instances
-// will share user-state, especially via local storage.
-// this class is not a state machine so it does not hold an enumerated state.
+/**
+ * single responsibility principle: this service does not know anything about
+ * state machines and is not a state machine so it does not hold an enumerated state.
+ *
+ * it just contains firebase-method-wrappers that make taking action more simple and uniform.
+ *
+ * this class is a singleton. the same instance should be used for all providers.
+ *
+ * this class holds state data (eg. email address) so the object instances
+ * will share user-state, especially via local storage.
+ *
+ * persistent user data lives in the database, not in this class' state.
+ *
+ * token management ...
+ */
 export class FirebaseAuthService {
     private _window: Window & typeof globalThis;
     private logger?: (logItem: TLogItem) => void;
@@ -149,7 +160,7 @@ export class FirebaseAuthService {
     public EmailPassword: string | null = null;
     public EmailActionCodeSettings: ActionCodeSettings;
     private localStorageEmailAddressKey = "emailAddress";
-    private localStorageCachedUserKey = "cachedUser";
+    //private localStorageCachedUserKey = "cachedUser";
     private hiddenMessage = "not stored in localStorage to prevent xss attacks";
     public signedInStatus: Record<TAuthProvider, boolean> = {
         [authProviders.Email]: false,
@@ -157,7 +168,7 @@ export class FirebaseAuthService {
         [authProviders.Facebook]: false,
         [authProviders.GitHub]: false,
     };
-    private user: Partial<Record<TAuthProvider, TSafeUser>> = {};
+    private user: TDBUserDTO = null;
     private callbacksForStateChanged = new Set<TStateChangedCallback>();
 
     constructor(props: {
@@ -212,54 +223,25 @@ export class FirebaseAuthService {
         this.emailAddress = emailAddress;
     }
 
-    public get User(): Partial<Record<TAuthProvider, TSafeUser>> | null {
-        if (Object.keys(this.user).length > 0) {
+    public get User(): TDBUserDTO {
+        if (!objIsNullOrEmpty(this.user)) {
             return this.user;
         }
-
-        const cachedUserJSON: string | null = this._window.localStorage.getItem(
-            this.localStorageCachedUserKey,
-        );
-        if (cachedUserJSON == null) {
-            return null;
-        }
-
-        this.user = JSON.parse(cachedUserJSON);
+        // note: we are using our own db instead of the firebase db
+        // see docs/user-db.md for a discussion of why
+        this.user = dbGetUser();
         return this.user;
     }
 
-    private set User(user: Partial<Record<TAuthProvider, TSafeUser>>) {
-        if (Object.keys(user).length === 0) {
-            this.user = {};
-            this._window.localStorage.removeItem(
-                this.localStorageCachedUserKey,
-            );
+    private set User(user: User) {
+        if (objIsNullOrEmpty(user)) {
+            this.user = null;
+            dbDeleteUser();
             return;
         }
-
-        this.user = user;
-        this._window.localStorage.setItem(
-            this.localStorageCachedUserKey,
-            JSON.stringify(user),
-        );
-    }
-
-    private upsertUser(user: User) {
-        const cachedUser: Record<string, TSafeUser> = this.User ?? {};
-
-        for (const userInfo of user.providerData) {
-            const providerID = userInfo.providerId as TAuthProvider;
-
-            // todo: remove data for any other service provider from user object
-
-            const convertToIdempotent = true;
-            cachedUser[providerID] = this.safeUserResponse(
-                user,
-                convertToIdempotent,
-            );
-            this.signedInStatus[providerID] = true;
-        }
-        this.User = cachedUser;
+        const userDTO = mapFirebaseUser2DBUserDTO(user);
+        this.user = mapMergeUserDTOs(this.user, userDTO);
+        dbSaveUser(this.user);
     }
 
     private setupSignedInStatus() {
@@ -519,6 +501,26 @@ export class FirebaseAuthService {
             initialStatuses[serviceProvider] &&
             this.signedInStatus[serviceProvider]
         );
+    }
+
+    public async getProfilePicUrl(
+        serviceProvider: TAuthProvider,
+    ): Promise<string | undefined> {
+        switch (serviceProvider) {
+            case authProviders.Facebook:
+                const token = this.User?.[authProviders.Facebook]?.token;
+                const getMeResponse = await fetch(
+                    `https://graph.facebook.com/me?fields=picture.type(large)&` +
+                        `access_token=${token}`,
+                );
+                const me = await getMeResponse.json();
+                console.log("graph me:", me);
+                return me?.picture?.data?.url;
+            default:
+                throw new Error(
+                    `getting the profile pic for ${serviceProvider} is not supported`,
+                );
+        }
     }
 
     /**

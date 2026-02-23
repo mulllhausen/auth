@@ -11,7 +11,7 @@ export const authProviderToGUINameMap = {
     [authProviders.Google]: "google",
 } as const;
 
-export function mapAuthProviderToNavTabElement(
+export function mapAuthProvider2NavTabElement(
     authProvider: TAuthProvider,
 ): HTMLAnchorElement {
     const guiName = authProviderToGUINameMap[authProvider];

@@ -51,12 +51,12 @@ import {
     TAuthProvider,
 } from "./firebase-wrapper.ts";
 import { GUILogger } from "./gui-logger.ts";
-import {
-    authProviderToGUINameMap,
-    mapAuthProviderToNavTabElement,
-} from "./gui-mappers.ts";
 import { HTMLTemplateManager } from "./html-template-manager.ts";
 import "./index.css";
+import {
+    authProviderToGUINameMap,
+    mapAuthProvider2NavTabElement,
+} from "./mappers-gui.ts";
 import { FSMCoordinator } from "./state-machine-coordinator.ts";
 import {
     EmailSignInFSMContext,
@@ -199,7 +199,7 @@ onReady(() => {
 
 function clickTab(authProvider: TAuthProvider) {
     const activeTab: HTMLAnchorElement =
-        mapAuthProviderToNavTabElement(authProvider);
+        mapAuthProvider2NavTabElement(authProvider);
 
     activateTab(activeTab);
 }

@@ -12,6 +12,8 @@
         ><br />
         <button id="loginBtn">Login with facebook</button>
         <button id="logoutBtn" style="display: none">Logout</button>
+        <br />
+        <img id="profilePic" style="display: none; width: 100px" />
 
         <script type="module">
             import { FirebaseError, initializeApp } from "firebase/app";
@@ -40,21 +42,32 @@
             const auth = getAuth(app);
 
             const provider = new FacebookAuthProvider();
+            provider.addScope("public_profile");
+            provider.addScope("email");
             const loginBtn = document.getElementById("loginBtn");
             const logoutBtn = document.getElementById("logoutBtn");
 
             loginBtn.addEventListener("click", async () => {
                 await signInWithRedirect(auth, provider);
             });
-
+            //"https://graph.facebook.com/1016 3591896943 536/picture"
+            //https://www.facebook.com/photo/?fbid=1016 2949842028 536&set=a.450672473535
             getRedirectResult(auth)
-                .then((result) => {
+                .then(async (result) => {
                     console.log("facebook getRedirectResult:", result);
                     if (result) {
                         const credential =
                             FacebookAuthProvider.credentialFromResult(result);
                         const token = credential.accessToken;
                         console.log("facebook access token:", token);
+
+                        const getMeResponse = await fetch(
+                            `https://graph.facebook.com/me?fields=picture.type(large)&access_token=${token}`,
+                        );
+                        const me = await getMeResponse.json();
+                        console.log("graph me:", me);
+                        document.getElementById("profilePic").src =
+                            me?.picture?.data?.url;
                     }
                 })
                 .catch((error) => {
@@ -66,10 +79,16 @@
                     console.log(`Logged in as: ${user.displayName}`, user);
                     loginBtn.style.display = "none";
                     logoutBtn.style.display = "inline-block";
+
+                    if (user.photoURL) {
+                        //   profilePic.src = user.photoURL;
+                        profilePic.style.display = "block";
+                    }
                 } else {
                     console.log("Not logged in.");
                     loginBtn.style.display = "inline-block";
                     logoutBtn.style.display = "none";
+                    profilePic.style.display = "none";
                 }
             });
 
