@@ -118,6 +118,12 @@ export type TFirebaseWrapperStateDTO = {
     userNotSignedIn?: boolean;
 };
 
+/** the actual User type with missing properties that firebase adds */
+export type TUserWithToken = User & {
+    token: string;
+    tokenExpiry: number;
+};
+
 type TStateChangedCallback = (dto: TFirebaseWrapperStateDTO) => Promise<void>;
 
 export type TDefaultAction = null;
@@ -160,7 +166,6 @@ export class FirebaseAuthService {
     public EmailPassword: string | null = null;
     public EmailActionCodeSettings: ActionCodeSettings;
     private localStorageEmailAddressKey = "emailAddress";
-    //private localStorageCachedUserKey = "cachedUser";
     private hiddenMessage = "not stored in localStorage to prevent xss attacks";
     public signedInStatus: Record<TAuthProvider, boolean> = {
         [authProviders.Email]: false,
@@ -227,31 +232,54 @@ export class FirebaseAuthService {
         if (!objIsNullOrEmpty(this.user)) {
             return this.user;
         }
-        // note: we are using our own db instead of the firebase db
-        // see docs/user-db.md for a discussion of why
+        // note: use our own db instead of the firebase db.
+        // see docs/user-db.md for a discussion of why.
         this.user = dbGetUser();
         return this.user;
     }
 
-    private set User(user: User) {
+    private set User(user: TUserWithToken) {
         if (objIsNullOrEmpty(user)) {
-            this.user = null;
-            dbDeleteUser();
+            this.deleteUser();
             return;
         }
-        const userDTO = mapFirebaseUser2DBUserDTO(user);
-        this.user = mapMergeUserDTOs(this.user, userDTO);
+        this.updateUser(user as TUserWithToken);
+    }
+
+    private deleteUser(): void {
+        this.user = null;
+        dbDeleteUser();
+    }
+
+    private updateUser(user: TUserWithToken): void {
+        const newUserDTO = mapFirebaseUser2DBUserDTO(user);
+        this.user = mapMergeUserDTOs(this.user, newUserDTO);
         dbSaveUser(this.user);
     }
 
-    private setupSignedInStatus() {
+    private setToken(
+        providerID: TAuthProvider,
+        token?: string,
+        tokenExpiry?: number,
+    ): void {
+        if (objIsNullOrEmpty(this.User)) {
+            this.log(
+                `unable to set token for provider ${providerID} - user is empty`,
+            );
+            return;
+        }
+        this.User![providerID]!.token = token;
+        this.User![providerID]!.tokenExpiry = tokenExpiry;
+    }
+
+    private setupSignedInStatus(): void {
         debugger;
         for (const providerID in this.User) {
             this.signedInStatus[providerID as TAuthProvider] = true;
         }
     }
 
-    private log(logMessage: string) {
+    private log(logMessage: string): void {
         this.logger?.({ logMessage });
     }
 
@@ -369,7 +397,7 @@ export class FirebaseAuthService {
             const providerId = redirectResult.providerId as TAuthProvider;
             const providerClass = this.authProviderFactory(providerId);
 
-            const credential =
+            const credential: OAuthCredential | null =
                 providerClass.credentialFromResult(redirectResult);
             if (credential == null) {
                 this.log(
@@ -398,7 +426,12 @@ export class FirebaseAuthService {
                 return;
             }
             this.setSignedInStatus(providerId, true);
-            this.upsertUser(redirectResult.user);
+            this.User = redirectResult.user as TUserWithToken;
+            this.setToken(
+                providerId,
+                credential.accessToken,
+                7, //credential.expirationTime, TODO
+            );
             await this.publishStateChanged?.({
                 userCredentialFoundViaFacebook: true,
             });
@@ -435,7 +468,7 @@ export class FirebaseAuthService {
         debugger;
         const logMessageStart: string = "firebase auth event.";
         const initialStatuses = deepCopy(this.signedInStatus);
-        this.upsertUser(user);
+        this.User = user as TUserWithToken;
 
         for (const providerName in authProviders) {
             const providerID = authProviders[providerName as TAuthProviderName];
@@ -618,7 +651,7 @@ export class FirebaseAuthService {
                         this.safeUserCredential(userCredentialResult),
                     imageURL: userCredentialResult.user.photoURL,
                 });
-                this.upsertUser(userCredentialResult.user);
+                this.User = userCredentialResult.user as TUserWithToken;
                 this.signedInStatus[authProviders.Email] = true;
                 this.publishStateChanged?.({
                     userCredentialFoundViaEmail: true,
@@ -715,7 +748,7 @@ export class FirebaseAuthService {
     // }
 
     public clearUserCache(): void {
-        this.User = {};
+        this.deleteUser();
         this.deleteCachedEmail();
     }
 

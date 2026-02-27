@@ -1,22 +1,46 @@
-import { User, UserInfo } from "firebase/auth";
-import type { TDBUserDTO, TDBUserInfo } from "./db-user.ts";
-import { TAuthProvider } from "./firebase-wrapper";
+import { UserInfo } from "firebase/auth";
+import type {
+    TDBSafeUserDTO,
+    TDBSafeUserInfo,
+    TDBUserDTO,
+    TDBUserInfo,
+} from "./db-user.ts";
+import type { TAuthProvider, TUserWithToken } from "./firebase-wrapper.ts";
 
-export function mapFirebaseUser2DBUserDTO(user: User): TDBUserDTO {
+export function mapFirebaseUser2DBUserDTO(user: TUserWithToken): TDBUserDTO {
     if (user?.providerData == null) {
         return null;
     }
-
     const dbUserDTO: TDBUserDTO = {};
     for (const userInfo of user.providerData) {
         const providerID = userInfo.providerId as TAuthProvider;
-        dbUserDTO[providerID] = mapUserInfo2DBUserInfo(user);
+        dbUserDTO[providerID] = mapUserInfo2DBSafeUserInfo(
+            userInfo,
+        ) as TDBUserInfo;
     }
+    // the user object has all the providers we have signed in with,
+    // as well as the most recent provider's token
+    const providerID = user.providerId as TAuthProvider;
+    dbUserDTO[providerID]!.token = user.token;
+    dbUserDTO[providerID]!.tokenExpiry = user.tokenExpiry;
     return dbUserDTO;
 }
 
+export function mapDBUserDTO2SafeUserDTO(userDTO: TDBUserDTO): TDBSafeUserDTO {
+    if (!userDTO) return null;
+
+    const safeUserDTO: TDBSafeUserDTO = {};
+    for (const provider in userDTO) {
+        const userInfo = userDTO[provider as TAuthProvider];
+        if (!userInfo) continue;
+        safeUserDTO[provider as TAuthProvider] =
+            mapUserInfo2DBSafeUserInfo(userInfo);
+    }
+    return safeUserDTO;
+}
+
 /** filter properties we want to keep */
-function mapUserInfo2DBUserInfo(userInfo: UserInfo): TDBUserInfo {
+function mapUserInfo2DBSafeUserInfo(userInfo: UserInfo): TDBSafeUserInfo {
     return {
         displayName: userInfo.displayName,
         email: userInfo.email,
