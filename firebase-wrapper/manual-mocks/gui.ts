@@ -1,4 +1,4 @@
-import { authProviders } from "../src/firebase-wrapper";
+import { authProviders } from "../src/firebase-wrapper.ts";
 import { setupDocumentQuerySelectorMock } from "./document-querySelector";
 import { setupDocumentQuerySelectorAllMock } from "./document-querySelectorAll";
 

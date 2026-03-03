@@ -6,18 +6,23 @@ export type TFacebookTransition =
 export type TFacebookSVGCSSClassKeys = TFacebookArrowKey | TFacebookStateBoxKey;
 
 export const FacebookSVGArrowCSSClass = {
+    DownloadProfilePic0: "download-profile-pic-0",
     Fail0: "fail-0",
+    Fail1: "fail-1",
     FirebaseReturnedAnError0: "firebase-returned-an-error-0",
     LogoutButtonClicked0: "logout-button-clicked-0",
     OkResponse0: "ok-response-0",
     Reset0: "reset-0",
     Reset1: "reset-1",
+    Reset2: "reset-2",
     UserClickedLoginButton0: "user-clicked-login-button-0",
 } as const;
 
 export const FacebookSVGStateBoxCSSClass = {
     AuthFailed0: "auth-failed-0",
     FacebookIsUnavailable0: "facebook-is-unavailable-0",
+    FailedToGetProfilePic0: "failed-to-get-profile-pic-0",
+    GotProfilePic0: "got-profile-pic-0",
     Idle0: "idle-0",
     RedirectingToFacebook0: "redirecting-to-facebook-0",
     SignedIn0: "signed-in-0",

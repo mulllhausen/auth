@@ -1,11 +1,11 @@
-import { UserInfo } from "firebase/auth";
+import type { UserInfo } from "firebase/auth";
 import type {
     TDBSafeUserDTO,
     TDBSafeUserInfo,
     TDBUserDTO,
     TDBUserInfo,
-} from "./db-user.ts";
-import type { TAuthProvider, TUserWithToken } from "./firebase-wrapper.ts";
+} from "../db-user.ts";
+import type { TAuthProvider, TUserWithToken } from "../firebase-wrapper.ts";
 
 export function mapFirebaseUser2DBUserDTO(user: TUserWithToken): TDBUserDTO {
     if (user?.providerData == null) {
@@ -18,11 +18,6 @@ export function mapFirebaseUser2DBUserDTO(user: TUserWithToken): TDBUserDTO {
             userInfo,
         ) as TDBUserInfo;
     }
-    // the user object has all the providers we have signed in with,
-    // as well as the most recent provider's token
-    const providerID = user.providerId as TAuthProvider;
-    dbUserDTO[providerID]!.token = user.token;
-    dbUserDTO[providerID]!.tokenExpiry = user.tokenExpiry;
     return dbUserDTO;
 }
 

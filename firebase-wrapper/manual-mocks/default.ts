@@ -1,4 +1,4 @@
-import { authProviders } from "../src/firebase-wrapper";
+import { authProviders } from "../src/firebase-wrapper.ts";
 
 // default values can be overwritten in tests if needed
 export const defaultHappyPath = {

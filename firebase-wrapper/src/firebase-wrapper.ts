@@ -41,7 +41,8 @@ import type {
     TSafeUserInfo,
 } from "./firebase-safe-types.ts";
 import type { TLogItem } from "./gui-logger.ts";
-import { mapFirebaseUser2DBUserDTO, mapMergeUserDTOs } from "./mappers-user.ts";
+import { mapFirebaseUser2DBUserDTO, mapMergeUserDTOs } from "./mappers/user.ts";
+import type { TMutable } from "./utils.ts";
 import { clearQueryParams, deepCopy, objIsNullOrEmpty } from "./utils.ts";
 
 // #endregion imports
@@ -113,13 +114,18 @@ export type TFirebaseWrapperStateDTO = {
     failedToRedirectToAuthProvider?: TAuthProvider;
     nullCredentialAfterSignIn?: TAuthProvider;
     nullCredentialAfterRedirect?: boolean;
-    userCredentialFoundViaFacebook?: boolean;
+    foundCredential?: TAuthProvider;
+
+    // note: some providers include the profile pic in the sign-in response
+    // so this is not necessarily for them
+    gotProfilePic?: TAuthProvider;
+    failedToGetProfilePic?: TAuthProvider;
 
     userNotSignedIn?: boolean;
 };
 
 /** the actual User type with missing properties that firebase adds */
-export type TUserWithToken = User & {
+export type TUserWithToken = TMutable<User> & {
     token: string;
     tokenExpiry: number;
 };
@@ -144,8 +150,9 @@ type TEventListenerMethod = <TKey extends keyof HTMLElementEventMap>(
 /**
  * single responsibility principle: this service does not know anything about
  * state machines and is not a state machine so it does not hold an enumerated state.
- *
  * it just contains firebase-method-wrappers that make taking action more simple and uniform.
+ * this service is intended to be controlled externally, so it does not initiate actions
+ * (except for publishing firebase events).
  *
  * this class is a singleton. the same instance should be used for all providers.
  *
@@ -154,7 +161,8 @@ type TEventListenerMethod = <TKey extends keyof HTMLElementEventMap>(
  *
  * persistent user data lives in the database, not in this class' state.
  *
- * token management ...
+ * persistent token data lives in the database (not local-storage) and also in this class's
+ * state for easy access.
  */
 export class FirebaseAuthService {
     private _window: Window & typeof globalThis;
@@ -254,7 +262,7 @@ export class FirebaseAuthService {
     private updateUser(user: TUserWithToken): void {
         const newUserDTO = mapFirebaseUser2DBUserDTO(user);
         this.user = mapMergeUserDTOs(this.user, newUserDTO);
-        dbSaveUser(this.user);
+        dbSaveUser(this.user); // todo: move out to the state machines
     }
 
     private setToken(
@@ -268,6 +276,7 @@ export class FirebaseAuthService {
             );
             return;
         }
+        if (token == null) return;
         this.User![providerID]!.token = token;
         this.User![providerID]!.tokenExpiry = tokenExpiry;
     }
@@ -384,9 +393,6 @@ export class FirebaseAuthService {
                     `just checked: the current page url is not a redirect ` +
                         `from a service provider`,
                 );
-                // await this.publishStateChanged?.({
-                //     nullCredentialAfterRedirect: true,
-                // });
                 // note: do not call this.publishStateChanged() here
                 return;
             }
@@ -394,23 +400,23 @@ export class FirebaseAuthService {
             // we only get here once - immediately after login
             // (stackoverflow.com/a/44468387)
 
-            const providerId = redirectResult.providerId as TAuthProvider;
-            const providerClass = this.authProviderFactory(providerId);
+            const providerID = redirectResult.providerId as TAuthProvider;
+            const providerClass = this.authProviderFactory(providerID);
 
             const credential: OAuthCredential | null =
                 providerClass.credentialFromResult(redirectResult);
             if (credential == null) {
                 this.log(
-                    `credential is null immediately after sign-in with ${providerId}`,
+                    `credential is null immediately after sign-in with ${providerID}`,
                 );
                 await this.publishStateChanged?.({
-                    nullCredentialAfterSignIn: providerId,
+                    nullCredentialAfterSignIn: providerID,
                 });
                 return;
             }
 
             this.logger?.({
-                logMessage: `credential immediately after sign-in with ${providerId}`,
+                logMessage: `credential immediately after sign-in with ${providerID}`,
                 logData: credential,
                 safeLocalStorageData: this.safeCredentialResponse(credential),
             });
@@ -418,23 +424,20 @@ export class FirebaseAuthService {
             const accessToken: string | undefined = credential.accessToken;
             if (accessToken == null) {
                 this.log(
-                    `accessToken is null immediately after sign-in with ${providerId}`,
+                    `accessToken is null immediately after sign-in with ${providerID}`,
                 );
                 await this.publishStateChanged?.({
-                    nullCredentialAfterSignIn: providerId,
+                    nullCredentialAfterSignIn: providerID,
                 });
                 return;
             }
-            this.setSignedInStatus(providerId, true);
+            this.setSignedInStatus(providerID, true);
             this.User = redirectResult.user as TUserWithToken;
-            this.setToken(
-                providerId,
-                credential.accessToken,
-                7, //credential.expirationTime, TODO
-            );
-            await this.publishStateChanged?.({
-                userCredentialFoundViaFacebook: true,
-            });
+
+            // this is the one chance we have to save the token - immediately after login
+            this.setToken(providerID, credential.accessToken);
+
+            await this.publishStateChanged?.({ foundCredential: providerID });
             return;
             // IdP data available using getAdditionalUserInfo(result)
         } catch (error: unknown) {
@@ -508,7 +511,7 @@ export class FirebaseAuthService {
             });
 
             await this.publishStateChanged?.({
-                userCredentialFoundViaFacebook: true,
+                foundCredential: authProviders.Facebook,
             });
         }
 
@@ -539,20 +542,32 @@ export class FirebaseAuthService {
     public async getProfilePicUrl(
         serviceProvider: TAuthProvider,
     ): Promise<string | undefined> {
-        switch (serviceProvider) {
-            case authProviders.Facebook:
-                const token = this.User?.[authProviders.Facebook]?.token;
-                const getMeResponse = await fetch(
-                    `https://graph.facebook.com/me?fields=picture.type(large)&` +
-                        `access_token=${token}`,
-                );
-                const me = await getMeResponse.json();
-                console.log("graph me:", me);
-                return me?.picture?.data?.url;
-            default:
-                throw new Error(
-                    `getting the profile pic for ${serviceProvider} is not supported`,
-                );
+        debugger;
+        try {
+            switch (serviceProvider) {
+                case authProviders.Facebook:
+                    const token = this.User?.[authProviders.Facebook]?.token;
+                    const getMeResponse = await fetch(
+                        `https://graph.facebook.com/me?fields=picture.type(large)&` +
+                            `access_token=${token}`,
+                    );
+                    const me = await getMeResponse.json();
+                    this.User![authProviders.Facebook]!.photoURL =
+                        me?.picture?.data?.url;
+                    await this.publishStateChanged?.({
+                        gotProfilePic: serviceProvider,
+                    });
+                    return;
+                default:
+                    throw new Error(
+                        `getting the profile pic for ${serviceProvider} is not supported`,
+                    );
+            }
+        } catch (error) {
+            await this.publishStateChanged?.({
+                failedToGetProfilePic: serviceProvider,
+            });
+            return;
         }
     }
 
@@ -762,6 +777,7 @@ export class FirebaseAuthService {
 
     // #region make firebase objects safe for storage (remove pii)
 
+    // todo: move all these to the mappers file
     private safeUserCredential(
         userCredential: UserCredential,
         idempotent: boolean = false, // use for comparing objects
@@ -827,6 +843,7 @@ export class FirebaseAuthService {
         };
     }
 
+    // todo: move to mapper
     private safeUserInfo(userInfo: UserInfo): TSafeUserInfo {
         return {
             providerId: userInfo.providerId,

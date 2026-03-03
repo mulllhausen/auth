@@ -56,7 +56,7 @@ import "./index.css";
 import {
     authProviderToGUINameMap,
     mapAuthProvider2NavTabElement,
-} from "./mappers-gui.ts";
+} from "./mappers/gui.ts";
 import { FSMCoordinator } from "./state-machine-coordinator.ts";
 import {
     EmailSignInFSMContext,

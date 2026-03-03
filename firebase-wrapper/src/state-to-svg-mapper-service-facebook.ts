@@ -119,8 +119,17 @@ export class StateToSVGMapperServiceFacebook {
             case this.generateTransition("AuthFailed0", "Idle0"):
                 return "Reset1";
 
-            case this.generateTransition("SignedIn0", "Idle0"):
+            case this.generateTransition("SignedIn0", "GotProfilePic0"):
+                return "DownloadProfilePic0";
+
+            case this.generateTransition("GotProfilePic0", "Idle0"):
                 return "LogoutButtonClicked0";
+
+            case this.generateTransition("SignedIn0", "FailedToGetProfilePic0"):
+                return "Fail1";
+
+            case this.generateTransition("FailedToGetProfilePic0", "Idle0"):
+                return "Reset2";
 
             default:
                 return null;
@@ -144,5 +153,7 @@ export class StateToSVGMapperServiceFacebook {
         FacebookIsUnavailable: "FacebookIsUnavailable0",
         FacebookAuthFailed: "AuthFailed0",
         SignedIn: "SignedIn0",
+        GotProfilePic: "GotProfilePic0",
+        FailedToGetProfilePic: "FailedToGetProfilePic0",
     };
 }

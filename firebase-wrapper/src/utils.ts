@@ -3,6 +3,10 @@ import type { TProcessEnv } from "./dotenv.d.ts";
 import { developmentEnv } from "./dotenv.development.ts";
 import { productionEnv } from "./dotenv.production.ts";
 
+export type TMutable<T> = {
+    -readonly [K in keyof T]: T[K];
+};
+
 export function getEnv(): TProcessEnv {
     let overrideEnv: Partial<TProcessEnv> = {};
     switch (import.meta.env.MODE) {

@@ -42,6 +42,8 @@ const facebookFSMStateIDs = [
     "FacebookIsUnavailable",
     "FacebookAuthFailed",
     "SignedIn",
+    "GotProfilePic",
+    "FailedToGetProfilePic",
 ] as const;
 export type TFacebookFSMStateID = (typeof facebookFSMStateIDs)[number];
 
@@ -65,6 +67,8 @@ export class FacebookSignInFSMContext {
         FacebookIsUnavailable: FacebookIsUnavailableState,
         FacebookAuthFailed: FacebookAuthFailedState,
         SignedIn: SignedInState,
+        GotProfilePic: GotProfilePicState,
+        FailedToGetProfilePic: FailedToGetProfilePicState,
     };
 
     // callbacks
@@ -209,7 +213,7 @@ abstract class FacebookSignInState {
         facebookStateDTO?: TFacebookStateDTO,
     ): Promise<boolean> {
         let skipCurrentStateLogic = false;
-        if (facebookStateDTO?.userCredentialFoundViaFacebook) {
+        if (facebookStateDTO?.foundCredential == authProviders.Facebook) {
             this.log("facebook fsm: detected user already signed in");
             await this.context.transitionTo(transitionToken, SignedInState);
             skipCurrentStateLogic = true;
@@ -306,7 +310,43 @@ class SignedInState extends FacebookSignInState {
 
     public override async handle(
         facebookStateDTO: TFacebookStateDTO,
+    ): Promise<void> {
+        if (facebookStateDTO?.foundCredential == authProviders.Facebook) {
+            await this.firebaseAuthService.getProfilePicUrl(
+                authProviders.Facebook,
+            );
+        }
+        if (facebookStateDTO?.failedToGetProfilePic == authProviders.Facebook) {
+            await this.context.transitionTo(
+                transitionToken,
+                FailedToGetProfilePicState,
+            );
+            return;
+        }
+    }
+
+    public override async onEnter(): Promise<void> {}
+}
+
+class GotProfilePicState extends FacebookSignInState {
+    public override readonly ID = "GotProfilePic";
+
+    public override async handle(
+        facebookStateDTO: TFacebookStateDTO,
     ): Promise<void> {}
 
     public override async onEnter(): Promise<void> {}
+}
+
+class FailedToGetProfilePicState extends FacebookSignInState {
+    public override readonly ID = "FailedToGetProfilePic";
+
+    public override async handle(
+        facebookStateDTO: TFacebookStateDTO,
+    ): Promise<void> {}
+
+    public override async onEnter(): Promise<void> {
+        await this.context.transitionTo(transitionToken, IdleState);
+        return;
+    }
 }

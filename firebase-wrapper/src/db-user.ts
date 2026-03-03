@@ -1,6 +1,7 @@
-import { UserInfo } from "firebase/auth";
+import type { UserInfo } from "firebase/auth";
 import type { TAuthProvider } from "./firebase-wrapper.ts";
-import { mapDBUserDTO2SafeUserDTO } from "./mappers-user.ts";
+import { mapDBUserDTO2SafeUserDTO } from "./mappers/user.ts";
+import type { TMutable } from "./utils.ts";
 import { objIsNullOrEmpty } from "./utils.ts";
 
 const localStorageUserKey = "dbUser";
@@ -17,9 +18,16 @@ export type TDBUserInfo = TDBSafeUserInfo & {
 
 /** note: localstorage is not secure so don't put any data in here that
  * could be used for an xss attack */
-export type TDBSafeUserInfo = Pick<
-    UserInfo,
-    "displayName" | "email" | "phoneNumber" | "photoURL" | "providerId" | "uid"
+export type TDBSafeUserInfo = TMutable<
+    Pick<
+        UserInfo,
+        | "displayName"
+        | "email"
+        | "phoneNumber"
+        | "photoURL"
+        | "providerId"
+        | "uid"
+    >
 >;
 
 export function dbSaveUser(userDTO: TDBUserDTO) {
