@@ -422,6 +422,10 @@ export class FirebaseAuthService {
             const email = firebaseError.customData?.email;
             // AuthCredential type that was used.
             //const credential = GithubAuthProvider.credentialFromError(firebaseError);
+            this.log(`firebase error after redirect: ${errorMessage}`);
+            await this.publishStateChanged?.({
+                nullCredentialAfterRedirect: true,
+            });
         }
     }
 
