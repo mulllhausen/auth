@@ -25,7 +25,7 @@ export class FSMCoordinator {
 
         await this.facebookSignInFSMContext.setup();
         //await this.emailSignInFSMContext.setup();
-        await this.firebaseAuthService.checkIfRedirectResult();
+        await this.checkIfRedirectResult();
         await this.firebaseAuthService.setupFirebaseListeners();
     }
 
@@ -49,5 +49,12 @@ export class FSMCoordinator {
         this.emailSignInFSMContext.deleteStateFromLocalstorage();
         await this.facebookSignInFSMContext.handle({});
         await this.emailSignInFSMContext.handle({});
+    }
+
+    private async checkIfRedirectResult(): Promise<void> {
+        await this.facebookSignInFSMContext.handle({
+            checkingRedirectResult: true,
+        });
+        await this.firebaseAuthService.checkIfRedirectResult();
     }
 }

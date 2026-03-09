@@ -174,6 +174,7 @@ function getTextWithoutTagsKebabCase(group: SVGGElement): string {
     return accumulatedText
         .trim()
         .toLowerCase()
+        .replace(/'/g, "")
         .replace(/\s+/g, " ")
         .replace(/\s/g, "-")
         .replace("&amp;", "and")

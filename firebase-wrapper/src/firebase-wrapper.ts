@@ -54,19 +54,6 @@ type TFacebookMeResponse = {
     };
 };
 
-// export const firebaseDependencies: TFirebaseDependencies = {
-//     FacebookAuthProvider,
-//     GithubAuthProvider,
-//     GoogleAuthProvider,
-//     getAuth,
-//     getRedirectResult,
-//     initializeApp,
-//     isSignInWithEmailLink,
-//     onAuthStateChanged,
-//     signInWithEmailLink,
-//     signInWithRedirect,
-// };
-
 type TAuthProviderName = keyof typeof authProviders;
 export type TAuthProvider = (typeof authProviders)[TAuthProviderName];
 
@@ -79,36 +66,6 @@ export const authProviders = {
 
 export const defaultAction: TDefaultAction = null;
 
-// export type TFirebaseDependencies = {
-//     FacebookAuthProvider: typeof FacebookAuthProvider;
-//     GithubAuthProvider: typeof GithubAuthProvider;
-//     GoogleAuthProvider: typeof GoogleAuthProvider;
-
-//     getAuth: (app?: FirebaseApp) => Auth;
-//     getRedirectResult: (
-//         auth: Auth,
-//         resolver?: PopupRedirectResolver,
-//     ) => Promise<UserCredential | null>;
-//     initializeApp: (options: FirebaseOptions, name?: string) => FirebaseApp;
-//     isSignInWithEmailLink: (auth: Auth, emailLink: string) => boolean;
-//     onAuthStateChanged: (
-//         auth: Auth,
-//         nextOrObserver: NextOrObserver<User>,
-//         error?: ErrorFn,
-//         completed?: CompleteFn,
-//     ) => Unsubscribe;
-//     signInWithEmailLink: (
-//         auth: Auth,
-//         email: string,
-//         emailLink?: string,
-//     ) => Promise<UserCredential>;
-//     signInWithRedirect: (
-//         auth: Auth,
-//         provider: AuthProvider,
-//         resolver?: PopupRedirectResolver,
-//     ) => Promise<never>;
-// };
-
 export type TFirebaseWrapperStateDTO = {
     successfullySentSignInLinkToEmail?: boolean;
     urlIsAnEmailSignInLink?: boolean;
@@ -119,11 +76,12 @@ export type TFirebaseWrapperStateDTO = {
     failedToRedirectToAuthProvider?: TAuthProvider;
     nullCredentialAfterSignIn?: TAuthProvider;
     nullCredentialAfterRedirect?: boolean;
+    checkingRedirectResult?: boolean;
     foundUser?: TAuthProvider;
     foundToken?: TAuthProvider;
 
     // note: some providers include the profile pic in the sign-in response
-    // so this is not necessarily for them
+    // so this is not necessary for them
     gotProfilePic?: TAuthProvider;
     failedToGetProfilePic?: TAuthProvider;
 

@@ -14,9 +14,6 @@ import {
 export class StateToSVGMapperServiceFacebook {
     private svgService: SVGFlowChartServiceFacebook;
     private queue: TFacebookStateBoxKey[] = [];
-    // private currentStateBoxCSSClassKey:
-    //     | keyof typeof FacebookSVGStateBoxCSSClass
-    //     | null = null;
 
     constructor(props: {
         svgService: SVGFlowChartServiceFacebook;
@@ -98,11 +95,8 @@ export class StateToSVGMapperServiceFacebook {
             case this.generateTransition("Idle0", "RedirectingToFacebook0"):
                 return "UserClickedLoginButton0";
 
-            case this.generateTransition("RedirectingToFacebook0", "SignedIn0"):
-                return "OkResponse0";
-
             case this.generateTransition(
-                "RedirectingToFacebook0",
+                "CheckingRedirectResult0",
                 "AuthFailed0",
             ):
                 return "Fail0";
@@ -112,6 +106,18 @@ export class StateToSVGMapperServiceFacebook {
                 "FacebookIsUnavailable0",
             ):
                 return "FirebaseReturnedAnError0";
+
+            case this.generateTransition(
+                "RedirectingToFacebook0",
+                "CheckingRedirectResult0",
+            ):
+                return "AndWereBack0";
+
+            case this.generateTransition(
+                "CheckingRedirectResult0",
+                "SignedIn0",
+            ):
+                return "OkResponse0";
 
             case this.generateTransition("FacebookIsUnavailable0", "Idle0"):
                 return "Reset0";
@@ -126,7 +132,7 @@ export class StateToSVGMapperServiceFacebook {
                 return "LogoutButtonClicked0";
 
             case this.generateTransition("SignedIn0", "FailedToGetProfilePic0"):
-                return "Fail1";
+                return "GraphApiFail0";
 
             case this.generateTransition("FailedToGetProfilePic0", "Idle0"):
                 return "Reset2";
@@ -150,6 +156,7 @@ export class StateToSVGMapperServiceFacebook {
     > = {
         Idle: "Idle0",
         RedirectingToFacebook: "RedirectingToFacebook0",
+        CheckingRedirectResult: "CheckingRedirectResult0",
         FacebookIsUnavailable: "FacebookIsUnavailable0",
         FacebookAuthFailed: "AuthFailed0",
         SignedIn: "SignedIn0",

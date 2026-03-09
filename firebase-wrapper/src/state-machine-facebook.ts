@@ -44,6 +44,7 @@ type TFacebookSignInStateConstructor<
 const facebookFSMStateIDs = [
     "Idle",
     "RedirectingToFacebook",
+    "CheckingRedirectResult",
     "FacebookIsUnavailable",
     "FacebookAuthFailed",
     "SignedIn",
@@ -69,6 +70,7 @@ export class FacebookSignInFSMContext {
     > = {
         Idle: IdleState,
         RedirectingToFacebook: RedirectingToFacebookState,
+        CheckingRedirectResult: CheckingRedirectResultState,
         FacebookIsUnavailable: FacebookIsUnavailableState,
         FacebookAuthFailed: FacebookAuthFailedState,
         SignedIn: SignedInState,
@@ -220,12 +222,12 @@ abstract class FacebookSignInState {
     ): Promise<boolean> {
         let skipCurrentStateLogic = false;
         if (facebookStateDTO?.foundToken == authProviders.Facebook) {
-            this.log("facebook fsm: detected user already signed in");
+            this.log("facebook fsm: detected user is signed in");
             await this.context.transitionTo(transitionToken, SignedInState);
             skipCurrentStateLogic = true;
         }
         if (facebookStateDTO?.userNotSignedIn) {
-            this.log("facebook fsm: detected user already signed out");
+            this.log("facebook fsm: detected user is signed out");
             await this.context.transitionTo(transitionToken, IdleState);
             skipCurrentStateLogic = true;
         }
@@ -259,14 +261,6 @@ class RedirectingToFacebookState extends FacebookSignInState {
     public override async handle(
         facebookStateDTO: TFacebookStateDTO,
     ): Promise<void> {
-        if (facebookStateDTO?.nullCredentialAfterRedirect) {
-            await this.context.transitionTo(
-                transitionToken,
-                FacebookAuthFailedState,
-            );
-            return;
-        }
-
         if (
             facebookStateDTO?.failedToRedirectToAuthProvider ===
             authProviders.Facebook
@@ -277,12 +271,38 @@ class RedirectingToFacebookState extends FacebookSignInState {
             );
             return;
         }
+
+        if (facebookStateDTO?.checkingRedirectResult) {
+            await this.context.transitionTo(
+                transitionToken,
+                CheckingRedirectResultState,
+            );
+            return;
+        }
     }
 
     public override async onEnter(): Promise<void> {
         this.context.callbackEnableLoginButton?.(false);
         await this.firebaseAuthService.signin(authProviders.Facebook);
     }
+}
+
+class CheckingRedirectResultState extends FacebookSignInState {
+    public override readonly ID = "CheckingRedirectResult";
+
+    public override async handle(
+        facebookStateDTO: TFacebookStateDTO,
+    ): Promise<void> {
+        if (facebookStateDTO?.nullCredentialAfterRedirect) {
+            await this.context.transitionTo(
+                transitionToken,
+                FacebookAuthFailedState,
+            );
+            return;
+        }
+    }
+
+    public override async onEnter(): Promise<void> {}
 }
 
 class FacebookAuthFailedState extends FacebookSignInState {
