@@ -10,6 +10,7 @@
 // been given by this service.
 
 import type { TGUIStateDTO } from ".";
+import { dbSaveUser } from "./db-user.ts";
 import type {
     TAuthProvider,
     TFirebaseWrapperStateDTO,
@@ -17,6 +18,10 @@ import type {
 import { authProviders, FirebaseAuthService } from "./firebase-wrapper.ts";
 import type { TLogItem } from "./gui-logger.ts";
 import { StateToSVGMapperServiceFacebook } from "./state-to-svg-mapper-service-facebook.ts";
+import {
+    facebookProfilePicRegex,
+    validateProfilePicUrl,
+} from "./validators/user.ts";
 
 // #region consts and types
 
@@ -121,6 +126,7 @@ export class FacebookSignInFSMContext {
         token: typeof transitionToken, // prevent external access
         newStateClass: TFacebookSignInStateConstructor<TState>,
     ): Promise<FacebookSignInState> {
+        debugger;
         if (token !== transitionToken) {
             throw new Error(`incorrect transition token`);
         }
@@ -213,7 +219,7 @@ abstract class FacebookSignInState {
         facebookStateDTO?: TFacebookStateDTO,
     ): Promise<boolean> {
         let skipCurrentStateLogic = false;
-        if (facebookStateDTO?.foundCredential == authProviders.Facebook) {
+        if (facebookStateDTO?.foundToken == authProviders.Facebook) {
             this.log("facebook fsm: detected user already signed in");
             await this.context.transitionTo(transitionToken, SignedInState);
             skipCurrentStateLogic = true;
@@ -311,10 +317,30 @@ class SignedInState extends FacebookSignInState {
     public override async handle(
         facebookStateDTO: TFacebookStateDTO,
     ): Promise<void> {
-        if (facebookStateDTO?.foundCredential == authProviders.Facebook) {
-            await this.firebaseAuthService.getProfilePicUrl(
-                authProviders.Facebook,
-            );
+        debugger;
+        if (facebookStateDTO?.gotProfilePic == authProviders.Facebook) {
+            const fbProfilePicUrl =
+                this.firebaseAuthService.User?.[authProviders.Facebook]
+                    ?.photoURL;
+            if (
+                validateProfilePicUrl(authProviders.Facebook, fbProfilePicUrl)
+            ) {
+                await this.context.transitionTo(
+                    transitionToken,
+                    GotProfilePicState,
+                );
+                return;
+            } else {
+                this.log(
+                    `facebook fsm: profile pic url ${fbProfilePicUrl} was not ` +
+                        `in the format ${facebookProfilePicRegex.source}`,
+                );
+                await this.context.transitionTo(
+                    transitionToken,
+                    FailedToGetProfilePicState,
+                );
+                return;
+            }
         }
         if (facebookStateDTO?.failedToGetProfilePic == authProviders.Facebook) {
             await this.context.transitionTo(
@@ -325,7 +351,10 @@ class SignedInState extends FacebookSignInState {
         }
     }
 
-    public override async onEnter(): Promise<void> {}
+    public override async onEnter(): Promise<void> {
+        dbSaveUser(this.firebaseAuthService.User);
+        await this.firebaseAuthService.getProfilePicUrl(authProviders.Facebook);
+    }
 }
 
 class GotProfilePicState extends FacebookSignInState {
@@ -335,7 +364,9 @@ class GotProfilePicState extends FacebookSignInState {
         facebookStateDTO: TFacebookStateDTO,
     ): Promise<void> {}
 
-    public override async onEnter(): Promise<void> {}
+    public override async onEnter(): Promise<void> {
+        dbSaveUser(this.firebaseAuthService.User);
+    }
 }
 
 class FailedToGetProfilePicState extends FacebookSignInState {

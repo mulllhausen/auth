@@ -1,19 +1,13 @@
 // #region imports
 
-import type { FirebaseApp, FirebaseOptions } from "firebase/app";
+import type { FirebaseOptions } from "firebase/app";
 import { FirebaseError, initializeApp } from "firebase/app";
 import type {
     ActionCodeSettings,
     Auth,
     AuthProvider,
-    CompleteFn,
-    ErrorFn,
-    NextOrObserver,
-    PopupRedirectResolver,
-    Unsubscribe,
     User,
     UserCredential,
-    UserInfo,
 } from "firebase/auth";
 import {
     EmailAuthProvider,
@@ -31,17 +25,16 @@ import {
     signOut,
 } from "firebase/auth";
 import type { TDBUserDTO } from "./db-user.ts";
-import { dbDeleteUser, dbGetUser, dbSaveUser } from "./db-user.ts";
+import { dbDeleteUser, dbGetUser } from "./db-user.ts";
 import type { TProcessEnv } from "./dotenv.d.ts";
-import type {
-    TSafeOAuthCredential,
-    TSafeTokenResponse,
-    TSafeUser,
-    TSafeUserCredential,
-    TSafeUserInfo,
-} from "./firebase-safe-types.ts";
 import type { TLogItem } from "./gui-logger.ts";
-import { mapFirebaseUser2DBUserDTO, mapMergeUserDTOs } from "./mappers/user.ts";
+import {
+    mapFirebaseUser2DBUserDTO,
+    mapMergeUserDTOs,
+    safeCredentialResponse,
+    safeUserCredential,
+    safeUserResponse,
+} from "./mappers/user.ts";
 import type { TMutable } from "./utils.ts";
 import { clearQueryParams, deepCopy, objIsNullOrEmpty } from "./utils.ts";
 
@@ -49,18 +42,30 @@ import { clearQueryParams, deepCopy, objIsNullOrEmpty } from "./utils.ts";
 
 // #region consts and types
 
-export const firebaseDependencies: TFirebaseDependencies = {
-    FacebookAuthProvider,
-    GithubAuthProvider,
-    GoogleAuthProvider,
-    getAuth,
-    getRedirectResult,
-    initializeApp,
-    isSignInWithEmailLink,
-    onAuthStateChanged,
-    signInWithEmailLink,
-    signInWithRedirect,
+type TFacebookMeResponse = {
+    id: string;
+    picture?: {
+        data?: {
+            url?: string;
+            height?: number;
+            width?: number;
+            is_silhouette?: boolean;
+        };
+    };
 };
+
+// export const firebaseDependencies: TFirebaseDependencies = {
+//     FacebookAuthProvider,
+//     GithubAuthProvider,
+//     GoogleAuthProvider,
+//     getAuth,
+//     getRedirectResult,
+//     initializeApp,
+//     isSignInWithEmailLink,
+//     onAuthStateChanged,
+//     signInWithEmailLink,
+//     signInWithRedirect,
+// };
 
 type TAuthProviderName = keyof typeof authProviders;
 export type TAuthProvider = (typeof authProviders)[TAuthProviderName];
@@ -74,35 +79,35 @@ export const authProviders = {
 
 export const defaultAction: TDefaultAction = null;
 
-export type TFirebaseDependencies = {
-    FacebookAuthProvider: typeof FacebookAuthProvider;
-    GithubAuthProvider: typeof GithubAuthProvider;
-    GoogleAuthProvider: typeof GoogleAuthProvider;
+// export type TFirebaseDependencies = {
+//     FacebookAuthProvider: typeof FacebookAuthProvider;
+//     GithubAuthProvider: typeof GithubAuthProvider;
+//     GoogleAuthProvider: typeof GoogleAuthProvider;
 
-    getAuth: (app?: FirebaseApp) => Auth;
-    getRedirectResult: (
-        auth: Auth,
-        resolver?: PopupRedirectResolver,
-    ) => Promise<UserCredential | null>;
-    initializeApp: (options: FirebaseOptions, name?: string) => FirebaseApp;
-    isSignInWithEmailLink: (auth: Auth, emailLink: string) => boolean;
-    onAuthStateChanged: (
-        auth: Auth,
-        nextOrObserver: NextOrObserver<User>,
-        error?: ErrorFn,
-        completed?: CompleteFn,
-    ) => Unsubscribe;
-    signInWithEmailLink: (
-        auth: Auth,
-        email: string,
-        emailLink?: string,
-    ) => Promise<UserCredential>;
-    signInWithRedirect: (
-        auth: Auth,
-        provider: AuthProvider,
-        resolver?: PopupRedirectResolver,
-    ) => Promise<never>;
-};
+//     getAuth: (app?: FirebaseApp) => Auth;
+//     getRedirectResult: (
+//         auth: Auth,
+//         resolver?: PopupRedirectResolver,
+//     ) => Promise<UserCredential | null>;
+//     initializeApp: (options: FirebaseOptions, name?: string) => FirebaseApp;
+//     isSignInWithEmailLink: (auth: Auth, emailLink: string) => boolean;
+//     onAuthStateChanged: (
+//         auth: Auth,
+//         nextOrObserver: NextOrObserver<User>,
+//         error?: ErrorFn,
+//         completed?: CompleteFn,
+//     ) => Unsubscribe;
+//     signInWithEmailLink: (
+//         auth: Auth,
+//         email: string,
+//         emailLink?: string,
+//     ) => Promise<UserCredential>;
+//     signInWithRedirect: (
+//         auth: Auth,
+//         provider: AuthProvider,
+//         resolver?: PopupRedirectResolver,
+//     ) => Promise<never>;
+// };
 
 export type TFirebaseWrapperStateDTO = {
     successfullySentSignInLinkToEmail?: boolean;
@@ -114,7 +119,8 @@ export type TFirebaseWrapperStateDTO = {
     failedToRedirectToAuthProvider?: TAuthProvider;
     nullCredentialAfterSignIn?: TAuthProvider;
     nullCredentialAfterRedirect?: boolean;
-    foundCredential?: TAuthProvider;
+    foundUser?: TAuthProvider;
+    foundToken?: TAuthProvider;
 
     // note: some providers include the profile pic in the sign-in response
     // so this is not necessarily for them
@@ -138,12 +144,6 @@ type TAuthProviderConstructor =
     | typeof GoogleAuthProvider
     | typeof FacebookAuthProvider
     | typeof GithubAuthProvider;
-
-type TEventListenerMethod = <TKey extends keyof HTMLElementEventMap>(
-    type: TKey,
-    listener: (this: HTMLElement, ev: HTMLElementEventMap[TKey]) => any,
-    options?: boolean | AddEventListenerOptions,
-) => void;
 
 // #endregion consts and types
 
@@ -262,7 +262,6 @@ export class FirebaseAuthService {
     private updateUser(user: TUserWithToken): void {
         const newUserDTO = mapFirebaseUser2DBUserDTO(user);
         this.user = mapMergeUserDTOs(this.user, newUserDTO);
-        dbSaveUser(this.user); // todo: move out to the state machines
     }
 
     private setToken(
@@ -402,6 +401,7 @@ export class FirebaseAuthService {
 
             const providerID = redirectResult.providerId as TAuthProvider;
             const providerClass = this.authProviderFactory(providerID);
+            const isIdempotent = true;
 
             const credential: OAuthCredential | null =
                 providerClass.credentialFromResult(redirectResult);
@@ -418,7 +418,10 @@ export class FirebaseAuthService {
             this.logger?.({
                 logMessage: `credential immediately after sign-in with ${providerID}`,
                 logData: credential,
-                safeLocalStorageData: this.safeCredentialResponse(credential),
+                safeLocalStorageData: safeCredentialResponse(
+                    credential,
+                    this.hiddenMessage,
+                ),
             });
 
             const accessToken: string | undefined = credential.accessToken;
@@ -434,10 +437,21 @@ export class FirebaseAuthService {
             this.setSignedInStatus(providerID, true);
             this.User = redirectResult.user as TUserWithToken;
 
-            // this is the one chance we have to save the token - immediately after login
+            // this is the only chance we have to save the token - immediately after login
             this.setToken(providerID, credential.accessToken);
 
-            await this.publishStateChanged?.({ foundCredential: providerID });
+            this.logger?.({
+                logMessage: `got user via ${providerID}`,
+                logData: this.User,
+                safeLocalStorageData: safeUserResponse(
+                    redirectResult.user,
+                    isIdempotent,
+                    this.hiddenMessage,
+                ),
+                imageURL: this.User?.[providerID]?.photoURL,
+            });
+
+            await this.publishStateChanged?.({ foundToken: providerID });
             return;
             // IdP data available using getAdditionalUserInfo(result)
         } catch (error: unknown) {
@@ -467,32 +481,45 @@ export class FirebaseAuthService {
         }
     }
 
+    // todo: we probably only care about email here. the others use checkIfRedirectResult
     private async afterUserSignedIn(user: User): Promise<void> {
         debugger;
         const logMessageStart: string = "firebase auth event.";
         const initialStatuses = deepCopy(this.signedInStatus);
-        this.User = user as TUserWithToken;
 
+        const isIdempotent = true;
         for (const providerName in authProviders) {
             const providerID = authProviders[providerName as TAuthProviderName];
+            if (providerID !== authProviders.Email) {
+                continue;
+            }
             if (this.isAlreadySignedInWith(providerID, initialStatuses)) {
                 this.logger?.({
                     logMessage:
                         logMessageStart +
                         `user is already signed-in with ${providerName}`,
-                    logData: user,
-                    safeLocalStorageData: this.safeUserResponse(user),
+                    logData: this.User,
+                    safeLocalStorageData: safeUserResponse(
+                        user,
+                        isIdempotent,
+                        this.hiddenMessage,
+                    ),
                     imageURL: user.photoURL,
                 });
             }
         }
 
         if (this.isJustSignedInWith(authProviders.Email, initialStatuses)) {
+            this.User = user as TUserWithToken;
             this.logger?.({
                 logMessage:
                     logMessageStart + ` user was just signed in via email`,
                 logData: user,
-                safeLocalStorageData: this.safeUserResponse(user),
+                safeLocalStorageData: safeUserResponse(
+                    user,
+                    isIdempotent,
+                    this.hiddenMessage,
+                ),
                 imageURL: user.photoURL,
             });
 
@@ -506,12 +533,16 @@ export class FirebaseAuthService {
                 logMessage:
                     logMessageStart + ` user was just signed in via facebook`,
                 logData: user,
-                safeLocalStorageData: this.safeUserResponse(user),
+                safeLocalStorageData: safeUserResponse(
+                    user,
+                    isIdempotent,
+                    this.hiddenMessage,
+                ),
                 imageURL: user.photoURL,
             });
 
             await this.publishStateChanged?.({
-                foundCredential: authProviders.Facebook,
+                foundUser: authProviders.Facebook,
             });
         }
 
@@ -541,7 +572,7 @@ export class FirebaseAuthService {
 
     public async getProfilePicUrl(
         serviceProvider: TAuthProvider,
-    ): Promise<string | undefined> {
+    ): Promise<void> {
         debugger;
         try {
             switch (serviceProvider) {
@@ -551,9 +582,21 @@ export class FirebaseAuthService {
                         `https://graph.facebook.com/me?fields=picture.type(large)&` +
                             `access_token=${token}`,
                     );
-                    const me = await getMeResponse.json();
-                    this.User![authProviders.Facebook]!.photoURL =
-                        me?.picture?.data?.url;
+                    const me: TFacebookMeResponse = await getMeResponse.json();
+                    const imageURL = me?.picture?.data?.url;
+                    if (imageURL == null) {
+                        const errorMessage = `empty profile pic URL from facebook graph api`;
+                        this.log(errorMessage);
+                        throw new Error(errorMessage);
+                    }
+                    this.logger?.({
+                        logMessage: `got profile pic URL from facebook graph api`,
+                        logData: me,
+                        imageURL,
+                    });
+
+                    this.User![authProviders.Facebook]!.photoURL = imageURL;
+                    this.updateUser(this.User as TUserWithToken);
                     await this.publishStateChanged?.({
                         gotProfilePic: serviceProvider,
                     });
@@ -564,6 +607,10 @@ export class FirebaseAuthService {
                     );
             }
         } catch (error) {
+            this.log(
+                `failed to get profile pic for ${serviceProvider}` +
+                    `${error instanceof Error ? error.message : ""}`,
+            );
             await this.publishStateChanged?.({
                 failedToGetProfilePic: serviceProvider,
             });
@@ -659,11 +706,15 @@ export class FirebaseAuthService {
                 );
 
             if (userCredentialResult) {
+                const isIdempotent = true;
                 this.logger?.({
                     logMessage: "user signed in with email link",
                     logData: userCredentialResult,
-                    safeLocalStorageData:
-                        this.safeUserCredential(userCredentialResult),
+                    safeLocalStorageData: safeUserCredential(
+                        userCredentialResult,
+                        isIdempotent,
+                        this.hiddenMessage,
+                    ),
                     imageURL: userCredentialResult.user.photoURL,
                 });
                 this.User = userCredentialResult.user as TUserWithToken;
@@ -673,9 +724,14 @@ export class FirebaseAuthService {
                 });
                 return;
             } else {
+                const isIdempotent = true;
                 this.logger?.({
                     logMessage: "user was not signed in with email link",
-                    logData: this.safeUserCredential(userCredentialResult),
+                    logData: safeUserCredential(
+                        userCredentialResult,
+                        isIdempotent,
+                        this.hiddenMessage,
+                    ),
                 });
                 this.publishStateChanged?.({
                     userCredentialFoundViaEmail: false,
@@ -715,13 +771,14 @@ export class FirebaseAuthService {
         const cachedUser = this.User[providerID];
         const convertToIdempotent = true;
         const cachedUserJSON = JSON.stringify(
-            this.safeUserResponse(
+            safeUserResponse(
                 cachedUser as unknown as User,
                 convertToIdempotent,
+                this.hiddenMessage,
             ),
         );
         const userJSON: string = JSON.stringify(
-            this.safeUserResponse(user, convertToIdempotent),
+            safeUserResponse(user, convertToIdempotent, this.hiddenMessage),
         );
 
         return cachedUserJSON === userJSON;
@@ -774,98 +831,4 @@ export class FirebaseAuthService {
     }
 
     // #endregion user caching
-
-    // #region make firebase objects safe for storage (remove pii)
-
-    // todo: move all these to the mappers file
-    private safeUserCredential(
-        userCredential: UserCredential,
-        idempotent: boolean = false, // use for comparing objects
-    ): TSafeUserCredential {
-        return {
-            user: this.safeUserResponse(userCredential.user, idempotent),
-            providerId: userCredential.providerId,
-            operationType: userCredential.operationType,
-            _tokenResponse: this.safeTokenResponse(
-                (userCredential as unknown as TSafeUserCredential)
-                    ._tokenResponse,
-                idempotent,
-            ),
-        };
-    }
-
-    private safeTokenResponse(
-        tokenResponse: TSafeTokenResponse,
-        idempotent: boolean = false, // use for comparing objects
-    ): TSafeTokenResponse {
-        return {
-            kind: tokenResponse.kind,
-            idToken: this.hiddenMessage,
-            email: tokenResponse.email,
-            refreshToken: this.hiddenMessage,
-            expiresIn: idempotent ? "0" : tokenResponse.expiresIn,
-            localId: tokenResponse.localId,
-            isNewUser: tokenResponse.isNewUser,
-        };
-    }
-
-    private safeUserResponse(
-        user: User,
-        idempotent: boolean = false, // use for comparing objects
-    ): TSafeUser {
-        const _user = user as unknown as TSafeUser;
-        return {
-            uid: _user.uid,
-            email: _user.email,
-            emailVerified: _user.emailVerified,
-            displayName: _user.displayName,
-            isAnonymous: _user.isAnonymous,
-            photoURL: _user.photoURL,
-            providerData: user.providerData.map((eachProviderData) =>
-                this.safeUserInfo(eachProviderData),
-            ),
-            stsTokenManager: {
-                refreshToken: this.hiddenMessage,
-                accessToken: this.hiddenMessage,
-                expirationTime: idempotent
-                    ? 0
-                    : _user.stsTokenManager?.expirationTime,
-            },
-            createdAt: idempotent ? "0" : _user.createdAt,
-            lastLoginAt: idempotent ? "0" : _user.lastLoginAt,
-            apiKey: this.hiddenMessage,
-            appName: _user.appName,
-            metadata: _user.metadata,
-            refreshToken: this.hiddenMessage,
-            tenantId: this.hiddenMessage,
-            phoneNumber: _user.phoneNumber,
-            providerId: _user.providerId,
-        };
-    }
-
-    // todo: move to mapper
-    private safeUserInfo(userInfo: UserInfo): TSafeUserInfo {
-        return {
-            providerId: userInfo.providerId,
-            uid: userInfo.uid,
-            displayName: userInfo.displayName,
-            email: userInfo.email,
-            phoneNumber: userInfo.phoneNumber,
-            photoURL: userInfo.photoURL,
-        };
-    }
-
-    private safeCredentialResponse(
-        credential: OAuthCredential,
-    ): TSafeOAuthCredential {
-        return {
-            idToken: this.hiddenMessage,
-            accessToken: this.hiddenMessage,
-            secret: this.hiddenMessage,
-            nonce: this.hiddenMessage,
-            pendingToken: this.hiddenMessage,
-        };
-    }
-
-    // #endregion make firebase objects safe for storage without pii
 }

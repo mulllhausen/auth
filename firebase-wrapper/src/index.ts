@@ -77,6 +77,8 @@ export type TGUIStateDTO = {
     isFacebookLoginClicked?: boolean;
 };
 
+let isAnyTabClicked = false;
+
 const htmlTemplateManager = new HTMLTemplateManager(document);
 
 const guiLogger = new GUILogger({
@@ -154,7 +156,9 @@ onReady(() => {
         }),
     );
     const defaultTab = authProviders.Email;
-    clickTab(defaultTab);
+    if (!isAnyTabClicked) {
+        clickTab(defaultTab);
+    }
 
     document
         .querySelector("button#clearCachedUser")
@@ -198,6 +202,7 @@ onReady(() => {
 // callback functions
 
 function clickTab(authProvider: TAuthProvider) {
+    isAnyTabClicked = true;
     const activeTab: HTMLAnchorElement =
         mapAuthProvider2NavTabElement(authProvider);
 
