@@ -18,6 +18,7 @@ import type {
 import { authProviders, FirebaseAuthService } from "./firebase-wrapper.ts";
 import type { TLogItem } from "./gui-logger.ts";
 import { StateToSVGMapperServiceFacebook } from "./state-to-svg-mapper-service-facebook.ts";
+import { wait, wait2AnimationFrames } from "./utils.ts";
 import {
     facebookProfilePicRegex,
     validateProfilePicUrl,
@@ -167,6 +168,7 @@ export class FacebookSignInFSMContext {
         });
         const newStateID = this.currentState.ID;
         this.stateToSVGMapperService?.enqueue(newStateID);
+        await wait2AnimationFrames(); // guarantees rendering
         this.backupStateToLocalstorage(newStateID);
         return this.currentState;
     }
@@ -225,11 +227,6 @@ abstract class FacebookSignInState {
             await this.context.transitionTo(transitionToken, SignedInState);
             skipCurrentStateLogic = true;
         }
-        if (facebookStateDTO?.userNotSignedIn) {
-            this.log("facebook fsm: detected user is signed out");
-            await this.context.transitionTo(transitionToken, IdleState);
-            skipCurrentStateLogic = true;
-        }
         return skipCurrentStateLogic;
     }
 }
@@ -260,6 +257,12 @@ class RedirectingToFacebookState extends FacebookSignInState {
     public override async handle(
         facebookStateDTO: TFacebookStateDTO,
     ): Promise<void> {
+        if (facebookStateDTO?.userNotSignedIn) {
+            this.log("facebook fsm: detected user is signed out");
+            await this.context.transitionTo(transitionToken, IdleState);
+            return;
+        }
+
         if (
             facebookStateDTO?.failedToRedirectToAuthProvider ===
             authProviders.Facebook
@@ -292,6 +295,15 @@ class CheckingRedirectResultState extends FacebookSignInState {
     public override async handle(
         facebookStateDTO: TFacebookStateDTO,
     ): Promise<void> {
+        if (facebookStateDTO?.userNotSignedIn) {
+            this.log("facebook fsm: detected user is signed out");
+            await this.context.transitionTo(
+                transitionToken,
+                FacebookAuthFailedState,
+            );
+            return;
+        }
+
         if (facebookStateDTO?.nullCredentialAfterRedirect) {
             await this.context.transitionTo(
                 transitionToken,
@@ -312,6 +324,7 @@ class FacebookAuthFailedState extends FacebookSignInState {
     ): Promise<void> {}
 
     public override async onEnter(): Promise<void> {
+        await wait(1000);
         await this.context.transitionTo(transitionToken, IdleState);
         return;
     }
@@ -325,6 +338,7 @@ class FacebookIsUnavailableState extends FacebookSignInState {
     ): Promise<void> {}
 
     public override async onEnter(): Promise<void> {
+        await wait(1000);
         await this.context.transitionTo(transitionToken, IdleState);
         return;
     }
@@ -360,6 +374,13 @@ class SignedInState extends FacebookSignInState {
                 return;
             }
         }
+
+        if (facebookStateDTO?.userNotSignedIn) {
+            this.log("facebook fsm: detected user is signed out");
+            await this.context.transitionTo(transitionToken, IdleState);
+            return;
+        }
+
         if (facebookStateDTO?.failedToGetProfilePic == authProviders.Facebook) {
             await this.context.transitionTo(
                 transitionToken,
@@ -380,7 +401,13 @@ class GotProfilePicState extends FacebookSignInState {
 
     public override async handle(
         facebookStateDTO: TFacebookStateDTO,
-    ): Promise<void> {}
+    ): Promise<void> {
+        if (facebookStateDTO?.userNotSignedIn) {
+            this.log("facebook fsm: detected user is signed out");
+            await this.context.transitionTo(transitionToken, IdleState);
+            return;
+        }
+    }
 
     public override async onEnter(): Promise<void> {
         dbSaveUser(this.firebaseAuthService.User);
@@ -395,6 +422,7 @@ class FailedToGetProfilePicState extends FacebookSignInState {
     ): Promise<void> {}
 
     public override async onEnter(): Promise<void> {
+        await wait(1000);
         await this.context.transitionTo(transitionToken, IdleState);
         return;
     }
