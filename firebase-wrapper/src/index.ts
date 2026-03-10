@@ -67,7 +67,6 @@ import { StateToSVGMapperServiceEmail } from "./state-to-svg-mapper-service-emai
 import { StateToSVGMapperServiceFacebook } from "./state-to-svg-mapper-service-facebook.ts";
 import { SVGFlowChartServiceEmail } from "./svg-flowchart-service-email.ts";
 import { SVGFlowChartServiceFacebook } from "./svg-flowchart-service-facebook.ts";
-import { SVGStateStatus } from "./svg-flowchart-service.ts";
 import { debounce, getEnv, onReady } from "./utils.ts";
 
 export type TGUIStateDTO = {
@@ -227,8 +226,8 @@ function enableAllSVGElements(event_: Event) {
     let buttonState = buttonEl.dataset.state;
     switch (buttonState) {
         case "unset":
-            emailFSMSVGService.SetAllIndividually(SVGStateStatus.Failure);
-            facebookFSMSVGService.SetAllIndividually(SVGStateStatus.Failure);
+            emailFSMSVGService.SetAllIndividually();
+            facebookFSMSVGService.SetAllIndividually();
             buttonEl.innerText = "disable all SVG elements";
             buttonEl.dataset.state = "set";
             break;

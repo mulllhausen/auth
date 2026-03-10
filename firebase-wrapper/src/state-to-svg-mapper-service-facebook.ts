@@ -6,10 +6,7 @@ import type {
 } from "./svg-flowchart-auto-types-facebook.ts";
 import { FacebookSVGStateBoxCSSClass } from "./svg-flowchart-auto-types-facebook.ts";
 import { SVGFlowChartServiceFacebook } from "./svg-flowchart-service-facebook.ts";
-import {
-    SVGCSSClassCategory,
-    SVGStateStatus,
-} from "./svg-flowchart-service.ts";
+import { SVGCSSClassCategory } from "./svg-flowchart-service.ts";
 
 export class StateToSVGMapperServiceFacebook {
     private svgService: SVGFlowChartServiceFacebook;
@@ -64,15 +61,11 @@ export class StateToSVGMapperServiceFacebook {
             );
         }
 
-        this.svgService.SetElementStatus<typeof SVGCSSClassCategory.StateBox>(
+        this.svgService.SetElement<typeof SVGCSSClassCategory.StateBox>(
             newStateBoxCSSClassKey,
-            SVGStateStatus.Success,
         );
 
-        this.svgService.UnsetCategory(
-            SVGCSSClassCategory.Arrow,
-            SVGStateStatus.Success,
-        );
+        this.svgService.UnsetCategory(SVGCSSClassCategory.Arrow);
 
         const arrowCSSClassKey = this.getArrowClass(
             oldStateBoxCSSClassKey,
@@ -81,9 +74,8 @@ export class StateToSVGMapperServiceFacebook {
 
         if (arrowCSSClassKey == null) return;
 
-        this.svgService.SetElementStatus<typeof SVGCSSClassCategory.Arrow>(
+        this.svgService.SetElement<typeof SVGCSSClassCategory.Arrow>(
             arrowCSSClassKey,
-            SVGStateStatus.Success,
         );
     }
 

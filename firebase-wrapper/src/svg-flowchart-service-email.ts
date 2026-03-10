@@ -2,11 +2,9 @@ import {
     EmailSVGArrowCSSClass,
     EmailSVGStateBoxCSSClass,
 } from "./svg-flowchart-auto-types-email";
-import type { TSVGStateStatusValues } from "./svg-flowchart-service";
 import {
     SVGCSSClassCategory,
     SVGFlowChartService,
-    SVGStateStatus,
 } from "./svg-flowchart-service";
 
 // convention: if a var has `css` in the name then it is a css class at runtime.
@@ -39,21 +37,18 @@ type TEmailSVGClassValue<TCat extends TEmailSVGCSSClassCategory> =
 
 export class SVGFlowChartServiceEmail extends SVGFlowChartService {
     /** for testing */
-    public SetAllIndividually(
-        status: TSVGStateStatusValues = SVGStateStatus.Success,
-    ): void {
-        this.SetAllElementsInCategory(EmailSVGStateBoxCSSClass, status);
-        this.SetAllElementsInCategory(EmailSVGArrowCSSClass, status);
+    public SetAllIndividually(): void {
+        this.SetAllElementsInCategory(EmailSVGStateBoxCSSClass);
+        this.SetAllElementsInCategory(EmailSVGArrowCSSClass);
     }
 
-    public SetElementStatus<TCat extends TEmailSVGCSSClassCategory>(
+    public SetElement<TCat extends TEmailSVGCSSClassCategory>(
         classKey: TEmailSVGClassKey<TCat>,
-        status: TSVGStateStatusValues,
     ): void {
         const data = this.getElementData(classKey);
         this.AddCSSClassBySelector(
             `.${data.cssCategory}.${data.cssClass}`,
-            status,
+            "active",
         );
     }
 
@@ -63,20 +58,15 @@ export class SVGFlowChartServiceEmail extends SVGFlowChartService {
         const data = this.getElementData(classKey);
         this.RemoveCSSClassBySelector(
             `.${data.cssCategory}.${data.cssClass}`,
-            "success",
-        );
-        this.RemoveCSSClassBySelector(
-            `.${data.cssCategory}.${data.cssClass}`,
-            "failure",
+            "active",
         );
     }
 
     private SetAllElementsInCategory<TCat extends TEmailSVGCSSClassCategory>(
         categoryObj: TEmailSVGClassesByCategory[TCat],
-        status: TSVGStateStatusValues,
     ): void {
         for (const key in categoryObj) {
-            this.SetElementStatus<TCat>(key, status);
+            this.SetElement<TCat>(key);
         }
     }
 

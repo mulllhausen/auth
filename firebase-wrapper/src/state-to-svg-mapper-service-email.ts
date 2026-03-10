@@ -6,10 +6,7 @@ import {
     TEmailTransition,
 } from "./svg-flowchart-auto-types-email.ts";
 import { SVGFlowChartServiceEmail } from "./svg-flowchart-service-email.ts";
-import {
-    SVGCSSClassCategory,
-    SVGStateStatus,
-} from "./svg-flowchart-service.ts";
+import { SVGCSSClassCategory } from "./svg-flowchart-service.ts";
 
 export class StateToSVGMapperServiceEmail {
     private svgService: SVGFlowChartServiceEmail;
@@ -64,15 +61,11 @@ export class StateToSVGMapperServiceEmail {
             );
         }
 
-        this.svgService.SetElementStatus<typeof SVGCSSClassCategory.StateBox>(
+        this.svgService.SetElement<typeof SVGCSSClassCategory.StateBox>(
             newStateBoxCSSClassKey,
-            SVGStateStatus.Success,
         );
 
-        this.svgService.UnsetCategory(
-            SVGCSSClassCategory.Arrow,
-            SVGStateStatus.Success,
-        );
+        this.svgService.UnsetCategory(SVGCSSClassCategory.Arrow);
 
         const arrowCSSClassKey = this.getArrowClass(
             oldStateBoxCSSClassKey,
@@ -81,9 +74,8 @@ export class StateToSVGMapperServiceEmail {
 
         if (arrowCSSClassKey == null) return;
 
-        this.svgService.SetElementStatus<typeof SVGCSSClassCategory.Arrow>(
+        this.svgService.SetElement<typeof SVGCSSClassCategory.Arrow>(
             arrowCSSClassKey,
-            SVGStateStatus.Success,
         );
     }
 

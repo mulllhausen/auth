@@ -5,10 +5,7 @@ import type { TAuthProvider } from "../src/firebase-wrapper.ts";
 import { authProviders } from "../src/firebase-wrapper.ts";
 import { authProviderToGUINameMap } from "../src/mappers/gui.ts";
 import type { TSVGCSSClassCategoryValues } from "../src/svg-flowchart-service.ts";
-import {
-    SVGCSSClassCategory,
-    SVGStateStatus,
-} from "../src/svg-flowchart-service.ts";
+import { SVGCSSClassCategory } from "../src/svg-flowchart-service.ts";
 import { capsFirstLetter } from "../src/utils.ts";
 
 // instructions:
@@ -25,7 +22,7 @@ const { serviceProviderName, inputSVGFileName, outputSVGTypesFileName } =
 console.log(`💪 Processing ${serviceProviderName} SVG`);
 
 const INPUT_SVG_FILE: string = `./public/images/${inputSVGFileName}.svg`;
-const OUTPUT_SVG_FILE: string = `./public/images/${inputSVGFileName}-cleaned.svg`;
+const OUTPUT_SVG_FILE: string = `./public/images/${inputSVGFileName.toLocaleLowerCase()}-cleaned.svg`;
 const OUTPUT_SVG_TYPES_FILE: string = `./src/${outputSVGTypesFileName}.ts`;
 
 // init
@@ -65,20 +62,33 @@ async function cleanSVG(
     let cleanedSvg: string = svgData.replace(
         /<style[\s\S]*<\/style>/,
         `<style>
-.${SVGCSSClassCategory.StateBox} {fill:none;}
-.${SVGCSSClassCategory.StateBox}.${SVGStateStatus.Failure} {fill:red;}
-.${SVGCSSClassCategory.StateBox}.${SVGStateStatus.Success} {fill:green;}
+.${SVGCSSClassCategory.StateBox} {
+    fill: transparent;
+    transition: fill 1s ease 0s;
+}
+.${SVGCSSClassCategory.StateBox}.active {
+    fill: deepskyblue;
+    transition: fill 0s ease 0s;
+}
 
 text.${SVGCSSClassCategory.Arrow} {
-    fill:black;
-    font-size:20px;
+    fill: black;
+    font-size: 20px;
+    transition: fill 1s ease 0s;
 }
-text.${SVGCSSClassCategory.Arrow}.${SVGStateStatus.Failure} {fill:red;}
-text.${SVGCSSClassCategory.Arrow}.${SVGStateStatus.Success} {fill:green;}
+text.${SVGCSSClassCategory.Arrow}.active {
+    fill: deepskyblue;
+    transition: fill 0s ease 0s;
+}
 
-path.${SVGCSSClassCategory.Arrow} {stroke:black;}
-path.${SVGCSSClassCategory.Arrow}.${SVGStateStatus.Failure} {stroke:red;}
-path.${SVGCSSClassCategory.Arrow}.${SVGStateStatus.Success} {stroke:green;}
+path.${SVGCSSClassCategory.Arrow} {
+    stroke: black;
+    transition: stroke 1s ease 0s;
+}
+path.${SVGCSSClassCategory.Arrow}.active {
+    stroke: deepskyblue;
+    transition: stroke 0s ease 0s;
+}
 * {font-family:Arial;}
     </style>`,
     );
@@ -153,6 +163,8 @@ function handleArrow(group: SVGGElement): void {
         SVGCSSClassCategory.Arrow,
     );
     const className = `${SVGCSSClassCategory.Arrow} ${textKebabCase}`;
+    // todo: fix this to get the arrow path. it is 2 groups back from the arrow text
+    // as a group with `stroke-linecap="round"`
     const paths: NodeListOf<SVGPathElement> = group.querySelectorAll("path");
     for (const pathEl of paths) {
         pathEl.setAttribute("class", className);

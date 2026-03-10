@@ -1,15 +1,5 @@
 import { SVGService } from "./svg-service.ts";
 
-export type TSVGStateStatusValues =
-    (typeof SVGStateStatus)[keyof typeof SVGStateStatus];
-
-// todo: just use "active" here. the SVG can specify if
-// a state is good or bad and same with arrows
-export const SVGStateStatus = {
-    Success: "success",
-    Failure: "failure",
-} as const;
-
 export type TSVGCSSClassCategoryValues =
     (typeof SVGCSSClassCategory)[keyof typeof SVGCSSClassCategory];
 
@@ -23,31 +13,19 @@ export const SVGCSSClassCategory = {
  * not specific to any type of flowchart (eg. email, fb).
  */
 export class SVGFlowChartService extends SVGService {
-    public SetCategory(
-        svgCSSClassCategory: TSVGCSSClassCategoryValues,
-        status: TSVGStateStatusValues = SVGStateStatus.Success,
-    ): void {
-        this.AddCSSClassBySelector(`.${svgCSSClassCategory}`, status);
+    public SetCategory(svgCSSClassCategory: TSVGCSSClassCategoryValues): void {
+        this.AddCSSClassBySelector(`.${svgCSSClassCategory}`, "active");
     }
 
-    public UnsetAll(status?: TSVGStateStatusValues): void {
+    public UnsetAll(): void {
         for (const category of Object.values(SVGCSSClassCategory)) {
-            this.UnsetCategory(category, status);
+            this.UnsetCategory(category);
         }
     }
 
     public UnsetCategory(
         svgCSSClassCategory: TSVGCSSClassCategoryValues,
-        unsetStatus?: TSVGStateStatusValues,
     ): void {
-        const unsetAllStatuses = unsetStatus === undefined;
-        for (const eachStatus of Object.values(SVGStateStatus)) {
-            if (unsetAllStatuses || unsetStatus === eachStatus) {
-                this.RemoveCSSClassBySelector(
-                    `.${svgCSSClassCategory}`,
-                    eachStatus,
-                );
-            }
-        }
+        this.RemoveCSSClassBySelector(`.${svgCSSClassCategory}`, "active");
     }
 }

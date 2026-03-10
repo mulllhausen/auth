@@ -102,7 +102,6 @@ export class FacebookSignInFSMContext {
 
     /** note: call setup() once immediately after the constructor */
     public async setup(): Promise<void> {
-        debugger;
         const facebookFSMStateID = this.getStateFromLocalstorage();
         const facebookSignInStateConstructor = facebookFSMStateID
             ? this.stateMap[facebookFSMStateID]
@@ -116,7 +115,6 @@ export class FacebookSignInFSMContext {
 
     /** should always be called by an action external to this FSM */
     public async handle(facebookStateDTO: TFacebookStateDTO): Promise<void> {
-        debugger;
         const skipCurrentStateHandler =
             await this.currentState?.overrideStateHandler(facebookStateDTO);
         if (skipCurrentStateHandler) return;
@@ -128,7 +126,6 @@ export class FacebookSignInFSMContext {
         token: typeof transitionToken, // prevent external access
         newStateClass: TFacebookSignInStateConstructor<TState>,
     ): Promise<FacebookSignInState> {
-        debugger;
         if (token !== transitionToken) {
             throw new Error(`incorrect transition token`);
         }
@@ -221,6 +218,8 @@ abstract class FacebookSignInState {
         facebookStateDTO?: TFacebookStateDTO,
     ): Promise<boolean> {
         let skipCurrentStateLogic = false;
+        // todo: move this to CheckingRedirectResultState and IdleState?
+        // hmm no. what if the user hits refresh half way through the flow?
         if (facebookStateDTO?.foundToken == authProviders.Facebook) {
             this.log("facebook fsm: detected user is signed in");
             await this.context.transitionTo(transitionToken, SignedInState);
@@ -337,7 +336,6 @@ class SignedInState extends FacebookSignInState {
     public override async handle(
         facebookStateDTO: TFacebookStateDTO,
     ): Promise<void> {
-        debugger;
         if (facebookStateDTO?.gotProfilePic == authProviders.Facebook) {
             const fbProfilePicUrl =
                 this.firebaseAuthService.User?.[authProviders.Facebook]

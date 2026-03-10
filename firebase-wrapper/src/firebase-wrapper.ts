@@ -239,7 +239,6 @@ export class FirebaseAuthService {
     }
 
     private setupSignedInStatus(): void {
-        debugger;
         for (const providerID in this.User) {
             this.signedInStatus[providerID as TAuthProvider] = true;
         }
@@ -297,7 +296,6 @@ export class FirebaseAuthService {
     // #region sign-in oauth providers with redirect
 
     private async signInWithRedirect(providerID: TAuthProvider): Promise<void> {
-        //debugger;
         try {
             this.log(`redirecting to ${providerID}`);
 
@@ -340,7 +338,6 @@ export class FirebaseAuthService {
     }
 
     public async checkIfRedirectResult(): Promise<void> {
-        debugger;
         try {
             const redirectResult: UserCredential | null =
                 await getRedirectResult(this.Auth);
@@ -445,7 +442,6 @@ export class FirebaseAuthService {
 
     // todo: we probably only care about email here. the others use checkIfRedirectResult
     private async afterUserSignedIn(user: User): Promise<void> {
-        debugger;
         const logMessageStart: string = "firebase auth event.";
         const initialStatuses = deepCopy(this.signedInStatus);
 
@@ -535,7 +531,6 @@ export class FirebaseAuthService {
     public async getProfilePicUrl(
         serviceProvider: TAuthProvider,
     ): Promise<void> {
-        debugger;
         try {
             switch (serviceProvider) {
                 case authProviders.Facebook:
@@ -721,65 +716,6 @@ export class FirebaseAuthService {
     // #endregion sign-in with email
 
     // #region user caching
-
-    private userAlreadyCached(user: User): boolean {
-        if (this.User == null) return false;
-
-        // todo: loop through providers
-
-        const providerID = user.providerData[0].providerId as TAuthProvider;
-        if (!this.User.hasOwnProperty(providerID)) return false;
-
-        const cachedUser = this.User[providerID];
-        const convertToIdempotent = true;
-        const cachedUserJSON = JSON.stringify(
-            safeUserResponse(
-                cachedUser as unknown as User,
-                convertToIdempotent,
-                this.hiddenMessage,
-            ),
-        );
-        const userJSON: string = JSON.stringify(
-            safeUserResponse(user, convertToIdempotent, this.hiddenMessage),
-        );
-
-        return cachedUserJSON === userJSON;
-    }
-
-    // private saveUser(user: User) {
-    //     for (const userInfo of user.providerData) {
-    //         const providerID = userInfo.providerId as TAuthProvider;
-    //         if (this.user == null) {
-    //             this.user = { [providerID]: user };
-    //         } else {
-    //             this.user[providerID] = user;
-    //         }
-    //     }
-    // }
-
-    // private cacheUser(user: User): void {
-    //     // cache the user under service provider since FIREBASE_LINK_ACCOUNTS=false
-    //     for (const userInfo of user.providerData) {
-    //         const providerID = userInfo.providerId as TAuthProvider;
-    //         const cachedUserJSON: string | null =
-    //             this._window.localStorage.getItem(
-    //                 this.localStorageCachedUserKey,
-    //             );
-    //         let cachedUser: Record<string, TSafeUser> = {};
-    //         if (cachedUserJSON !== null) {
-    //             cachedUser = JSON.parse(cachedUserJSON!);
-    //         }
-    //         const convertToIdempotent = true;
-    //         cachedUser[providerID] = this.safeUserResponse(
-    //             user,
-    //             convertToIdempotent,
-    //         );
-    //         this._window.localStorage.setItem(
-    //             this.localStorageCachedUserKey,
-    //             JSON.stringify(cachedUser),
-    //         );
-    //     }
-    // }
 
     public clearUserCache(): void {
         this.deleteUser();
