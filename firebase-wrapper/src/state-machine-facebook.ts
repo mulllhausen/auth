@@ -18,7 +18,7 @@ import type {
 import { authProviders, FirebaseAuthService } from "./firebase-wrapper.ts";
 import type { TLogItem } from "./gui-logger.ts";
 import { StateToSVGMapperServiceFacebook } from "./state-to-svg-mapper-service-facebook.ts";
-import { wait, wait2AnimationFrames } from "./utils.ts";
+import { wait } from "./utils.ts";
 import {
     facebookProfilePicRegex,
     validateProfilePicUrl,
@@ -167,8 +167,7 @@ export class FacebookSignInFSMContext {
             logger: this.logger,
         });
         const newStateID = this.currentState.ID;
-        this.stateToSVGMapperService?.enqueue(newStateID);
-        await wait2AnimationFrames(); // guarantees rendering
+        await this.stateToSVGMapperService?.enqueue(newStateID);
         this.backupStateToLocalstorage(newStateID);
         return this.currentState;
     }

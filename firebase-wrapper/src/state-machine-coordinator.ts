@@ -30,7 +30,8 @@ export class FSMCoordinator {
     }
 
     public async loginEmail(): Promise<void> {
-        await this.emailSignInFSMContext.handle({ isEmailLoginClicked: true }); // todo: can this be combined into the above command?
+        // todo: can this be combined into the above command?
+        await this.emailSignInFSMContext.handle({ isEmailLoginClicked: true });
     }
 
     public async loginFacebook(): Promise<void> {

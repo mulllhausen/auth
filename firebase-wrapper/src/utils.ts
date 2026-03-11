@@ -99,16 +99,6 @@ export function objIsNullOrEmpty<T>(obj: T): boolean {
     return obj == null || Object.keys(obj).length === 0;
 }
 
-export async function wait2AnimationFrames(): Promise<void> {
-    await new Promise((resolve) =>
-        // 1. browser calculates layout/styles and schedules a paint
-        requestAnimationFrame(() =>
-            // 2. fires after the paint has been committed to the screen
-            requestAnimationFrame(resolve),
-        ),
-    );
-}
-
 export async function wait(milliseconds: number): Promise<void> {
     await new Promise((resolve) => setTimeout(resolve, milliseconds));
 }
