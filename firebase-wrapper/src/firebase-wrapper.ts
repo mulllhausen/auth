@@ -61,7 +61,7 @@ export const authProviders = {
     Email: EmailAuthProvider.PROVIDER_ID,
     Google: GoogleAuthProvider.PROVIDER_ID,
     Facebook: FacebookAuthProvider.PROVIDER_ID,
-    GitHub: GithubAuthProvider.PROVIDER_ID,
+    Github: GithubAuthProvider.PROVIDER_ID,
 } as const;
 
 export const defaultAction: TDefaultAction = null;
@@ -137,7 +137,7 @@ export class FirebaseAuthService {
         [authProviders.Email]: false,
         [authProviders.Google]: false,
         [authProviders.Facebook]: false,
-        [authProviders.GitHub]: false,
+        [authProviders.Github]: false,
     };
     private user: TDBUserDTO = null;
     private callbacksForStateChanged = new Set<TStateChangedCallback>();
@@ -330,7 +330,7 @@ export class FirebaseAuthService {
                 return GoogleAuthProvider;
             case authProviders.Facebook:
                 return FacebookAuthProvider;
-            case authProviders.GitHub:
+            case authProviders.Github:
                 return GithubAuthProvider;
             default:
                 throw new Error(`unsupported provider ${providerId}`);

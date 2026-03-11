@@ -1,11 +1,13 @@
 import { FirebaseAuthService } from "./firebase-wrapper.ts";
 import { EmailSignInFSMContext } from "./state-machine-email.ts";
 import { FacebookSignInFSMContext } from "./state-machine-facebook.ts";
+import { GithubSignInFSMContext } from "./state-machine-github.ts";
 
 /** this class should know nothing about SVGs, loggers and the GUI */
 export class FSMCoordinator {
     private firebaseAuthService: FirebaseAuthService;
     private facebookSignInFSMContext: FacebookSignInFSMContext;
+    private githubSignInFSMContext: GithubSignInFSMContext;
     private emailSignInFSMContext: EmailSignInFSMContext;
     private isSetup: boolean = false;
 
@@ -13,10 +15,12 @@ export class FSMCoordinator {
         firebaseAuthService: FirebaseAuthService;
         emailSignInFSMContext: EmailSignInFSMContext;
         facebookSignInFSMContext: FacebookSignInFSMContext;
+        githubSignInFSMContext: GithubSignInFSMContext;
     }) {
         this.firebaseAuthService = props.firebaseAuthService;
         this.emailSignInFSMContext = props.emailSignInFSMContext;
         this.facebookSignInFSMContext = props.facebookSignInFSMContext;
+        this.githubSignInFSMContext = props.githubSignInFSMContext;
     }
 
     public async setup(): Promise<void> {
@@ -24,6 +28,7 @@ export class FSMCoordinator {
         this.isSetup = true;
 
         await this.facebookSignInFSMContext.setup();
+        await this.githubSignInFSMContext.setup();
         //await this.emailSignInFSMContext.setup();
         await this.checkIfRedirectResult();
         await this.firebaseAuthService.setupFirebaseListeners();
@@ -40,6 +45,12 @@ export class FSMCoordinator {
         });
     }
 
+    public async loginGithub(): Promise<void> {
+        await this.githubSignInFSMContext.handle({
+            isGithubLoginClicked: true,
+        });
+    }
+
     public async logout(): Promise<void> {
         await this.firebaseAuthService.logout();
     }
@@ -48,8 +59,10 @@ export class FSMCoordinator {
         await this.firebaseAuthService.logout();
         this.facebookSignInFSMContext.deleteStateFromLocalstorage();
         this.emailSignInFSMContext.deleteStateFromLocalstorage();
+        this.githubSignInFSMContext.deleteStateFromLocalstorage();
         await this.facebookSignInFSMContext.handle({});
         await this.emailSignInFSMContext.handle({});
+        await this.githubSignInFSMContext.handle({});
     }
 
     private async checkIfRedirectResult(): Promise<void> {

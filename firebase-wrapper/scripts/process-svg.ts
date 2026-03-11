@@ -15,7 +15,7 @@ import { capsFirstLetter } from "../src/utils.ts";
 //    generate typescript types.
 // the gui can then interact with the svg.
 
-const serviceProvider: TAuthProvider = authProviders.Facebook;
+const serviceProvider: TAuthProvider = authProviders.GitHub;
 const { serviceProviderName, inputSVGFileName, outputSVGTypesFileName } =
     mapAuthProvider(serviceProvider);
 

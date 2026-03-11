@@ -77,12 +77,12 @@ export class SVGFlowChartServiceFacebook extends SVGFlowChartService {
         cssClass: TFacebookSVGClassValue<TCat>;
     } {
         for (const category of Object.keys(FacebookSVGHierarchy) as TCat[]) {
-            const FacebookSVGCSSClassObj = FacebookSVGHierarchy[category];
+            const facebookSVGCSSClassObj = FacebookSVGHierarchy[category];
 
-            if (svgClassKey in FacebookSVGCSSClassObj) {
+            if (svgClassKey in facebookSVGCSSClassObj) {
                 return {
                     cssCategory: category,
-                    cssClass: FacebookSVGCSSClassObj[svgClassKey],
+                    cssClass: facebookSVGCSSClassObj[svgClassKey],
                 };
             }
         }

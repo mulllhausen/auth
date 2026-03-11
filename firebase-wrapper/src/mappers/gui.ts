@@ -7,7 +7,7 @@ export type TGUIAuthProviderNames =
 export const authProviderToGUINameMap = {
     [authProviders.Email]: "email",
     [authProviders.Facebook]: "facebook",
-    [authProviders.GitHub]: "github",
+    [authProviders.Github]: "github",
     [authProviders.Google]: "google",
 } as const;
 

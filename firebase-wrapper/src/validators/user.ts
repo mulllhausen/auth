@@ -12,6 +12,11 @@ export const facebookProfilePicRegex = buildURLRegex({
     },
 });
 
+export const githubProfilePicRegex = buildURLRegex({
+    domain: "github.com",
+    // todo
+});
+
 export function validateProfilePicUrl(
     providerID: TAuthProvider,
     url?: string | null,
@@ -26,7 +31,7 @@ export function validateProfilePicUrl(
             regex = /https?:\/\/.*\.googleusercontent\.com\/.*/;
             break;
         case "github.com":
-            regex = /https?:\/\/.*\.githubusercontent\.com\/.*/;
+            regex = githubProfilePicRegex;
             break;
         default:
             return false;

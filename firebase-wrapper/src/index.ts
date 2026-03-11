@@ -45,11 +45,8 @@
 // - you can’t describe the system at a moment in time
 // - Introducing a new state resolves the non-determinism.
 
-import {
-    authProviders,
-    FirebaseAuthService,
-    TAuthProvider,
-} from "./firebase-wrapper.ts";
+import type { TAuthProvider } from "./firebase-wrapper.ts";
+import { authProviders, FirebaseAuthService } from "./firebase-wrapper.ts";
 import { GUILogger } from "./gui-logger.ts";
 import { HTMLTemplateManager } from "./html-template-manager.ts";
 import "./index.css";
@@ -58,15 +55,16 @@ import {
     mapAuthProvider2NavTabElement,
 } from "./mappers/gui.ts";
 import { FSMCoordinator } from "./state-machine-coordinator.ts";
-import {
-    EmailSignInFSMContext,
-    TEmailStateDTO,
-} from "./state-machine-email.ts";
+import type { TEmailStateDTO } from "./state-machine-email.ts";
+import { EmailSignInFSMContext } from "./state-machine-email.ts";
 import { FacebookSignInFSMContext } from "./state-machine-facebook.ts";
+import { GithubSignInFSMContext } from "./state-machine-github.ts";
 import { StateToSVGMapperServiceEmail } from "./state-to-svg-mapper-service-email.ts";
 import { StateToSVGMapperServiceFacebook } from "./state-to-svg-mapper-service-facebook.ts";
+import { StateToSVGMapperServiceGithub } from "./state-to-svg-mapper-service-github.ts";
 import { SVGFlowChartServiceEmail } from "./svg-flowchart-service-email.ts";
 import { SVGFlowChartServiceFacebook } from "./svg-flowchart-service-facebook.ts";
+import { SVGFlowChartServiceGithub } from "./svg-flowchart-service-github.ts";
 import { debounce, getEnv, onReady } from "./utils.ts";
 
 export type TGUIStateDTO = {
@@ -74,6 +72,7 @@ export type TGUIStateDTO = {
     inputPasswordValue?: string;
     isEmailLoginClicked?: boolean;
     isFacebookLoginClicked?: boolean;
+    isGithubLoginClicked?: boolean;
 };
 
 let isAnyTabClicked = false;
@@ -104,6 +103,11 @@ const emailFSMSVGService = new SVGFlowChartServiceEmail({
 const facebookFSMSVGService = new SVGFlowChartServiceFacebook({
     document,
     svgQuerySelector: "#facebookFSMChart",
+});
+
+const githubFSMSVGService = new SVGFlowChartServiceGithub({
+    document,
+    svgQuerySelector: "#githubFSMChart",
 });
 
 const stateToEmailSVGMapperService = new StateToSVGMapperServiceEmail({
@@ -139,10 +143,25 @@ const facebookSignInFSMContext = new FacebookSignInFSMContext({
     callbackEnableLoginButton: callbackEnableLoginButtonFacebook,
 });
 
+const stateToGithubSVGMapperService = new StateToSVGMapperServiceGithub({
+    svgService: githubFSMSVGService,
+    currentStateBoxCSSClassKey: null,
+});
+
+const githubSignInFSMContext = new GithubSignInFSMContext({
+    window,
+    firebaseAuthService,
+    stateToSVGMapperService: stateToGithubSVGMapperService,
+    logger: guiLogger.log.bind(guiLogger),
+    callbackSetTab,
+    callbackEnableLoginButton: callbackEnableLoginButtonGithub,
+});
+
 const fsmCoordinator = new FSMCoordinator({
     firebaseAuthService,
     emailSignInFSMContext,
     facebookSignInFSMContext,
+    githubSignInFSMContext,
 });
 await fsmCoordinator.setup();
 
@@ -228,12 +247,14 @@ function enableAllSVGElements(event_: Event) {
         case "unset":
             emailFSMSVGService.SetAllIndividually();
             facebookFSMSVGService.SetAllIndividually();
+            githubFSMSVGService.SetAllIndividually();
             buttonEl.innerText = "disable all SVG elements";
             buttonEl.dataset.state = "set";
             break;
         case "set":
             emailFSMSVGService.UnsetAll();
             facebookFSMSVGService.UnsetAll();
+            githubFSMSVGService.UnsetAll();
             buttonEl.innerText = "enable all SVG elements";
             buttonEl.dataset.state = "unset";
             break;
@@ -304,6 +325,13 @@ function callbackEnableLoginButtonEmail(enabled: boolean): void {
 
 function callbackEnableLoginButtonFacebook(enabled: boolean): void {
     const guiName = authProviderToGUINameMap[authProviders.Facebook];
+    document.querySelector<HTMLInputElement>(
+        `button.login[data-service-provider="${guiName}"]`,
+    )!.disabled = !enabled;
+}
+
+function callbackEnableLoginButtonGithub(enabled: boolean): void {
+    const guiName = authProviderToGUINameMap[authProviders.Github];
     document.querySelector<HTMLInputElement>(
         `button.login[data-service-provider="${guiName}"]`,
     )!.disabled = !enabled;
