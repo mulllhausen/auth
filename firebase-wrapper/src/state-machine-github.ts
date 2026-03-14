@@ -206,15 +206,8 @@ abstract class GithubSignInState {
     public async overrideStateHandler(
         githubStateDTO?: TGithubStateDTO,
     ): Promise<boolean> {
-        let skipCurrentStateLogic = false;
-        // todo: move this to CheckingRedirectResultState and IdleState?
-        // hmm no. what if the user hits refresh half way through the flow?
-        if (githubStateDTO?.foundToken == authProviders.Github) {
-            this.log("github fsm: detected user is signed in");
-            await this.context.transitionTo(transitionToken, SignedInState);
-            skipCurrentStateLogic = true;
-        }
-        return skipCurrentStateLogic;
+        // not used for github
+        return false;
     }
 }
 
@@ -224,6 +217,11 @@ class IdleState extends GithubSignInState {
     public override async handle(
         githubStateDTO: TGithubStateDTO,
     ): Promise<void> {
+        if (githubStateDTO?.foundToken == authProviders.Github) {
+            this.log("github fsm: detected user is signed in");
+            await this.context.transitionTo(transitionToken, SignedInState);
+            return;
+        }
         if (githubStateDTO?.isGithubLoginClicked) {
             await this.context.transitionTo(
                 transitionToken,
@@ -298,6 +296,12 @@ class GithubRespondedState extends GithubSignInState {
             );
             return;
         }
+
+        if (githubStateDTO?.foundToken == authProviders.Github) {
+            this.log("github fsm: detected user is signed in");
+            await this.context.transitionTo(transitionToken, SignedInState);
+            return;
+        }
     }
 
     public override async onEnter(): Promise<void> {}
@@ -346,6 +350,5 @@ class SignedInState extends GithubSignInState {
 
     public override async onEnter(): Promise<void> {
         dbSaveUser(this.firebaseAuthService.User);
-        await this.firebaseAuthService.getProfilePicUrl(authProviders.Github);
     }
 }

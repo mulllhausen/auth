@@ -207,6 +207,13 @@ onReady(() => {
         ?.addEventListener("click", onLoginClickFacebook);
 
     document
+        .querySelector<HTMLInputElement>(
+            `button.login[data-service-provider` +
+                `="${authProviderToGUINameMap[authProviders.Github]}"]`,
+        )
+        ?.addEventListener("click", onLoginClickGithub);
+
+    document
         .querySelector<HTMLInputElement>("button.logout")
         ?.addEventListener("click", async () => {
             fsmCoordinator.logout();
@@ -310,6 +317,11 @@ async function onLoginClickEmail(e: Event): Promise<void> {
 async function onLoginClickFacebook(e: Event): Promise<void> {
     clickTab(authProviders.Facebook);
     await fsmCoordinator.loginFacebook();
+}
+
+async function onLoginClickGithub(e: Event): Promise<void> {
+    clickTab(authProviders.Github);
+    await fsmCoordinator.loginGithub();
 }
 
 function callbackSetTab(authProvider: TAuthProvider): void {

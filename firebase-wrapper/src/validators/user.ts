@@ -1,20 +1,17 @@
 import type { TAuthProvider } from "../firebase-wrapper.ts";
 
+const alphaNumeric = "[a-zA-Z0-9_-]+";
+const queryParam = `${alphaNumeric}=${alphaNumeric}`;
+const defaultQuerystring = `\\?${queryParam}(&${queryParam})*`;
+
 export const facebookProfilePicRegex = buildURLRegex({
     domain: "platform-lookaside.fbsbx.com",
-    path: "platform/profilepic/",
-    queryParams: {
-        asid: /\d+/,
-        height: /\d+/,
-        width: /\d+/,
-        ext: /\d+/,
-        hash: /[a-zA-Z0-9_\/]+/,
-    },
+    path: "platform/profilepic",
 });
 
 export const githubProfilePicRegex = buildURLRegex({
-    domain: "github.com",
-    // todo
+    domain: "avatars.githubusercontent.com",
+    path: "u/\\d+",
 });
 
 export function validateProfilePicUrl(
@@ -57,7 +54,9 @@ function buildURLRegex(props: {
 
         const enforceOneQuestionMark = `(?=[^?]*\\?[^?]*)`;
         queryParamsPattern = enforceOneQuestionMark + lookaheads;
+    } else {
+        queryParamsPattern = `(${defaultQuerystring})?`;
     }
 
-    return new RegExp(`${domain}${path}${queryParamsPattern}`);
+    return new RegExp(`^${domain}${path}\/?${queryParamsPattern}$`);
 }

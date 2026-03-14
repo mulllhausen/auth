@@ -91,7 +91,7 @@ export class StateToSVGMapperServiceGithub {
                 "RedirectingToGithub0",
                 "GithubResponded0",
             ):
-                return "OkResponse0";
+                return "OkResponse1";
 
             case this.generateTransition(
                 "RedirectingToGithub0",
@@ -103,13 +103,16 @@ export class StateToSVGMapperServiceGithub {
                 return "Reset0";
 
             case this.generateTransition("GithubResponded0", "SignedIn0"):
-                return "OkResponse1";
+                return "OkResponse0";
 
             case this.generateTransition("GithubResponded0", "AuthFailed0"):
                 return "Fail0";
 
             case this.generateTransition("AuthFailed0", "Idle0"):
                 return "Reset1";
+
+            case this.generateTransition("SignedIn0", "Idle0"):
+                return "LogoutButtonClicked0";
 
             default:
                 return null;

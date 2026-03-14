@@ -69,6 +69,9 @@ export class FSMCoordinator {
         await this.facebookSignInFSMContext.handle({
             checkingRedirectResult: true,
         });
+        await this.githubSignInFSMContext.handle({
+            checkingRedirectResult: true,
+        });
         await this.firebaseAuthService.checkIfRedirectResult();
     }
 }

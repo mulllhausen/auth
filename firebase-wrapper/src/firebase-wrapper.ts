@@ -355,6 +355,14 @@ export class FirebaseAuthService {
             // (stackoverflow.com/a/44468387)
 
             const providerID = redirectResult.providerId as TAuthProvider;
+            if (redirectResult.operationType !== "signIn") {
+                this.log(
+                    `non-sign-in operation for ${providerID}: ` +
+                        redirectResult.operationType,
+                );
+                return;
+            }
+
             const providerClass = this.authProviderFactory(providerID);
             const isIdempotent = true;
 
@@ -565,7 +573,7 @@ export class FirebaseAuthService {
             }
         } catch (error) {
             this.log(
-                `failed to get profile pic for ${serviceProvider}` +
+                `failed to get profile pic for ${serviceProvider}: ` +
                     `${error instanceof Error ? error.message : ""}`,
             );
             await this.publishStateChanged?.({
