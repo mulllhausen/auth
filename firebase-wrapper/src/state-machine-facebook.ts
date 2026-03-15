@@ -363,8 +363,8 @@ class SignedInState extends FacebookSignInState {
                 return;
             } else {
                 this.log(
-                    `facebook fsm: profile pic url ${fbProfilePicUrl} was not ` +
-                        `in the format ${facebookProfilePicRegex.source}`,
+                    `facebook fsm: profile pic url <code>${fbProfilePicUrl}</code> was not ` +
+                        `in the format <code>${facebookProfilePicRegex.source}</code>`,
                 );
                 await this.context.transitionTo(
                     transitionToken,
