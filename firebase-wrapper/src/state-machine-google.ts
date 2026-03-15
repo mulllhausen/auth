@@ -50,7 +50,7 @@ const googleFSMStateIDs = [
 ] as const;
 export type TGoogleFSMStateID = (typeof googleFSMStateIDs)[number];
 
-const transitionToken: unique symbol = Symbol("transitionToken");
+const token: unique symbol = Symbol("token");
 
 // #endregion consts and types
 
@@ -101,7 +101,7 @@ export class GoogleSignInFSMContext {
             : IdleState;
 
         await this.transitionTo(
-            transitionToken,
+            token,
             googleSignInStateConstructor, // init. a class is required.
         );
     }
@@ -112,10 +112,10 @@ export class GoogleSignInFSMContext {
     }
 
     public async transitionTo<TState extends GoogleSignInState>(
-        token: typeof transitionToken, // prevent external access
+        fsmToken: typeof token, // prevent external access
         newStateClass: TGoogleSignInStateConstructor<TState>,
     ): Promise<GoogleSignInState> {
-        if (token !== transitionToken) {
+        if (fsmToken !== token) {
             throw new Error(`incorrect transition token`);
         }
         const oldStateID = this.currentState
@@ -160,6 +160,10 @@ export class GoogleSignInFSMContext {
         return this.currentState;
     }
 
+    public log(logMessage: string): void {
+        this.logger?.({ logMessage });
+    }
+
     // localstorage functions
 
     private getStateFromLocalstorage(): TGoogleFSMStateID | null {
@@ -187,21 +191,15 @@ abstract class GoogleSignInState {
     protected firebaseAuthService: FirebaseAuthService;
     protected context: GoogleSignInFSMContext;
     protected stateToSVGMapperService?: StateToSVGMapperServiceGoogle;
-    protected logger?: (logItem: TLogItem) => void;
 
     constructor(props: TGoogleSignInStateConstructorProps) {
         this.firebaseAuthService = props.firebaseAuthService;
         this.context = props.context;
         this.stateToSVGMapperService = props.stateToSVGMapperService;
-        this.logger = props.logger;
     }
 
     public abstract handle(googleStateDTO: TGoogleStateDTO): Promise<void>;
     public abstract onEnter(): Promise<void>;
-
-    protected log(logMessage: string): void {
-        this.logger?.({ logMessage });
-    }
 }
 
 class IdleState extends GoogleSignInState {
@@ -211,15 +209,12 @@ class IdleState extends GoogleSignInState {
         googleStateDTO: TGoogleStateDTO,
     ): Promise<void> {
         if (googleStateDTO?.foundToken == authProviders.Google) {
-            this.log("google fsm: detected user is signed in");
-            await this.context.transitionTo(transitionToken, SignedInState);
+            this.context.log("google fsm: detected user is signed in");
+            await this.context.transitionTo(token, SignedInState);
             return;
         }
         if (googleStateDTO?.isGoogleLoginClicked) {
-            await this.context.transitionTo(
-                transitionToken,
-                RedirectingToGoogleState,
-            );
+            await this.context.transitionTo(token, RedirectingToGoogleState);
             return;
         }
     }
@@ -236,8 +231,8 @@ class RedirectingToGoogleState extends GoogleSignInState {
         googleStateDTO: TGoogleStateDTO,
     ): Promise<void> {
         if (googleStateDTO?.userNotSignedIn) {
-            this.log("google fsm: detected user is signed out");
-            await this.context.transitionTo(transitionToken, IdleState);
+            this.context.log("google fsm: detected user is signed out");
+            await this.context.transitionTo(token, IdleState);
             return;
         }
 
@@ -245,18 +240,12 @@ class RedirectingToGoogleState extends GoogleSignInState {
             googleStateDTO?.failedToRedirectToAuthProvider ===
             authProviders.Google
         ) {
-            await this.context.transitionTo(
-                transitionToken,
-                GoogleIsUnavailableState,
-            );
+            await this.context.transitionTo(token, GoogleIsUnavailableState);
             return;
         }
 
         if (googleStateDTO?.checkingRedirectResult) {
-            await this.context.transitionTo(
-                transitionToken,
-                GoogleRespondedState,
-            );
+            await this.context.transitionTo(token, GoogleRespondedState);
             return;
         }
     }
@@ -274,24 +263,18 @@ class GoogleRespondedState extends GoogleSignInState {
         googleStateDTO: TGoogleStateDTO,
     ): Promise<void> {
         if (googleStateDTO?.userNotSignedIn) {
-            this.log("google fsm: detected user is signed out");
-            await this.context.transitionTo(
-                transitionToken,
-                GoogleAuthFailedState,
-            );
+            this.context.log("google fsm: detected user is signed out");
+            await this.context.transitionTo(token, GoogleAuthFailedState);
             return;
         }
 
         if (googleStateDTO?.nullCredentialAfterRedirect) {
-            await this.context.transitionTo(
-                transitionToken,
-                GoogleAuthFailedState,
-            );
+            await this.context.transitionTo(token, GoogleAuthFailedState);
             return;
         }
 
         if (googleStateDTO?.foundToken == authProviders.Google) {
-            this.log("google fsm: detected user is signed in");
+            this.context.log("google fsm: detected user is signed in");
 
             const googleProfilePicUrl =
                 this.firebaseAuthService.User?.[authProviders.Google]?.photoURL;
@@ -301,12 +284,12 @@ class GoogleRespondedState extends GoogleSignInState {
                     googleProfilePicUrl,
                 )
             ) {
-                this.log(
+                this.context.log(
                     `google fsm: profile pic url <code>${googleProfilePicUrl}</code> was not ` +
                         `in the format <code>${googleProfilePicRegex.source}</code>`,
                 );
             }
-            await this.context.transitionTo(transitionToken, SignedInState);
+            await this.context.transitionTo(token, SignedInState);
             return;
         }
     }
@@ -323,7 +306,7 @@ class GoogleAuthFailedState extends GoogleSignInState {
 
     public override async onEnter(): Promise<void> {
         await wait(1000);
-        await this.context.transitionTo(transitionToken, IdleState);
+        await this.context.transitionTo(token, IdleState);
         return;
     }
 }
@@ -337,7 +320,7 @@ class GoogleIsUnavailableState extends GoogleSignInState {
 
     public override async onEnter(): Promise<void> {
         await wait(1000);
-        await this.context.transitionTo(transitionToken, IdleState);
+        await this.context.transitionTo(token, IdleState);
         return;
     }
 }
@@ -349,8 +332,8 @@ class SignedInState extends GoogleSignInState {
         googleStateDTO: TGoogleStateDTO,
     ): Promise<void> {
         if (googleStateDTO?.userNotSignedIn) {
-            this.log("google fsm: detected user is signed out");
-            await this.context.transitionTo(transitionToken, IdleState);
+            this.context.log("google fsm: detected user is signed out");
+            await this.context.transitionTo(token, IdleState);
             return;
         }
     }

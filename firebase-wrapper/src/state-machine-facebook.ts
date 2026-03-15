@@ -54,7 +54,7 @@ const facebookFSMStateIDs = [
 ] as const;
 export type TFacebookFSMStateID = (typeof facebookFSMStateIDs)[number];
 
-const transitionToken: unique symbol = Symbol("transitionToken");
+const token: unique symbol = Symbol("token");
 
 // #endregion consts and types
 
@@ -109,7 +109,7 @@ export class FacebookSignInFSMContext {
             : IdleState;
 
         await this.transitionTo(
-            transitionToken,
+            token,
             facebookSignInStateConstructor, // init. a class is required.
         );
     }
@@ -120,10 +120,10 @@ export class FacebookSignInFSMContext {
     }
 
     public async transitionTo<TState extends FacebookSignInState>(
-        token: typeof transitionToken, // prevent external access
+        fsmToken: typeof token, // prevent external access
         newStateClass: TFacebookSignInStateConstructor<TState>,
     ): Promise<FacebookSignInState> {
-        if (token !== transitionToken) {
+        if (fsmToken !== token) {
             throw new Error(`incorrect transition token`);
         }
         const oldStateID = this.currentState
@@ -168,6 +168,10 @@ export class FacebookSignInFSMContext {
         return this.currentState;
     }
 
+    public log(logMessage: string): void {
+        this.logger?.({ logMessage });
+    }
+
     // localstorage functions
 
     private getStateFromLocalstorage(): TFacebookFSMStateID | null {
@@ -195,21 +199,15 @@ abstract class FacebookSignInState {
     protected firebaseAuthService: FirebaseAuthService;
     protected context: FacebookSignInFSMContext;
     protected stateToSVGMapperService?: StateToSVGMapperServiceFacebook;
-    protected logger?: (logItem: TLogItem) => void;
 
     constructor(props: TFacebookSignInStateConstructorProps) {
         this.firebaseAuthService = props.firebaseAuthService;
         this.context = props.context;
         this.stateToSVGMapperService = props.stateToSVGMapperService;
-        this.logger = props.logger;
     }
 
     public abstract handle(facebookStateDTO: TFacebookStateDTO): Promise<void>;
     public abstract onEnter(): Promise<void>;
-
-    protected log(logMessage: string): void {
-        this.logger?.({ logMessage });
-    }
 }
 
 class IdleState extends FacebookSignInState {
@@ -219,16 +217,13 @@ class IdleState extends FacebookSignInState {
         facebookStateDTO: TFacebookStateDTO,
     ): Promise<void> {
         if (facebookStateDTO?.foundToken == authProviders.Facebook) {
-            this.log("facebook fsm: detected user is signed in");
-            await this.context.transitionTo(transitionToken, SignedInState);
+            this.context.log("facebook fsm: detected user is signed in");
+            await this.context.transitionTo(token, SignedInState);
             return;
         }
 
         if (facebookStateDTO?.isFacebookLoginClicked) {
-            await this.context.transitionTo(
-                transitionToken,
-                RedirectingToFacebookState,
-            );
+            await this.context.transitionTo(token, RedirectingToFacebookState);
             return;
         }
     }
@@ -245,14 +240,14 @@ class RedirectingToFacebookState extends FacebookSignInState {
         facebookStateDTO: TFacebookStateDTO,
     ): Promise<void> {
         if (facebookStateDTO?.foundToken == authProviders.Facebook) {
-            this.log("facebook fsm: detected user is signed in");
-            await this.context.transitionTo(transitionToken, SignedInState);
+            this.context.log("facebook fsm: detected user is signed in");
+            await this.context.transitionTo(token, SignedInState);
             return;
         }
 
         if (facebookStateDTO?.userNotSignedIn) {
-            this.log("facebook fsm: detected user is signed out");
-            await this.context.transitionTo(transitionToken, IdleState);
+            this.context.log("facebook fsm: detected user is signed out");
+            await this.context.transitionTo(token, IdleState);
             return;
         }
 
@@ -260,18 +255,12 @@ class RedirectingToFacebookState extends FacebookSignInState {
             facebookStateDTO?.failedToRedirectToAuthProvider ===
             authProviders.Facebook
         ) {
-            await this.context.transitionTo(
-                transitionToken,
-                FacebookIsUnavailableState,
-            );
+            await this.context.transitionTo(token, FacebookIsUnavailableState);
             return;
         }
 
         if (facebookStateDTO?.checkingRedirectResult) {
-            await this.context.transitionTo(
-                transitionToken,
-                CheckingRedirectResultState,
-            );
+            await this.context.transitionTo(token, CheckingRedirectResultState);
             return;
         }
     }
@@ -289,25 +278,19 @@ class CheckingRedirectResultState extends FacebookSignInState {
         facebookStateDTO: TFacebookStateDTO,
     ): Promise<void> {
         if (facebookStateDTO?.foundToken == authProviders.Facebook) {
-            this.log("facebook fsm: detected user is signed in");
-            await this.context.transitionTo(transitionToken, SignedInState);
+            this.context.log("facebook fsm: detected user is signed in");
+            await this.context.transitionTo(token, SignedInState);
             return;
         }
 
         if (facebookStateDTO?.userNotSignedIn) {
-            this.log("facebook fsm: detected user is signed out");
-            await this.context.transitionTo(
-                transitionToken,
-                FacebookAuthFailedState,
-            );
+            this.context.log("facebook fsm: detected user is signed out");
+            await this.context.transitionTo(token, FacebookAuthFailedState);
             return;
         }
 
         if (facebookStateDTO?.nullCredentialAfterRedirect) {
-            await this.context.transitionTo(
-                transitionToken,
-                FacebookAuthFailedState,
-            );
+            await this.context.transitionTo(token, FacebookAuthFailedState);
             return;
         }
     }
@@ -324,7 +307,7 @@ class FacebookAuthFailedState extends FacebookSignInState {
 
     public override async onEnter(): Promise<void> {
         await wait(1000);
-        await this.context.transitionTo(transitionToken, IdleState);
+        await this.context.transitionTo(token, IdleState);
         return;
     }
 }
@@ -338,7 +321,7 @@ class FacebookIsUnavailableState extends FacebookSignInState {
 
     public override async onEnter(): Promise<void> {
         await wait(1000);
-        await this.context.transitionTo(transitionToken, IdleState);
+        await this.context.transitionTo(token, IdleState);
         return;
     }
 }
@@ -356,18 +339,15 @@ class SignedInState extends FacebookSignInState {
             if (
                 validateProfilePicUrl(authProviders.Facebook, fbProfilePicUrl)
             ) {
-                await this.context.transitionTo(
-                    transitionToken,
-                    GotProfilePicState,
-                );
+                await this.context.transitionTo(token, GotProfilePicState);
                 return;
             } else {
-                this.log(
+                this.context.log(
                     `facebook fsm: profile pic url <code>${fbProfilePicUrl}</code> was not ` +
                         `in the format <code>${facebookProfilePicRegex.source}</code>`,
                 );
                 await this.context.transitionTo(
-                    transitionToken,
+                    token,
                     FailedToGetProfilePicState,
                 );
                 return;
@@ -375,16 +355,13 @@ class SignedInState extends FacebookSignInState {
         }
 
         if (facebookStateDTO?.userNotSignedIn) {
-            this.log("facebook fsm: detected user is signed out");
-            await this.context.transitionTo(transitionToken, IdleState);
+            this.context.log("facebook fsm: detected user is signed out");
+            await this.context.transitionTo(token, IdleState);
             return;
         }
 
         if (facebookStateDTO?.failedToGetProfilePic == authProviders.Facebook) {
-            await this.context.transitionTo(
-                transitionToken,
-                FailedToGetProfilePicState,
-            );
+            await this.context.transitionTo(token, FailedToGetProfilePicState);
             return;
         }
     }
@@ -402,8 +379,8 @@ class GotProfilePicState extends FacebookSignInState {
         facebookStateDTO: TFacebookStateDTO,
     ): Promise<void> {
         if (facebookStateDTO?.userNotSignedIn) {
-            this.log("facebook fsm: detected user is signed out");
-            await this.context.transitionTo(transitionToken, IdleState);
+            this.context.log("facebook fsm: detected user is signed out");
+            await this.context.transitionTo(token, IdleState);
             return;
         }
     }
@@ -422,7 +399,7 @@ class FailedToGetProfilePicState extends FacebookSignInState {
 
     public override async onEnter(): Promise<void> {
         await wait(1000);
-        await this.context.transitionTo(transitionToken, IdleState);
+        await this.context.transitionTo(token, IdleState);
         return;
     }
 }

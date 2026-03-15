@@ -50,7 +50,7 @@ const githubFSMStateIDs = [
 ] as const;
 export type TGithubFSMStateID = (typeof githubFSMStateIDs)[number];
 
-const transitionToken: unique symbol = Symbol("transitionToken");
+const token: unique symbol = Symbol("token");
 
 // #endregion consts and types
 
@@ -101,7 +101,7 @@ export class GithubSignInFSMContext {
             : IdleState;
 
         await this.transitionTo(
-            transitionToken,
+            token,
             githubSignInStateConstructor, // init. a class is required.
         );
     }
@@ -112,10 +112,10 @@ export class GithubSignInFSMContext {
     }
 
     public async transitionTo<TState extends GithubSignInState>(
-        token: typeof transitionToken, // prevent external access
+        fsmToken: typeof token, // prevent external access
         newStateClass: TGithubSignInStateConstructor<TState>,
     ): Promise<GithubSignInState> {
-        if (token !== transitionToken) {
+        if (fsmToken !== token) {
             throw new Error(`incorrect transition token`);
         }
         const oldStateID = this.currentState
@@ -160,6 +160,10 @@ export class GithubSignInFSMContext {
         return this.currentState;
     }
 
+    public log(logMessage: string): void {
+        this.logger?.({ logMessage });
+    }
+
     // localstorage functions
 
     private getStateFromLocalstorage(): TGithubFSMStateID | null {
@@ -187,21 +191,15 @@ abstract class GithubSignInState {
     protected firebaseAuthService: FirebaseAuthService;
     protected context: GithubSignInFSMContext;
     protected stateToSVGMapperService?: StateToSVGMapperServiceGithub;
-    protected logger?: (logItem: TLogItem) => void;
 
     constructor(props: TGithubSignInStateConstructorProps) {
         this.firebaseAuthService = props.firebaseAuthService;
         this.context = props.context;
         this.stateToSVGMapperService = props.stateToSVGMapperService;
-        this.logger = props.logger;
     }
 
     public abstract handle(githubStateDTO: TGithubStateDTO): Promise<void>;
     public abstract onEnter(): Promise<void>;
-
-    protected log(logMessage: string): void {
-        this.logger?.({ logMessage });
-    }
 }
 
 class IdleState extends GithubSignInState {
@@ -211,15 +209,12 @@ class IdleState extends GithubSignInState {
         githubStateDTO: TGithubStateDTO,
     ): Promise<void> {
         if (githubStateDTO?.foundToken == authProviders.Github) {
-            this.log("github fsm: detected user is signed in");
-            await this.context.transitionTo(transitionToken, SignedInState);
+            this.context.log("github fsm: detected user is signed in");
+            await this.context.transitionTo(token, SignedInState);
             return;
         }
         if (githubStateDTO?.isGithubLoginClicked) {
-            await this.context.transitionTo(
-                transitionToken,
-                RedirectingToGithubState,
-            );
+            await this.context.transitionTo(token, RedirectingToGithubState);
             return;
         }
     }
@@ -236,8 +231,8 @@ class RedirectingToGithubState extends GithubSignInState {
         githubStateDTO: TGithubStateDTO,
     ): Promise<void> {
         if (githubStateDTO?.userNotSignedIn) {
-            this.log("github fsm: detected user is signed out");
-            await this.context.transitionTo(transitionToken, IdleState);
+            this.context.log("github fsm: detected user is signed out");
+            await this.context.transitionTo(token, IdleState);
             return;
         }
 
@@ -245,18 +240,12 @@ class RedirectingToGithubState extends GithubSignInState {
             githubStateDTO?.failedToRedirectToAuthProvider ===
             authProviders.Github
         ) {
-            await this.context.transitionTo(
-                transitionToken,
-                GithubIsUnavailableState,
-            );
+            await this.context.transitionTo(token, GithubIsUnavailableState);
             return;
         }
 
         if (githubStateDTO?.checkingRedirectResult) {
-            await this.context.transitionTo(
-                transitionToken,
-                GithubRespondedState,
-            );
+            await this.context.transitionTo(token, GithubRespondedState);
             return;
         }
     }
@@ -274,24 +263,18 @@ class GithubRespondedState extends GithubSignInState {
         githubStateDTO: TGithubStateDTO,
     ): Promise<void> {
         if (githubStateDTO?.userNotSignedIn) {
-            this.log("github fsm: detected user is signed out");
-            await this.context.transitionTo(
-                transitionToken,
-                GithubAuthFailedState,
-            );
+            this.context.log("github fsm: detected user is signed out");
+            await this.context.transitionTo(token, GithubAuthFailedState);
             return;
         }
 
         if (githubStateDTO?.nullCredentialAfterRedirect) {
-            await this.context.transitionTo(
-                transitionToken,
-                GithubAuthFailedState,
-            );
+            await this.context.transitionTo(token, GithubAuthFailedState);
             return;
         }
 
         if (githubStateDTO?.foundToken == authProviders.Github) {
-            this.log("github fsm: detected user is signed in");
+            this.context.log("github fsm: detected user is signed in");
 
             const githubProfilePicUrl =
                 this.firebaseAuthService.User?.[authProviders.Github]?.photoURL;
@@ -301,12 +284,12 @@ class GithubRespondedState extends GithubSignInState {
                     githubProfilePicUrl,
                 )
             ) {
-                this.log(
+                this.context.log(
                     `github fsm: profile pic url <code>${githubProfilePicUrl}</code> was not ` +
                         `in the format <code>${githubProfilePicRegex.source}</code>`,
                 );
             }
-            await this.context.transitionTo(transitionToken, SignedInState);
+            await this.context.transitionTo(token, SignedInState);
 
             return;
         }
@@ -324,7 +307,7 @@ class GithubAuthFailedState extends GithubSignInState {
 
     public override async onEnter(): Promise<void> {
         await wait(1000);
-        await this.context.transitionTo(transitionToken, IdleState);
+        await this.context.transitionTo(token, IdleState);
         return;
     }
 }
@@ -338,7 +321,7 @@ class GithubIsUnavailableState extends GithubSignInState {
 
     public override async onEnter(): Promise<void> {
         await wait(1000);
-        await this.context.transitionTo(transitionToken, IdleState);
+        await this.context.transitionTo(token, IdleState);
         return;
     }
 }
@@ -350,8 +333,8 @@ class SignedInState extends GithubSignInState {
         githubStateDTO: TGithubStateDTO,
     ): Promise<void> {
         if (githubStateDTO?.userNotSignedIn) {
-            this.log("github fsm: detected user is signed out");
-            await this.context.transitionTo(transitionToken, IdleState);
+            this.context.log("github fsm: detected user is signed out");
+            await this.context.transitionTo(token, IdleState);
             return;
         }
     }

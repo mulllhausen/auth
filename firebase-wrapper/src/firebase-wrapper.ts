@@ -85,6 +85,7 @@ export type TFirebaseWrapperStateDTO = {
     gotProfilePic?: TAuthProvider;
     failedToGetProfilePic?: TAuthProvider;
 
+    /** as reported by firebase */
     userNotSignedIn?: boolean;
 };
 
@@ -127,11 +128,11 @@ export class FirebaseAuthService {
     private logger?: (logItem: TLogItem) => void;
     private env: TProcessEnv;
     public Auth: Auth;
-    private emailAddress!: string | null;
+    public EmailAddress: string | null = null;
     public UseLinkInsteadOfPassword: boolean = false;
     public EmailPassword: string | null = null;
     public EmailActionCodeSettings: ActionCodeSettings;
-    private localStorageEmailAddressKey = "emailAddress";
+    //private localStorageEmailAddressKey = "emailAddress";
     private hiddenMessage = "not stored in localStorage to prevent xss attacks";
     public signedInStatus: Record<TAuthProvider, boolean> = {
         [authProviders.Email]: false,
@@ -166,10 +167,6 @@ export class FirebaseAuthService {
             measurementId: this.env.FIREBASE_MEASUREMENT_ID,
         };
 
-        // todo: ignore if older than 1 day
-        this.emailAddress = this._window.localStorage.getItem(
-            this.localStorageEmailAddressKey,
-        );
         this.EmailActionCodeSettings = {
             url: this._window.location.href,
             handleCodeInApp: true,
@@ -180,19 +177,19 @@ export class FirebaseAuthService {
         this.log(`finished initializing firebase SDK`);
     }
 
-    public get EmailAddress(): string | null {
-        return this.emailAddress;
-    }
+    // public get EmailAddress(): string | null {
+    //     return this.emailAddress;
+    // }
 
-    public set EmailAddress(emailAddress: string) {
-        const isEmpty = emailAddress == null || emailAddress.length === 0;
-        this.log(`${isEmpty ? "empty " : ""}email address cached`);
-        this._window.localStorage.setItem(
-            this.localStorageEmailAddressKey,
-            emailAddress,
-        );
-        this.emailAddress = emailAddress;
-    }
+    //public set EmailAddress(emailAddress: string) {
+    // const isEmpty = emailAddress == null || emailAddress.length === 0;
+    // this.log(`${isEmpty ? "empty " : ""}email address cached`);
+    // this._window.localStorage.setItem(
+    //     this.localStorageEmailAddressKey,
+    //     emailAddress,
+    // );
+    //     this.emailAddress = emailAddress;
+    // }
 
     public get User(): TDBUserDTO {
         if (!objIsNullOrEmpty(this.user)) {
@@ -441,7 +438,7 @@ export class FirebaseAuthService {
             this.log(`firebase auth event: user is not signed in`);
             this.clearUserCache();
             this.deleteFirebaseQuerystringParams();
-            this.deleteCachedEmail();
+            //this.deleteCachedEmail();
             await this.publishStateChanged?.({
                 userNotSignedIn: true,
             });
@@ -592,7 +589,7 @@ export class FirebaseAuthService {
         this.deleteFirebaseQuerystringParams();
         switch (providerID) {
             case authProviders.Email:
-                this.deleteCachedEmail();
+                //this.deleteCachedEmail();
                 await this.publishStateChanged?.({
                     emailDataDeleted: true,
                 });
@@ -643,7 +640,7 @@ export class FirebaseAuthService {
         this.log(
             `just checked: the current page url is a sign-in-with-email-link`,
         );
-        if (this.emailAddress == null) {
+        if (this.EmailAddress == null) {
             this.log(
                 `the user has opened the email link on a different browser. ` +
                     `to prevent session fixation attacks, the email address must be entered again.`,
@@ -666,7 +663,7 @@ export class FirebaseAuthService {
             const userCredentialResult: UserCredential =
                 await signInWithEmailLink(
                     this.Auth,
-                    this.emailAddress!,
+                    this.EmailAddress!,
                     this._window.location.href,
                 );
 
@@ -727,14 +724,14 @@ export class FirebaseAuthService {
 
     public clearUserCache(): void {
         this.deleteUser();
-        this.deleteCachedEmail();
+        //this.deleteCachedEmail();
     }
 
-    private deleteCachedEmail(): void {
-        this.EmailAddress = "";
-        this.signedInStatus[authProviders.Email] = false;
-        this._window.localStorage.removeItem(this.localStorageEmailAddressKey);
-    }
+    // private deleteCachedEmail(): void {
+    //     this.EmailAddress = "";
+    //     this.signedInStatus[authProviders.Email] = false;
+    //     this._window.localStorage.removeItem(this.localStorageEmailAddressKey);
+    // }
 
     // #endregion user caching
 }
