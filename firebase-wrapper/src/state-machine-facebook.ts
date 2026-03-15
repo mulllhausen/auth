@@ -139,7 +139,7 @@ export class FacebookSignInFSMContext {
         if (newStateID === oldStateID) {
             this.logger?.({
                 logMessage:
-                    `old & new facebook state: <i>${oldStateID}</i>.` +
+                    `old & new facebook state: <code>${oldStateID}</code>.` +
                     ` no transition needed.`,
             });
             return this.currentState;
@@ -147,8 +147,8 @@ export class FacebookSignInFSMContext {
 
         this.logger?.({
             logMessage:
-                `transitioned facebook state from <i>${oldStateID}</i>` +
-                ` to <i>${newStateID}</i>`,
+                `transitioned facebook state from <code>${oldStateID}</code>` +
+                ` to <code>${newStateID}</code>`,
         });
 
         await this.currentState.onEnter();

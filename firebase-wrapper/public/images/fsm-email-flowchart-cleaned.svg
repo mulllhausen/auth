@@ -10,34 +10,31 @@
     <defs>
         <style>
             .state-box {
-                fill: none;
+                fill: transparent;
+                transition: fill 1s ease 0s;
             }
-            .state-box.failure {
-                fill: red;
-            }
-            .state-box.success {
-                fill: green;
+            .state-box.active {
+                fill: deepskyblue;
+                transition: fill 0s ease 0s;
             }
 
             text.arrow {
                 fill: black;
                 font-size: 20px;
+                transition: fill 1s ease 0s;
             }
-            text.arrow.failure {
-                fill: red;
-            }
-            text.arrow.success {
-                fill: green;
+            text.arrow.active {
+                fill: deepskyblue;
+                transition: fill 0s ease 0s;
             }
 
             path.arrow {
                 stroke: black;
+                transition: stroke 1s ease 0s;
             }
-            path.arrow.failure {
-                stroke: red;
-            }
-            path.arrow.success {
-                stroke: green;
+            path.arrow.active {
+                stroke: deepskyblue;
+                transition: stroke 0s ease 0s;
             }
             * {
                 font-family: Arial;

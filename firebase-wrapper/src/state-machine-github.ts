@@ -19,6 +19,10 @@ import type { TLogItem } from "./gui-logger.ts";
 import type { TGUIStateDTO } from "./index.ts";
 import { StateToSVGMapperServiceGithub } from "./state-to-svg-mapper-service-github.ts";
 import { wait } from "./utils.ts";
+import {
+    githubProfilePicRegex,
+    validateProfilePicUrl,
+} from "./validators/user.ts";
 
 // #region consts and types
 
@@ -127,7 +131,7 @@ export class GithubSignInFSMContext {
         if (newStateID === oldStateID) {
             this.logger?.({
                 logMessage:
-                    `old & new github state: <i>${oldStateID}</i>.` +
+                    `old & new github state: <code>${oldStateID}</code>.` +
                     ` no transition needed.`,
             });
             return this.currentState;
@@ -135,8 +139,8 @@ export class GithubSignInFSMContext {
 
         this.logger?.({
             logMessage:
-                `transitioned github state from <i>${oldStateID}</i>` +
-                ` to <i>${newStateID}</i>`,
+                `transitioned github state from <code>${oldStateID}</code>` +
+                ` to <code>${newStateID}</code>`,
         });
 
         await this.currentState.onEnter();
@@ -299,7 +303,23 @@ class GithubRespondedState extends GithubSignInState {
 
         if (githubStateDTO?.foundToken == authProviders.Github) {
             this.log("github fsm: detected user is signed in");
+
+            const githubProfilePicUrl =
+                this.firebaseAuthService.User?.[authProviders.Github]?.photoURL;
+            if (
+                !validateProfilePicUrl(
+                    authProviders.Github,
+                    githubProfilePicUrl,
+                )
+            ) {
+                this.log(
+                    `github fsm: profile pic url <code>${githubProfilePicUrl}</code> was not ` +
+                        `in the format <code>${githubProfilePicRegex.source}</code>`,
+                );
+                return;
+            }
             await this.context.transitionTo(transitionToken, SignedInState);
+
             return;
         }
     }

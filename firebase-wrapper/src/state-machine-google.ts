@@ -19,6 +19,10 @@ import type { TLogItem } from "./gui-logger.ts";
 import type { TGUIStateDTO } from "./index.ts";
 import { StateToSVGMapperServiceGoogle } from "./state-to-svg-mapper-service-google.ts";
 import { wait } from "./utils.ts";
+import {
+    googleProfilePicRegex,
+    validateProfilePicUrl,
+} from "./validators/user.ts";
 
 // #region consts and types
 
@@ -127,7 +131,7 @@ export class GoogleSignInFSMContext {
         if (newStateID === oldStateID) {
             this.logger?.({
                 logMessage:
-                    `old & new google state: <i>${oldStateID}</i>.` +
+                    `old & new google state: <code>${oldStateID}</code>.` +
                     ` no transition needed.`,
             });
             return this.currentState;
@@ -135,8 +139,8 @@ export class GoogleSignInFSMContext {
 
         this.logger?.({
             logMessage:
-                `transitioned google state from <i>${oldStateID}</i>` +
-                ` to <i>${newStateID}</i>`,
+                `transitioned google state from <code>${oldStateID}</code>` +
+                ` to <code>${newStateID}</code>`,
         });
 
         await this.currentState.onEnter();
@@ -299,6 +303,21 @@ class GoogleRespondedState extends GoogleSignInState {
 
         if (googleStateDTO?.foundToken == authProviders.Google) {
             this.log("google fsm: detected user is signed in");
+
+            const googleProfilePicUrl =
+                this.firebaseAuthService.User?.[authProviders.Google]?.photoURL;
+            if (
+                !validateProfilePicUrl(
+                    authProviders.Google,
+                    googleProfilePicUrl,
+                )
+            ) {
+                this.log(
+                    `google fsm: profile pic url <code>${googleProfilePicUrl}</code> was not ` +
+                        `in the format <code>${googleProfilePicRegex.source}</code>`,
+                );
+                return;
+            }
             await this.context.transitionTo(transitionToken, SignedInState);
             return;
         }

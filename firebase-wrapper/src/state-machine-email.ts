@@ -120,12 +120,15 @@ export class EmailSignInFSMContext {
 
     /** note: call setup() once immediately after the constructor */
     public async setup(): Promise<void> {
-        const emailSignInStateConstructor = this.getStateFromLocalstorage();
-        this.currentState = await this.transitionTo(
+        const emailFSMStateID = this.getStateFromLocalstorage();
+        const emailSignInStateConstructor = emailFSMStateID
+            ? this.stateMap[emailFSMStateID]
+            : IdleState;
+
+        await this.transitionTo(
             transitionToken,
             emailSignInStateConstructor, // init. a class is required.
         );
-        await this.firebaseAuthService.checkIfURLIsASignInWithEmailLink();
     }
 
     /** should always be called by an action external to this FSM */
@@ -144,33 +147,25 @@ export class EmailSignInFSMContext {
         if (token !== transitionToken) {
             throw new Error(`incorrect transition token`);
         }
-        const oldStateID = this.currentState ? this.currentState.ID : "null";
+        const oldStateID = this.currentState
+            ? this.currentState.ID
+            : (this.getStateFromLocalstorage() ?? "null");
 
-        this.currentState = new newStateClass({
-            firebaseAuthService: this.firebaseAuthService,
-            context: this,
-            stateToSVGMapperService: this.stateToSVGMapperService,
-            logger: this.logger,
-        });
-
+        this.currentState = await this.setState(newStateClass);
         const newStateID = this.currentState.ID;
         if (newStateID === oldStateID) {
             this.logger?.({
                 logMessage:
-                    `old & new email state: <i>${oldStateID}</i>.` +
+                    `old & new email state: <code>${oldStateID}</code>.` +
                     ` no transition needed.`,
             });
             return this.currentState;
         }
 
-        // todo: move into setState()
-        this.callbackSetTab?.(authProviders.Email);
-        this.stateToSVGMapperService?.enqueue(this.currentState.ID);
-        this.backupStateToLocalstorage(newStateID);
         this.logger?.({
             logMessage:
-                `transitioned email state from <i>${oldStateID}</i>` +
-                ` to <i>${newStateID}</i>`,
+                `transitioned email state from <code>${oldStateID}</code>` +
+                ` to <code>${newStateID}</code>`,
         });
 
         await this.currentState.onEnter();
@@ -178,14 +173,28 @@ export class EmailSignInFSMContext {
         return this.currentState;
     }
 
+    private async setState<TState extends EmailSignInState>(
+        newStateClass: TEmailSignInStateConstructor<TState>,
+    ): Promise<EmailSignInState> {
+        this.callbackSetTab?.(authProviders.Email);
+        this.currentState = new newStateClass({
+            firebaseAuthService: this.firebaseAuthService,
+            context: this,
+            stateToSVGMapperService: this.stateToSVGMapperService,
+            logger: this.logger,
+        });
+        const newStateID = this.currentState.ID;
+        await this.stateToSVGMapperService?.enqueue(newStateID);
+        this.backupStateToLocalstorage(newStateID);
+        return this.currentState;
+    }
+
     // localstorage functions
 
-    private getStateFromLocalstorage(): TEmailSignInStateConstructor {
-        const emailFSMStateID = this._window.localStorage.getItem(
+    private getStateFromLocalstorage(): TEmailFSMStateID | null {
+        return this._window.localStorage.getItem(
             this.localStorageEmailStateKey,
         ) as TEmailFSMStateID | null;
-        if (emailFSMStateID == null) return IdleState;
-        return this.stateMap[emailFSMStateID];
     }
 
     private backupStateToLocalstorage(emailFSMStateID: TEmailFSMStateID): void {
@@ -229,6 +238,7 @@ abstract class EmailSignInState {
             this.log("email fsm: detected user already signed out");
         }
         if (emailStateDTO?.emailDataDeleted) {
+            // todo: do we still want this state? how is it different to logout?
             this.log("email fsm: detected user email data deleted");
         }
         if (emailStateDTO?.userNotSignedIn || emailStateDTO?.emailDataDeleted) {
