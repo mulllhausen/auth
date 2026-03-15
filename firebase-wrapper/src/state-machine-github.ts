@@ -305,7 +305,6 @@ class GithubRespondedState extends GithubSignInState {
                     `github fsm: profile pic url <code>${githubProfilePicUrl}</code> was not ` +
                         `in the format <code>${githubProfilePicRegex.source}</code>`,
                 );
-                return;
             }
             await this.context.transitionTo(transitionToken, SignedInState);
 

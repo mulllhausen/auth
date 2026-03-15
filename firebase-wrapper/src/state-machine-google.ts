@@ -305,7 +305,6 @@ class GoogleRespondedState extends GoogleSignInState {
                     `google fsm: profile pic url <code>${googleProfilePicUrl}</code> was not ` +
                         `in the format <code>${googleProfilePicRegex.source}</code>`,
                 );
-                return;
             }
             await this.context.transitionTo(transitionToken, SignedInState);
             return;

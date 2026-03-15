@@ -1,6 +1,6 @@
 import type { TAuthProvider } from "../firebase-wrapper.ts";
 
-const alphaNumeric = "[a-zA-Z0-9_-]+";
+const alphaNumeric = "[a-zA-Z0-9=_-]+";
 const queryParam = `${alphaNumeric}=${alphaNumeric}`;
 const defaultQuerystring = `\\?${queryParam}(&${queryParam})*`;
 
