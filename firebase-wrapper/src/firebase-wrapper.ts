@@ -555,7 +555,7 @@ export class FirebaseAuthService {
                         throw new Error(errorMessage);
                     }
                     this.logger?.({
-                        logMessage: `got profile pic URL from facebook graph api`,
+                        logMessage: `got profile pic from facebook graph api`,
                         logData: me,
                         imageURL,
                     });

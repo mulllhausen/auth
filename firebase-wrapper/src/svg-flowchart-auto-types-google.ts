@@ -7,6 +7,7 @@ export type TGoogleSVGCSSClassKeys = TGoogleArrowKey | TGoogleStateBoxKey;
 export const GoogleSVGArrowCSSClass = {
     Fail0: "fail-0",
     FirebaseReturnedAnError0: "firebase-returned-an-error-0",
+    LogoutButtonClicked0: "logout-button-clicked-0",
     OkResponse0: "ok-response-0",
     OkResponse1: "ok-response-1",
     Reset0: "reset-0",
