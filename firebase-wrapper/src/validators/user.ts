@@ -14,6 +14,11 @@ export const githubProfilePicRegex = buildURLRegex({
     path: "u/\\d+",
 });
 
+export const googleProfilePicRegex = buildURLRegex({
+    domain: "lh3.googleusercontent.com",
+    path: `a/${alphaNumeric}`,
+});
+
 export function validateProfilePicUrl(
     providerID: TAuthProvider,
     url?: string | null,
@@ -25,7 +30,7 @@ export function validateProfilePicUrl(
             regex = facebookProfilePicRegex;
             break;
         case "google.com":
-            regex = /https?:\/\/.*\.googleusercontent\.com\/.*/;
+            regex = googleProfilePicRegex;
             break;
         case "github.com":
             regex = githubProfilePicRegex;

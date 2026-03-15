@@ -59,12 +59,15 @@ import type { TEmailStateDTO } from "./state-machine-email.ts";
 import { EmailSignInFSMContext } from "./state-machine-email.ts";
 import { FacebookSignInFSMContext } from "./state-machine-facebook.ts";
 import { GithubSignInFSMContext } from "./state-machine-github.ts";
+import { GoogleSignInFSMContext } from "./state-machine-google.ts";
 import { StateToSVGMapperServiceEmail } from "./state-to-svg-mapper-service-email.ts";
 import { StateToSVGMapperServiceFacebook } from "./state-to-svg-mapper-service-facebook.ts";
 import { StateToSVGMapperServiceGithub } from "./state-to-svg-mapper-service-github.ts";
+import { StateToSVGMapperServiceGoogle } from "./state-to-svg-mapper-service-google.ts";
 import { SVGFlowChartServiceEmail } from "./svg-flowchart-service-email.ts";
 import { SVGFlowChartServiceFacebook } from "./svg-flowchart-service-facebook.ts";
 import { SVGFlowChartServiceGithub } from "./svg-flowchart-service-github.ts";
+import { SVGFlowChartServiceGoogle } from "./svg-flowchart-service-google.ts";
 import { debounce, getEnv, onReady } from "./utils.ts";
 
 export type TGUIStateDTO = {
@@ -73,6 +76,7 @@ export type TGUIStateDTO = {
     isEmailLoginClicked?: boolean;
     isFacebookLoginClicked?: boolean;
     isGithubLoginClicked?: boolean;
+    isGoogleLoginClicked?: boolean;
 };
 
 let isAnyTabClicked = false;
@@ -108,6 +112,11 @@ const facebookFSMSVGService = new SVGFlowChartServiceFacebook({
 const githubFSMSVGService = new SVGFlowChartServiceGithub({
     document,
     svgQuerySelector: "#githubFSMChart",
+});
+
+const googleFSMSVGService = new SVGFlowChartServiceGoogle({
+    document,
+    svgQuerySelector: "#googleFSMChart",
 });
 
 const stateToEmailSVGMapperService = new StateToSVGMapperServiceEmail({
@@ -157,11 +166,26 @@ const githubSignInFSMContext = new GithubSignInFSMContext({
     callbackEnableLoginButton: callbackEnableLoginButtonGithub,
 });
 
+const stateToGoogleSVGMapperService = new StateToSVGMapperServiceGoogle({
+    svgService: googleFSMSVGService,
+    currentStateBoxCSSClassKey: null,
+});
+
+const googleSignInFSMContext = new GoogleSignInFSMContext({
+    window,
+    firebaseAuthService,
+    stateToSVGMapperService: stateToGoogleSVGMapperService,
+    logger: guiLogger.log.bind(guiLogger),
+    callbackSetTab,
+    callbackEnableLoginButton: callbackEnableLoginButtonGoogle,
+});
+
 const fsmCoordinator = new FSMCoordinator({
     firebaseAuthService,
     emailSignInFSMContext,
     facebookSignInFSMContext,
     githubSignInFSMContext,
+    googleSignInFSMContext,
 });
 await fsmCoordinator.setup();
 
@@ -214,6 +238,13 @@ onReady(() => {
         ?.addEventListener("click", onLoginClickGithub);
 
     document
+        .querySelector<HTMLInputElement>(
+            `button.login[data-service-provider` +
+                `="${authProviderToGUINameMap[authProviders.Google]}"]`,
+        )
+        ?.addEventListener("click", onLoginClickGoogle);
+
+    document
         .querySelector<HTMLInputElement>("button.logout")
         ?.addEventListener("click", async () => {
             fsmCoordinator.logout();
@@ -255,6 +286,7 @@ function enableAllSVGElements(event_: Event) {
             emailFSMSVGService.SetAllIndividually();
             facebookFSMSVGService.SetAllIndividually();
             githubFSMSVGService.SetAllIndividually();
+            googleFSMSVGService.SetAllIndividually();
             buttonEl.innerText = "disable all SVG elements";
             buttonEl.dataset.state = "set";
             break;
@@ -262,6 +294,7 @@ function enableAllSVGElements(event_: Event) {
             emailFSMSVGService.UnsetAll();
             facebookFSMSVGService.UnsetAll();
             githubFSMSVGService.UnsetAll();
+            googleFSMSVGService.UnsetAll();
             buttonEl.innerText = "enable all SVG elements";
             buttonEl.dataset.state = "unset";
             break;
@@ -324,6 +357,11 @@ async function onLoginClickGithub(e: Event): Promise<void> {
     await fsmCoordinator.loginGithub();
 }
 
+async function onLoginClickGoogle(e: Event): Promise<void> {
+    clickTab(authProviders.Google);
+    await fsmCoordinator.loginGoogle();
+}
+
 function callbackSetTab(authProvider: TAuthProvider): void {
     clickTab(authProvider);
 }
@@ -344,6 +382,13 @@ function callbackEnableLoginButtonFacebook(enabled: boolean): void {
 
 function callbackEnableLoginButtonGithub(enabled: boolean): void {
     const guiName = authProviderToGUINameMap[authProviders.Github];
+    document.querySelector<HTMLInputElement>(
+        `button.login[data-service-provider="${guiName}"]`,
+    )!.disabled = !enabled;
+}
+
+function callbackEnableLoginButtonGoogle(enabled: boolean): void {
+    const guiName = authProviderToGUINameMap[authProviders.Google];
     document.querySelector<HTMLInputElement>(
         `button.login[data-service-provider="${guiName}"]`,
     )!.disabled = !enabled;
