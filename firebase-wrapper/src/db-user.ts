@@ -12,7 +12,7 @@ export type TDBSafeUserDTO = Partial<
 > | null;
 
 export type TDBUserInfo = TDBSafeUserInfo & {
-    token?: string;
+    accessToken?: string;
     tokenExpiry?: number;
 };
 

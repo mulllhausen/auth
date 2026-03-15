@@ -208,7 +208,7 @@ class IdleState extends GithubSignInState {
     public override async handle(
         githubStateDTO: TGithubStateDTO,
     ): Promise<void> {
-        if (githubStateDTO?.foundToken == authProviders.Github) {
+        if (githubStateDTO?.foundAccessToken == authProviders.Github) {
             this.context.log("github fsm: detected user is signed in");
             await this.context.transitionTo(token, SignedInState);
             return;
@@ -273,7 +273,7 @@ class GithubRespondedState extends GithubSignInState {
             return;
         }
 
-        if (githubStateDTO?.foundToken == authProviders.Github) {
+        if (githubStateDTO?.foundAccessToken == authProviders.Github) {
             this.context.log("github fsm: detected user is signed in");
 
             const githubProfilePicUrl =

@@ -78,7 +78,7 @@ export type TFirebaseWrapperStateDTO = {
     nullCredentialAfterRedirect?: boolean;
     checkingRedirectResult?: boolean;
     foundUser?: TAuthProvider;
-    foundToken?: TAuthProvider;
+    foundAccessToken?: TAuthProvider;
 
     // note: some providers include the profile pic in the sign-in response
     // so this is not necessary for them
@@ -90,8 +90,8 @@ export type TFirebaseWrapperStateDTO = {
 };
 
 /** the actual User type with missing properties that firebase adds */
-export type TUserWithToken = TMutable<User> & {
-    token: string;
+export type TUserWithAccessToken = TMutable<User> & {
+    accessToken: string;
     tokenExpiry: number;
 };
 
@@ -201,27 +201,28 @@ export class FirebaseAuthService {
         return this.user;
     }
 
-    private set User(user: TUserWithToken) {
+    private set User(user: TUserWithAccessToken | null) {
         if (objIsNullOrEmpty(user)) {
-            this.deleteUser();
+            //this.deleteUser();
+            dbDeleteUser();
             return;
         }
-        this.updateUser(user as TUserWithToken);
+        this.updateUser(user as TUserWithAccessToken);
     }
 
-    private deleteUser(): void {
-        this.user = null;
-        dbDeleteUser();
-    }
+    // private deleteUser(): void {
+    //     this.User = null;
+    //     dbDeleteUser();
+    // }
 
-    private updateUser(user: TUserWithToken): void {
+    private updateUser(user: TUserWithAccessToken): void {
         const newUserDTO = mapFirebaseUser2DBUserDTO(user);
         this.user = mapMergeUserDTOs(this.user, newUserDTO);
     }
 
-    private setToken(
+    private setAccessToken(
         providerID: TAuthProvider,
-        token?: string,
+        accessToken?: string,
         tokenExpiry?: number,
     ): void {
         if (objIsNullOrEmpty(this.User)) {
@@ -230,8 +231,8 @@ export class FirebaseAuthService {
             );
             return;
         }
-        if (token == null) return;
-        this.User![providerID]!.token = token;
+        if (accessToken == null) return;
+        this.User![providerID]!.accessToken = accessToken;
         this.User![providerID]!.tokenExpiry = tokenExpiry;
     }
 
@@ -395,10 +396,10 @@ export class FirebaseAuthService {
                 return;
             }
             this.setSignedInStatus(providerID, true);
-            this.User = redirectResult.user as TUserWithToken;
+            this.User = redirectResult.user as TUserWithAccessToken;
 
             // this is the only chance we have to save the token - immediately after login
-            this.setToken(providerID, credential.accessToken);
+            this.setAccessToken(providerID, credential.accessToken);
 
             this.logger?.({
                 logMessage: `got user via ${providerID}`,
@@ -411,7 +412,7 @@ export class FirebaseAuthService {
                 imageURL: this.User?.[providerID]?.photoURL,
             });
 
-            await this.publishStateChanged?.({ foundToken: providerID });
+            await this.publishStateChanged?.({ foundAccessToken: providerID });
             return;
             // IdP data available using getAdditionalUserInfo(result)
         } catch (error: unknown) {
@@ -436,7 +437,8 @@ export class FirebaseAuthService {
             this.afterUserSignedIn(user);
         } else {
             this.log(`firebase auth event: user is not signed in`);
-            this.clearUserCache();
+            this.User = null;
+            //this.clearUserCache();
             this.deleteFirebaseQuerystringParams();
             //this.deleteCachedEmail();
             await this.publishStateChanged?.({
@@ -473,7 +475,7 @@ export class FirebaseAuthService {
         }
 
         if (this.isJustSignedInWith(authProviders.Email, initialStatuses)) {
-            this.User = user as TUserWithToken;
+            this.User = user as TUserWithAccessToken;
             this.logger?.({
                 logMessage:
                     logMessageStart + ` user was just signed in via email`,
@@ -539,10 +541,11 @@ export class FirebaseAuthService {
         try {
             switch (serviceProvider) {
                 case authProviders.Facebook:
-                    const token = this.User?.[authProviders.Facebook]?.token;
+                    const accessToken =
+                        this.User?.[authProviders.Facebook]?.accessToken;
                     const getMeResponse = await fetch(
                         `https://graph.facebook.com/me?fields=picture.type(large)&` +
-                            `access_token=${token}`,
+                            `access_token=${accessToken}`,
                     );
                     const me: TFacebookMeResponse = await getMeResponse.json();
                     const imageURL = me?.picture?.data?.url;
@@ -558,7 +561,7 @@ export class FirebaseAuthService {
                     });
 
                     this.User![authProviders.Facebook]!.photoURL = imageURL;
-                    this.updateUser(this.User as TUserWithToken);
+                    this.updateUser(this.User as TUserWithAccessToken);
                     await this.publishStateChanged?.({
                         gotProfilePic: serviceProvider,
                     });
@@ -679,7 +682,7 @@ export class FirebaseAuthService {
                     ),
                     imageURL: userCredentialResult.user.photoURL,
                 });
-                this.User = userCredentialResult.user as TUserWithToken;
+                this.User = userCredentialResult.user as TUserWithAccessToken;
                 this.signedInStatus[authProviders.Email] = true;
                 this.publishStateChanged?.({
                     userCredentialFoundViaEmail: true,
@@ -722,10 +725,11 @@ export class FirebaseAuthService {
 
     // #region user caching
 
-    public clearUserCache(): void {
-        this.deleteUser();
-        //this.deleteCachedEmail();
-    }
+    // public clearUserCache(): void {
+    //     this.user = null;
+    //this.deleteUser();
+    //this.deleteCachedEmail();
+    //}
 
     // private deleteCachedEmail(): void {
     //     this.EmailAddress = "";

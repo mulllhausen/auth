@@ -40,7 +40,6 @@ export class FSMCoordinator {
     }
 
     public async loginEmail(): Promise<void> {
-        // todo: can this be combined into the above command?
         await this.emailSignInFSMContext.handle({ isEmailLoginClicked: true });
     }
 
@@ -68,12 +67,12 @@ export class FSMCoordinator {
 
     public async clearCachedUser(): Promise<void> {
         await this.firebaseAuthService.logout();
-        this.facebookSignInFSMContext.deleteStateFromLocalstorage();
         this.emailSignInFSMContext.deleteStateFromLocalstorage();
+        this.facebookSignInFSMContext.deleteStateFromLocalstorage();
         this.githubSignInFSMContext.deleteStateFromLocalstorage();
         this.googleSignInFSMContext.deleteStateFromLocalstorage();
-        await this.facebookSignInFSMContext.handle({});
         await this.emailSignInFSMContext.handle({});
+        await this.facebookSignInFSMContext.handle({});
         await this.githubSignInFSMContext.handle({});
         await this.googleSignInFSMContext.handle({});
     }

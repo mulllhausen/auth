@@ -18,9 +18,14 @@ import type {
     TSafeUserCredential,
     TSafeUserInfo,
 } from "../firebase-safe-types.ts";
-import type { TAuthProvider, TUserWithToken } from "../firebase-wrapper.ts";
+import type {
+    TAuthProvider,
+    TUserWithAccessToken,
+} from "../firebase-wrapper.ts";
 
-export function mapFirebaseUser2DBUserDTO(user: TUserWithToken): TDBUserDTO {
+export function mapFirebaseUser2DBUserDTO(
+    user: TUserWithAccessToken,
+): TDBUserDTO {
     if (user?.providerData == null) {
         return null;
     }

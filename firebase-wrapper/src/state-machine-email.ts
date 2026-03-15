@@ -121,8 +121,12 @@ export class EmailSignInFSMContext {
 
     /** note: call setup() once immediately after the constructor */
     public async setup(): Promise<void> {
+        debugger;
         // todo: ignore if older than 1 day
         this.firebaseAuthService.EmailAddress = this.getEmailFromLocalstorage();
+        this.callbackPopulateEmailInput?.(
+            this.firebaseAuthService.EmailAddress,
+        );
 
         const emailFSMStateID = this.getStateFromLocalstorage();
         const emailSignInStateConstructor = emailFSMStateID
@@ -135,6 +139,7 @@ export class EmailSignInFSMContext {
 
     /** should always be called by an action external to this FSM */
     public async handle(emailStateDTO: TEmailStateDTO): Promise<void> {
+        debugger;
         await this.currentState?.handle(emailStateDTO);
     }
 
@@ -246,12 +251,19 @@ abstract class EmailSignInState {
     public abstract onEnter(): Promise<void>;
 
     protected saveInputValues(emailStateDTO?: TEmailStateDTO): void {
+        const previousEmailAddress = this.firebaseAuthService.EmailAddress;
+        const previousPassword = this.firebaseAuthService.EmailPassword;
         this.setEmail(emailStateDTO?.inputEmailValue);
         this.setPassword(emailStateDTO?.inputPasswordValue);
-        this.context.log(
-            `${this.isAnyEmailEntered() ? "an" : "no"} email was entered and ` +
-                `${this.isAnyPasswordEntered() ? "a" : "no"} password was entered`,
-        );
+        if (
+            previousEmailAddress !== this.firebaseAuthService.EmailAddress ||
+            previousPassword !== this.firebaseAuthService.EmailPassword
+        ) {
+            this.context.log(
+                `${this.isAnyEmailEntered() ? "an" : "no"} email was entered and ` +
+                    `${this.isAnyPasswordEntered() ? "a" : "no"} password was entered`,
+            );
+        }
     }
 
     protected setEmail(input?: string): void {
@@ -343,11 +355,15 @@ class UserInputtingTextState extends EmailSignInState {
     public override async handle(emailStateDTO: TEmailStateDTO): Promise<void> {
         this.saveInputValues(emailStateDTO);
 
-        if (this.isLoggedOut(emailStateDTO)) {
-            this.context.callbackPopulateEmailInput?.("");
-            await this.context.transitionTo(token, IdleState);
-            return;
-        }
+        // we want this to trigger if the user clicked the logout button
+        // but not if firebase state changed the user is not yet logged in.
+        // how to distinguish?
+        // since this is a non-logged in state there is no need to change state to idle
+        // if (this.isLoggedOut(emailStateDTO)) {
+        //     this.context.callbackPopulateEmailInput?.("");
+        //     await this.context.transitionTo(token, IdleState);
+        //     return;
+        // }
 
         if (!this.isAnyEmailEntered() && !this.isAnyPasswordEntered()) {
             await this.context.transitionTo(token, IdleState);

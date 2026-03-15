@@ -208,7 +208,7 @@ class IdleState extends GoogleSignInState {
     public override async handle(
         googleStateDTO: TGoogleStateDTO,
     ): Promise<void> {
-        if (googleStateDTO?.foundToken == authProviders.Google) {
+        if (googleStateDTO?.foundAccessToken == authProviders.Google) {
             this.context.log("google fsm: detected user is signed in");
             await this.context.transitionTo(token, SignedInState);
             return;
@@ -273,7 +273,7 @@ class GoogleRespondedState extends GoogleSignInState {
             return;
         }
 
-        if (googleStateDTO?.foundToken == authProviders.Google) {
+        if (googleStateDTO?.foundAccessToken == authProviders.Google) {
             this.context.log("google fsm: detected user is signed in");
 
             const googleProfilePicUrl =

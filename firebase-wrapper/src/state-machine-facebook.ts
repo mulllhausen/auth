@@ -216,7 +216,7 @@ class IdleState extends FacebookSignInState {
     public override async handle(
         facebookStateDTO: TFacebookStateDTO,
     ): Promise<void> {
-        if (facebookStateDTO?.foundToken == authProviders.Facebook) {
+        if (facebookStateDTO?.foundAccessToken == authProviders.Facebook) {
             this.context.log("facebook fsm: detected user is signed in");
             await this.context.transitionTo(token, SignedInState);
             return;
@@ -239,7 +239,7 @@ class RedirectingToFacebookState extends FacebookSignInState {
     public override async handle(
         facebookStateDTO: TFacebookStateDTO,
     ): Promise<void> {
-        if (facebookStateDTO?.foundToken == authProviders.Facebook) {
+        if (facebookStateDTO?.foundAccessToken == authProviders.Facebook) {
             this.context.log("facebook fsm: detected user is signed in");
             await this.context.transitionTo(token, SignedInState);
             return;
@@ -277,7 +277,7 @@ class CheckingRedirectResultState extends FacebookSignInState {
     public override async handle(
         facebookStateDTO: TFacebookStateDTO,
     ): Promise<void> {
-        if (facebookStateDTO?.foundToken == authProviders.Facebook) {
+        if (facebookStateDTO?.foundAccessToken == authProviders.Facebook) {
             this.context.log("facebook fsm: detected user is signed in");
             await this.context.transitionTo(token, SignedInState);
             return;
