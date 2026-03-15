@@ -133,10 +133,6 @@ export class EmailSignInFSMContext {
 
     /** should always be called by an action external to this FSM */
     public async handle(emailStateDTO: TEmailStateDTO): Promise<void> {
-        const skipCurrentStateHandler =
-            await this.currentState?.overrideStateHandler(emailStateDTO);
-        if (skipCurrentStateHandler) return;
-
         await this.currentState?.handle(emailStateDTO);
     }
 
@@ -230,26 +226,6 @@ abstract class EmailSignInState {
         this.logger?.({ logMessage });
     }
 
-    public async overrideStateHandler(
-        emailStateDTO?: TEmailStateDTO,
-    ): Promise<boolean> {
-        let skipCurrentStateLogic = false;
-        if (emailStateDTO?.userNotSignedIn) {
-            this.log("email fsm: detected user already signed out");
-        }
-        if (emailStateDTO?.emailDataDeleted) {
-            // todo: do we still want this state? how is it different to logout?
-            this.log("email fsm: detected user email data deleted");
-        }
-        if (emailStateDTO?.userNotSignedIn || emailStateDTO?.emailDataDeleted) {
-            this.context.callbackPopulateEmailInput?.("");
-            await this.context.transitionTo(transitionToken, IdleState);
-            skipCurrentStateLogic = true;
-            return skipCurrentStateLogic;
-        }
-        return skipCurrentStateLogic;
-    }
-
     protected saveInputValues(emailStateDTO?: TEmailStateDTO): void {
         this.setEmail(emailStateDTO?.inputEmailValue);
         this.setPassword(emailStateDTO?.inputPasswordValue);
@@ -280,6 +256,20 @@ abstract class EmailSignInState {
         if (this.firebaseAuthService.EmailPassword == null) return false;
         return this.firebaseAuthService.EmailPassword?.length > 0;
     }
+
+    protected isLoggedOut(emailStateDTO?: TEmailStateDTO): boolean {
+        let isUserSignedOut = false;
+        if (emailStateDTO?.userNotSignedIn) {
+            this.log("email fsm: detected user already signed out");
+            isUserSignedOut = true;
+        }
+        if (emailStateDTO?.emailDataDeleted) {
+            // todo: do we still want this state? how is it different to logout i.e. userNotSignedIn?
+            this.log("email fsm: detected user email data deleted");
+            isUserSignedOut = true;
+        }
+        return isUserSignedOut;
+    }
 }
 
 class IdleState extends EmailSignInState {
@@ -287,6 +277,7 @@ class IdleState extends EmailSignInState {
 
     public override async handle(emailStateDTO: TEmailStateDTO): Promise<void> {
         this.saveInputValues(emailStateDTO);
+
         if (emailStateDTO.userOpenedEmailLinkOnSameBrowser === true) {
             await this.context.transitionTo(
                 transitionToken,
@@ -333,6 +324,13 @@ class UserInputtingTextState extends EmailSignInState {
 
     public override async handle(emailStateDTO: TEmailStateDTO): Promise<void> {
         this.saveInputValues(emailStateDTO);
+
+        if (this.isLoggedOut(emailStateDTO)) {
+            this.context.callbackPopulateEmailInput?.("");
+            await this.context.transitionTo(transitionToken, IdleState);
+            return;
+        }
+
         if (!this.isAnyEmailEntered() && !this.isAnyPasswordEntered()) {
             await this.context.transitionTo(transitionToken, IdleState);
             return;
@@ -369,6 +367,12 @@ class SendingEmailAddressToFirebaseState extends EmailSignInState {
     public override readonly ID = "SendingEmailAddressToFirebase";
 
     public override async handle(emailStateDTO: TEmailStateDTO): Promise<void> {
+        if (this.isLoggedOut(emailStateDTO)) {
+            this.context.callbackPopulateEmailInput?.("");
+            await this.context.transitionTo(transitionToken, IdleState);
+            return;
+        }
+
         if (emailStateDTO.successfullySentSignInLinkToEmail == null) {
             return;
         } else if (emailStateDTO.successfullySentSignInLinkToEmail) {
@@ -400,6 +404,12 @@ class WaitingForUserToClickLinkInEmailState extends EmailSignInState {
     public override readonly ID = "WaitingForUserToClickLinkInEmail";
 
     public override async handle(emailStateDTO: TEmailStateDTO): Promise<void> {
+        if (this.isLoggedOut(emailStateDTO)) {
+            this.context.callbackPopulateEmailInput?.("");
+            await this.context.transitionTo(transitionToken, IdleState);
+            return;
+        }
+
         if (emailStateDTO.userOpenedEmailLinkOnSameBrowser === true) {
             await this.context.transitionTo(
                 transitionToken,
@@ -428,6 +438,13 @@ class BadEmailAddressState extends EmailSignInState {
 
     public override async handle(emailStateDTO: TEmailStateDTO): Promise<void> {
         this.saveInputValues(emailStateDTO);
+
+        if (this.isLoggedOut(emailStateDTO)) {
+            this.context.callbackPopulateEmailInput?.("");
+            await this.context.transitionTo(transitionToken, IdleState);
+            return;
+        }
+
         if (this.isAnyEmailEntered() || this.isAnyPasswordEntered()) {
             await this.context.transitionTo(
                 transitionToken,
@@ -452,9 +469,13 @@ class BadEmailAddressState extends EmailSignInState {
 class SignInLinkOpenedOnSameBrowserState extends EmailSignInState {
     public override readonly ID = "SignInLinkOpenedOnSameBrowser";
 
-    public override async handle(
-        emailStateDTO: TEmailStateDTO,
-    ): Promise<void> {}
+    public override async handle(emailStateDTO: TEmailStateDTO): Promise<void> {
+        if (this.isLoggedOut(emailStateDTO)) {
+            this.context.callbackPopulateEmailInput?.("");
+            await this.context.transitionTo(transitionToken, IdleState);
+            return;
+        }
+    }
 
     public override async onEnter(): Promise<void> {
         this.context.callbackEnableEmailInput?.(false);
@@ -471,9 +492,13 @@ class SignInLinkOpenedOnSameBrowserState extends EmailSignInState {
 class SignInLinkOpenedOnDifferentBrowserState extends EmailSignInState {
     public override readonly ID = "SignInLinkOpenedOnDifferentBrowser";
 
-    public override async handle(
-        emailStateDTO: TEmailStateDTO,
-    ): Promise<void> {}
+    public override async handle(emailStateDTO: TEmailStateDTO): Promise<void> {
+        if (this.isLoggedOut(emailStateDTO)) {
+            this.context.callbackPopulateEmailInput?.("");
+            await this.context.transitionTo(transitionToken, IdleState);
+            return;
+        }
+    }
 
     public override async onEnter(): Promise<void> {
         this.context.callbackEnableEmailInput?.(true);
@@ -497,6 +522,12 @@ class WaitingForReEnteredEmailState extends EmailSignInState {
     public override readonly ID = "WaitingForReEnteredEmail";
 
     public override async handle(emailStateDTO: TEmailStateDTO): Promise<void> {
+        if (this.isLoggedOut(emailStateDTO)) {
+            this.context.callbackPopulateEmailInput?.("");
+            await this.context.transitionTo(transitionToken, IdleState);
+            return;
+        }
+
         this.setEmail(emailStateDTO?.inputEmailValue);
 
         if (this.isAnyEmailEntered()) {
@@ -528,6 +559,12 @@ class AuthorisingViaFirebaseState extends EmailSignInState {
     public override readonly ID = "AuthorisingViaFirebase";
 
     public override async handle(emailStateDTO: TEmailStateDTO): Promise<void> {
+        if (this.isLoggedOut(emailStateDTO)) {
+            this.context.callbackPopulateEmailInput?.("");
+            await this.context.transitionTo(transitionToken, IdleState);
+            return;
+        }
+
         switch (emailStateDTO.userCredentialFoundViaEmail) {
             case true:
                 this.firebaseAuthService.deleteFirebaseQuerystringParams();
@@ -555,9 +592,13 @@ class AuthorisingViaFirebaseState extends EmailSignInState {
 class SignedInState extends EmailSignInState {
     public override readonly ID = "SignedIn";
 
-    public override async handle(
-        emailStateDTO: TEmailStateDTO,
-    ): Promise<void> {}
+    public override async handle(emailStateDTO: TEmailStateDTO): Promise<void> {
+        if (this.isLoggedOut(emailStateDTO)) {
+            this.context.callbackPopulateEmailInput?.("");
+            await this.context.transitionTo(transitionToken, IdleState);
+            return;
+        }
+    }
 
     public override async onEnter(): Promise<void> {
         this.context.callbackEnableEmailInput?.(false);
@@ -572,8 +613,15 @@ class AuthFailedState extends EmailSignInState {
     public override readonly ID = "AuthFailed";
 
     public override async handle(emailStateDTO: TEmailStateDTO): Promise<void> {
+        if (this.isLoggedOut(emailStateDTO)) {
+            this.context.callbackPopulateEmailInput?.("");
+            await this.context.transitionTo(transitionToken, IdleState);
+            return;
+        }
+
         if (emailStateDTO.emailDataDeleted) {
-            this.context.transitionTo(transitionToken, IdleState);
+            await this.context.transitionTo(transitionToken, IdleState);
+            return;
         }
     }
 

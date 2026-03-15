@@ -116,10 +116,6 @@ export class FacebookSignInFSMContext {
 
     /** should always be called by an action external to this FSM */
     public async handle(facebookStateDTO: TFacebookStateDTO): Promise<void> {
-        const skipCurrentStateHandler =
-            await this.currentState?.overrideStateHandler(facebookStateDTO);
-        if (skipCurrentStateHandler) return;
-
         await this.currentState?.handle(facebookStateDTO);
     }
 
@@ -214,20 +210,6 @@ abstract class FacebookSignInState {
     protected log(logMessage: string): void {
         this.logger?.({ logMessage });
     }
-
-    public async overrideStateHandler(
-        facebookStateDTO?: TFacebookStateDTO,
-    ): Promise<boolean> {
-        let skipCurrentStateLogic = false;
-        // todo: move this to CheckingRedirectResultState and IdleState?
-        // hmm no. what if the user hits refresh half way through the flow?
-        if (facebookStateDTO?.foundToken == authProviders.Facebook) {
-            this.log("facebook fsm: detected user is signed in");
-            await this.context.transitionTo(transitionToken, SignedInState);
-            skipCurrentStateLogic = true;
-        }
-        return skipCurrentStateLogic;
-    }
 }
 
 class IdleState extends FacebookSignInState {
@@ -236,6 +218,12 @@ class IdleState extends FacebookSignInState {
     public override async handle(
         facebookStateDTO: TFacebookStateDTO,
     ): Promise<void> {
+        if (facebookStateDTO?.foundToken == authProviders.Facebook) {
+            this.log("facebook fsm: detected user is signed in");
+            await this.context.transitionTo(transitionToken, SignedInState);
+            return;
+        }
+
         if (facebookStateDTO?.isFacebookLoginClicked) {
             await this.context.transitionTo(
                 transitionToken,
@@ -256,6 +244,12 @@ class RedirectingToFacebookState extends FacebookSignInState {
     public override async handle(
         facebookStateDTO: TFacebookStateDTO,
     ): Promise<void> {
+        if (facebookStateDTO?.foundToken == authProviders.Facebook) {
+            this.log("facebook fsm: detected user is signed in");
+            await this.context.transitionTo(transitionToken, SignedInState);
+            return;
+        }
+
         if (facebookStateDTO?.userNotSignedIn) {
             this.log("facebook fsm: detected user is signed out");
             await this.context.transitionTo(transitionToken, IdleState);
@@ -294,6 +288,12 @@ class CheckingRedirectResultState extends FacebookSignInState {
     public override async handle(
         facebookStateDTO: TFacebookStateDTO,
     ): Promise<void> {
+        if (facebookStateDTO?.foundToken == authProviders.Facebook) {
+            this.log("facebook fsm: detected user is signed in");
+            await this.context.transitionTo(transitionToken, SignedInState);
+            return;
+        }
+
         if (facebookStateDTO?.userNotSignedIn) {
             this.log("facebook fsm: detected user is signed out");
             await this.context.transitionTo(

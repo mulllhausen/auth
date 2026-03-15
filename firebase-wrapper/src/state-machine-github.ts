@@ -108,10 +108,6 @@ export class GithubSignInFSMContext {
 
     /** should always be called by an action external to this FSM */
     public async handle(githubStateDTO: TGithubStateDTO): Promise<void> {
-        const skipCurrentStateHandler =
-            await this.currentState?.overrideStateHandler(githubStateDTO);
-        if (skipCurrentStateHandler) return;
-
         await this.currentState?.handle(githubStateDTO);
     }
 
@@ -205,13 +201,6 @@ abstract class GithubSignInState {
 
     protected log(logMessage: string): void {
         this.logger?.({ logMessage });
-    }
-
-    public async overrideStateHandler(
-        githubStateDTO?: TGithubStateDTO,
-    ): Promise<boolean> {
-        // not used for github
-        return false;
     }
 }
 

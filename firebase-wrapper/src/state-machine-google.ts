@@ -108,10 +108,6 @@ export class GoogleSignInFSMContext {
 
     /** should always be called by an action external to this FSM */
     public async handle(googleStateDTO: TGoogleStateDTO): Promise<void> {
-        const skipCurrentStateHandler =
-            await this.currentState?.overrideStateHandler(googleStateDTO);
-        if (skipCurrentStateHandler) return;
-
         await this.currentState?.handle(googleStateDTO);
     }
 
@@ -205,13 +201,6 @@ abstract class GoogleSignInState {
 
     protected log(logMessage: string): void {
         this.logger?.({ logMessage });
-    }
-
-    public async overrideStateHandler(
-        googleStateDTO?: TGoogleStateDTO,
-    ): Promise<boolean> {
-        // not used for google
-        return false;
     }
 }
 
