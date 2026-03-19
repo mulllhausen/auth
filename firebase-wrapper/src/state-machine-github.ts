@@ -104,6 +104,10 @@ export class GithubSignInFSMContext {
             token,
             githubSignInStateConstructor, // init. a class is required.
         );
+
+        this.callbackEnableLoginButton?.(
+            !this.firebaseAuthService.signedInStatus[authProviders.Github],
+        );
     }
 
     /** should always be called by an action external to this FSM */
@@ -341,5 +345,6 @@ class SignedInState extends GithubSignInState {
 
     public override async onEnter(): Promise<void> {
         dbSaveUser(this.firebaseAuthService.User);
+        this.context.callbackEnableLoginButton?.(false);
     }
 }

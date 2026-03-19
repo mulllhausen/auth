@@ -77,6 +77,7 @@ export type TGUIStateDTO = {
     isFacebookLoginClicked?: boolean;
     isGithubLoginClicked?: boolean;
     isGoogleLoginClicked?: boolean;
+    isLogoutClicked?: boolean;
 };
 
 let isAnyTabClicked = false;

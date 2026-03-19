@@ -121,7 +121,6 @@ export class EmailSignInFSMContext {
 
     /** note: call setup() once immediately after the constructor */
     public async setup(): Promise<void> {
-        debugger;
         // todo: ignore if older than 1 day
         this.firebaseAuthService.EmailAddress = this.getEmailFromLocalstorage();
         this.callbackPopulateEmailInput?.(
@@ -135,11 +134,16 @@ export class EmailSignInFSMContext {
 
         // init. a class is required.
         await this.transitionTo(token, emailSignInStateConstructor);
+
+        this.callbackEnableLoginButton?.(
+            !this.firebaseAuthService.signedInStatus[authProviders.Email],
+        );
+
+        await this.firebaseAuthService.checkIfURLIsASignInWithEmailLink();
     }
 
     /** should always be called by an action external to this FSM */
     public async handle(emailStateDTO: TEmailStateDTO): Promise<void> {
-        debugger;
         await this.currentState?.handle(emailStateDTO);
     }
 

@@ -104,6 +104,10 @@ export class GoogleSignInFSMContext {
             token,
             googleSignInStateConstructor, // init. a class is required.
         );
+
+        this.callbackEnableLoginButton?.(
+            !this.firebaseAuthService.signedInStatus[authProviders.Google],
+        );
     }
 
     /** should always be called by an action external to this FSM */

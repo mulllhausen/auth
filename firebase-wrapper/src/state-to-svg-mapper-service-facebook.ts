@@ -120,14 +120,37 @@ export class StateToSVGMapperServiceFacebook {
             case this.generateTransition("SignedIn0", "GotProfilePic0"):
                 return "DownloadProfilePic0";
 
-            case this.generateTransition("GotProfilePic0", "Idle0"):
-                return "LogoutButtonClicked0";
-
             case this.generateTransition("SignedIn0", "FailedToGetProfilePic0"):
                 return "GraphApiFail0";
 
             case this.generateTransition("FailedToGetProfilePic0", "Idle0"):
                 return "Reset2";
+
+            // logout
+
+            case this.generateTransition(
+                "RedirectingToFacebook0",
+                "SentLogoutRequest0",
+            ):
+                return "LogoutButtonClicked0";
+
+            case this.generateTransition(
+                "CheckingRedirectResult0",
+                "SentLogoutRequest0",
+            ):
+                return "LogoutButtonClicked1";
+
+            case this.generateTransition("SignedIn0", "SentLogoutRequest0"):
+                return "LogoutButtonClicked2";
+
+            case this.generateTransition(
+                "GotProfilePic0",
+                "SentLogoutRequest0",
+            ):
+                return "LogoutButtonClicked3";
+
+            case this.generateTransition("SentLogoutRequest0", "Idle0"):
+                return "LogoutSuccessful0";
 
             default:
                 return null;
@@ -154,5 +177,6 @@ export class StateToSVGMapperServiceFacebook {
         SignedIn: "SignedIn0",
         GotProfilePic: "GotProfilePic0",
         FailedToGetProfilePic: "FailedToGetProfilePic0",
+        SentLogoutRequest: "SentLogoutRequest0",
     };
 }

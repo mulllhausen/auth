@@ -51,6 +51,7 @@ const facebookFSMStateIDs = [
     "SignedIn",
     "GotProfilePic",
     "FailedToGetProfilePic",
+    "SentLogoutRequest",
 ] as const;
 export type TFacebookFSMStateID = (typeof facebookFSMStateIDs)[number];
 
@@ -77,6 +78,7 @@ export class FacebookSignInFSMContext {
         SignedIn: SignedInState,
         GotProfilePic: GotProfilePicState,
         FailedToGetProfilePic: FailedToGetProfilePicState,
+        SentLogoutRequest: SentLogoutRequestState,
     };
 
     // callbacks
@@ -111,6 +113,10 @@ export class FacebookSignInFSMContext {
         await this.transitionTo(
             token,
             facebookSignInStateConstructor, // init. a class is required.
+        );
+
+        this.callbackEnableLoginButton?.(
+            !this.firebaseAuthService.signedInStatus[authProviders.Facebook],
         );
     }
 
@@ -245,9 +251,8 @@ class RedirectingToFacebookState extends FacebookSignInState {
             return;
         }
 
-        if (facebookStateDTO?.userNotSignedIn) {
-            this.context.log("facebook fsm: detected user is signed out");
-            await this.context.transitionTo(token, IdleState);
+        if (facebookStateDTO?.isLogoutClicked) {
+            await this.context.transitionTo(token, SentLogoutRequestState);
             return;
         }
 
@@ -283,9 +288,8 @@ class CheckingRedirectResultState extends FacebookSignInState {
             return;
         }
 
-        if (facebookStateDTO?.userNotSignedIn) {
-            this.context.log("facebook fsm: detected user is signed out");
-            await this.context.transitionTo(token, FacebookAuthFailedState);
+        if (facebookStateDTO?.isLogoutClicked) {
+            await this.context.transitionTo(token, SentLogoutRequestState);
             return;
         }
 
@@ -354,9 +358,8 @@ class SignedInState extends FacebookSignInState {
             }
         }
 
-        if (facebookStateDTO?.userNotSignedIn) {
-            this.context.log("facebook fsm: detected user is signed out");
-            await this.context.transitionTo(token, IdleState);
+        if (facebookStateDTO?.isLogoutClicked) {
+            await this.context.transitionTo(token, SentLogoutRequestState);
             return;
         }
 
@@ -378,9 +381,8 @@ class GotProfilePicState extends FacebookSignInState {
     public override async handle(
         facebookStateDTO: TFacebookStateDTO,
     ): Promise<void> {
-        if (facebookStateDTO?.userNotSignedIn) {
-            this.context.log("facebook fsm: detected user is signed out");
-            await this.context.transitionTo(token, IdleState);
+        if (facebookStateDTO?.isLogoutClicked) {
+            await this.context.transitionTo(token, SentLogoutRequestState);
             return;
         }
     }
@@ -402,4 +404,19 @@ class FailedToGetProfilePicState extends FacebookSignInState {
         await this.context.transitionTo(token, IdleState);
         return;
     }
+}
+
+class SentLogoutRequestState extends FacebookSignInState {
+    public override readonly ID = "SentLogoutRequest";
+
+    public override async handle(
+        facebookStateDTO: TFacebookStateDTO,
+    ): Promise<void> {
+        if (facebookStateDTO.userNotSignedIn) {
+            await this.context.transitionTo(token, IdleState);
+            return;
+        }
+    }
+
+    public override async onEnter(): Promise<void> {}
 }

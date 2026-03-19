@@ -36,6 +36,8 @@ export class FSMCoordinator {
         await this.googleSignInFSMContext.setup();
         await this.emailSignInFSMContext.setup();
         await this.checkIfRedirectResult();
+
+        // only needed for logout
         await this.firebaseAuthService.setupFirebaseListeners();
     }
 
@@ -62,6 +64,19 @@ export class FSMCoordinator {
     }
 
     public async logout(): Promise<void> {
+        debugger;
+        await this.emailSignInFSMContext.handle({
+            isLogoutClicked: true,
+        });
+        await this.facebookSignInFSMContext.handle({
+            isLogoutClicked: true,
+        });
+        await this.githubSignInFSMContext.handle({
+            isLogoutClicked: true,
+        });
+        await this.googleSignInFSMContext.handle({
+            isLogoutClicked: true,
+        });
         await this.firebaseAuthService.logout();
     }
 

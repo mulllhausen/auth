@@ -433,9 +433,10 @@ export class FirebaseAuthService {
     }
 
     private async authStateChanged(user: User | null): Promise<void> {
-        if (user) {
-            this.afterUserSignedIn(user);
-        } else {
+        if (!user) {
+            debugger;
+            //    this.afterUserSignedIn(user);
+            //} else {
             this.log(`firebase auth event: user is not signed in`);
             this.User = null;
             //this.clearUserCache();
