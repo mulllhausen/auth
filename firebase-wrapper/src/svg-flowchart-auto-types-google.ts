@@ -8,6 +8,9 @@ export const GoogleSVGArrowCSSClass = {
     Fail0: "fail-0",
     FirebaseReturnedAnError0: "firebase-returned-an-error-0",
     LogoutButtonClicked0: "logout-button-clicked-0",
+    LogoutButtonClicked1: "logout-button-clicked-1",
+    LogoutButtonClicked2: "logout-button-clicked-2",
+    LogoutSuccessful0: "logout-successful-0",
     OkResponse0: "ok-response-0",
     OkResponse1: "ok-response-1",
     Reset0: "reset-0",
@@ -21,5 +24,6 @@ export const GoogleSVGStateBoxCSSClass = {
     GoogleResponded0: "google-responded-0",
     Idle0: "idle-0",
     RedirectingToGoogle0: "redirecting-to-google-0",
+    SentLogoutRequest0: "sent-logout-request-0",
     SignedIn0: "signed-in-0",
 } as const;
