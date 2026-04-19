@@ -5,7 +5,7 @@ import {
     defaultAction,
     FirebaseAuthService,
 } from "../src/firebase-wrapper";
-import { getEnv } from "../src/utils.ts";
+import { getFirebaseWrapperEnv } from "../src/utils.ts";
 
 // note: returns a concrete instance of FirebaseAuthService, not a mock
 // however the internal settings are mocked
@@ -50,7 +50,7 @@ export const setupFirebaseAuthService = (params: {
 
     const firebaseAuthService = new FirebaseAuthService({
         window, // todo: mock
-        env: getEnv(), // use real, not mock
+        env: getFirebaseWrapperEnv(), // use real, not mock
         settings: wrapperSettings,
     });
     return firebaseAuthService;

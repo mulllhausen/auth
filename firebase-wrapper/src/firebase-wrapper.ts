@@ -26,7 +26,7 @@ import {
 } from "firebase/auth";
 import type { TDBUserDTO } from "./db-user.ts";
 import { dbDeleteUser, dbGetUser } from "./db-user.ts";
-import type { TProcessEnv } from "./dotenv.d.ts";
+import type { TFirebaseWrapperEnv } from "./dotenv.d.ts";
 import type { TLogItem } from "./gui-logger.ts";
 import {
     mapFirebaseUser2DBUserDTO,
@@ -126,7 +126,7 @@ type TAuthProviderConstructor =
 export class FirebaseAuthService {
     private _window: Window & typeof globalThis;
     private logger?: (logItem: TLogItem) => void;
-    private env: TProcessEnv;
+    private env: TFirebaseWrapperEnv;
     public Auth: Auth;
     public EmailAddress: string | null = null;
     public UseLinkInsteadOfPassword: boolean = false;
@@ -145,7 +145,7 @@ export class FirebaseAuthService {
 
     constructor(props: {
         window: Window & typeof globalThis;
-        env: TProcessEnv;
+        env: TFirebaseWrapperEnv;
         logger?: (logItemInput: TLogItem) => void;
     }) {
         this._window = props.window;

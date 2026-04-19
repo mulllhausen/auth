@@ -1,4 +1,4 @@
-export type TProcessEnv = {
+export type TFirebaseWrapperEnv = {
     PROJECT_DOMAIN?: string;
     PROJECT_NAME?: string;
     BASE_PATH?: string;
