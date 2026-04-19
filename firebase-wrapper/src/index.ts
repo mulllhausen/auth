@@ -130,7 +130,7 @@ const emailSignInFSMContext = new EmailSignInFSMContext({
     firebaseAuthService,
     stateToSVGMapperService: stateToEmailSVGMapperService,
     logger: guiLogger.log.bind(guiLogger),
-    callbackSetTab,
+    callbackSetProviderFocus: callbackSetTab,
     callbackEnableLoginButton: callbackEnableLoginButtonEmail,
     callbackPopulateEmailInput,
     callbackEnableEmailInput,
@@ -149,7 +149,7 @@ const facebookSignInFSMContext = new FacebookSignInFSMContext({
     firebaseAuthService,
     stateToSVGMapperService: stateToFacebookSVGMapperService,
     logger: guiLogger.log.bind(guiLogger),
-    callbackSetTab,
+    callbackSetProviderFocus: callbackSetTab,
     callbackEnableLoginButton: callbackEnableLoginButtonFacebook,
 });
 
@@ -163,7 +163,7 @@ const githubSignInFSMContext = new GithubSignInFSMContext({
     firebaseAuthService,
     stateToSVGMapperService: stateToGithubSVGMapperService,
     logger: guiLogger.log.bind(guiLogger),
-    callbackSetTab,
+    callbackSetProviderFocus: callbackSetTab,
     callbackEnableLoginButton: callbackEnableLoginButtonGithub,
 });
 
@@ -177,7 +177,7 @@ const googleSignInFSMContext = new GoogleSignInFSMContext({
     firebaseAuthService,
     stateToSVGMapperService: stateToGoogleSVGMapperService,
     logger: guiLogger.log.bind(guiLogger),
-    callbackSetTab,
+    callbackSetProviderFocus: callbackSetTab,
     callbackEnableLoginButton: callbackEnableLoginButtonGoogle,
 });
 

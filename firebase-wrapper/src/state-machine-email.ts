@@ -79,7 +79,7 @@ export class EmailSignInFSMContext {
     };
 
     // callbacks
-    public callbackSetTab?: (authProvider: TAuthProvider) => void;
+    public callbackSetProviderFocus?: (authProvider: TAuthProvider) => void;
     public callbackEnableEmailInput?: (enabled: boolean) => void;
     public callbackPopulateEmailInput?: (value: string | null) => void;
     public callbackEnablePasswordInput?: (enabled: boolean) => void;
@@ -94,7 +94,7 @@ export class EmailSignInFSMContext {
         firebaseAuthService: FirebaseAuthService;
         stateToSVGMapperService?: StateToSVGMapperServiceEmail;
         logger?: (logItemInput: TLogItem) => void;
-        callbackSetTab?: (authProvider: TAuthProvider) => void;
+        callbackSetProviderFocus?: (authProvider: TAuthProvider) => void;
         callbackEnableEmailInput?: (enabled: boolean) => void;
         callbackPopulateEmailInput?: (value: string | null) => void;
         callbackEnablePasswordInput?: (enabled: boolean) => void;
@@ -106,7 +106,7 @@ export class EmailSignInFSMContext {
         this.firebaseAuthService = props.firebaseAuthService;
         this.stateToSVGMapperService = props.stateToSVGMapperService;
         this.logger = props.logger;
-        this.callbackSetTab = props.callbackSetTab;
+        this.callbackSetProviderFocus = props.callbackSetProviderFocus;
         this.callbackEnableLoginButton = props.callbackEnableLoginButton;
         this.callbackPopulateEmailInput = props.callbackPopulateEmailInput;
         this.callbackEnableEmailInput = props.callbackEnableEmailInput;
@@ -183,7 +183,7 @@ export class EmailSignInFSMContext {
     private async setState<TState extends EmailSignInState>(
         newStateClass: TEmailSignInStateConstructor<TState>,
     ): Promise<EmailSignInState> {
-        this.callbackSetTab?.(authProviders.Email);
+        this.callbackSetProviderFocus?.(authProviders.Email);
         this.currentState = new newStateClass({
             firebaseAuthService: this.firebaseAuthService,
             context: this,

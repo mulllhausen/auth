@@ -72,7 +72,7 @@ export class GoogleSignInFSMContext {
         };
 
     // callbacks
-    public callbackSetTab?: (authProvider: TAuthProvider) => void;
+    public callbackSetProviderFocus?: (authProvider: TAuthProvider) => void;
     public callbackEnableLoginButton?: (enabled: boolean) => void;
 
     constructor(props: {
@@ -80,14 +80,14 @@ export class GoogleSignInFSMContext {
         firebaseAuthService: FirebaseAuthService;
         stateToSVGMapperService?: StateToSVGMapperServiceGoogle;
         logger?: (logItemInput: TLogItem) => void;
-        callbackSetTab?: (authProvider: TAuthProvider) => void;
+        callbackSetProviderFocus?: (authProvider: TAuthProvider) => void;
         callbackEnableLoginButton?: (enabled: boolean) => void;
     }) {
         this._window = props.window;
         this.firebaseAuthService = props.firebaseAuthService;
         this.stateToSVGMapperService = props.stateToSVGMapperService;
         this.logger = props.logger;
-        this.callbackSetTab = props.callbackSetTab;
+        this.callbackSetProviderFocus = props.callbackSetProviderFocus;
         this.callbackEnableLoginButton = props.callbackEnableLoginButton;
 
         this.firebaseAuthService.subscribeStateChanged(this.handle.bind(this));
@@ -151,7 +151,7 @@ export class GoogleSignInFSMContext {
     private async setState<TState extends GoogleSignInState>(
         newStateClass: TGoogleSignInStateConstructor<TState>,
     ): Promise<GoogleSignInState> {
-        this.callbackSetTab?.(authProviders.Google);
+        this.callbackSetProviderFocus?.(authProviders.Google);
         this.currentState = new newStateClass({
             firebaseAuthService: this.firebaseAuthService,
             context: this,
