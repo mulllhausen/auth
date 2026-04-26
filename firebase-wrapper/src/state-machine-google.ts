@@ -17,7 +17,7 @@ import type {
 import { authProviders, FirebaseAuthService } from "./firebase-wrapper.ts";
 import type { TLogItem } from "./gui-logger.ts";
 import type { TGUIStateDTO } from "./index.ts";
-import { StateToSVGMapperServiceGoogle } from "./state-to-svg-mapper-service-google.ts";
+import { TStateToSVGMapperServiceGoogle } from "./state-to-svg-mapper-service-google.ts";
 import { wait } from "./utils.ts";
 import {
     googleProfilePicRegex,
@@ -32,7 +32,7 @@ export type TGoogleStateDTO = Partial<TGUIStateDTO & TFirebaseWrapperStateDTO>;
 type TGoogleSignInStateConstructorProps = {
     firebaseAuthService: FirebaseAuthService;
     context: GoogleSignInFSMContext;
-    stateToSVGMapperService?: StateToSVGMapperServiceGoogle;
+    stateToSVGMapperService?: TStateToSVGMapperServiceGoogle;
     logger?: (logItem: TLogItem) => void;
 };
 
@@ -57,7 +57,7 @@ const token: unique symbol = Symbol("token");
 export class GoogleSignInFSMContext {
     private _window: Window & typeof globalThis;
     private firebaseAuthService: FirebaseAuthService;
-    private stateToSVGMapperService?: StateToSVGMapperServiceGoogle;
+    private stateToSVGMapperService?: TStateToSVGMapperServiceGoogle;
     private currentState?: GoogleSignInState; // todo - prevent setting except via transitionTo()
     private logger?: (logItemInput: TLogItem) => void;
     private localStorageGoogleStateKey = "googleState";
@@ -78,7 +78,7 @@ export class GoogleSignInFSMContext {
     constructor(props: {
         window: Window & typeof globalThis;
         firebaseAuthService: FirebaseAuthService;
-        stateToSVGMapperService?: StateToSVGMapperServiceGoogle;
+        stateToSVGMapperService?: TStateToSVGMapperServiceGoogle;
         logger?: (logItemInput: TLogItem) => void;
         callbackSetProviderFocus?: (authProvider: TAuthProvider) => void;
         callbackEnableLoginButton?: (enabled: boolean) => void;
@@ -194,7 +194,7 @@ abstract class GoogleSignInState {
     public abstract readonly ID: TGoogleFSMStateID;
     protected firebaseAuthService: FirebaseAuthService;
     protected context: GoogleSignInFSMContext;
-    protected stateToSVGMapperService?: StateToSVGMapperServiceGoogle;
+    protected stateToSVGMapperService?: TStateToSVGMapperServiceGoogle;
 
     constructor(props: TGoogleSignInStateConstructorProps) {
         this.firebaseAuthService = props.firebaseAuthService;

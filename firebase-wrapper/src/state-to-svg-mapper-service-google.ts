@@ -8,7 +8,12 @@ import {
 import { SVGFlowChartServiceGoogle } from "./svg-flowchart-service-google.ts";
 import { SVGCSSClassCategory } from "./svg-flowchart-service.ts";
 
-export class StateToSVGMapperServiceGoogle {
+export type TStateToSVGMapperServiceGoogle = {
+    enqueue(state: TGoogleFSMStateID): void;
+    updateSvg(): void;
+}
+
+export class StateToSVGMapperServiceGoogle implements TStateToSVGMapperServiceGoogle {
     private svgService: SVGFlowChartServiceGoogle;
     private queue: TGoogleStateBoxKey[] = [];
 

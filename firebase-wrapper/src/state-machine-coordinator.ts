@@ -4,6 +4,18 @@ import { FacebookSignInFSMContext } from "./state-machine-facebook.ts";
 import { GithubSignInFSMContext } from "./state-machine-github.ts";
 import { GoogleSignInFSMContext } from "./state-machine-google.ts";
 
+// todo: put all these callbacks into a single type
+//   callbackSetProviderFocus: (authProvider: TAuthProvider) => void;
+//   callbackEnableLoginButtonEmail: (enabled: boolean) => void;
+//   callbackEnableLoginButtonFacebook: (enabled: boolean) => void;
+//   callbackEnableLoginButtonGithub: (enabled: boolean) => void;
+//   callbackEnableLoginButtonGoogle: (enabled: boolean) => void;
+//   callbackPopulateEmailInput: (value: string | null) => void;
+//   callbackEnableEmailInput: (enabled: boolean) => void;
+//   callbackEnablePasswordInput: (enabled: boolean) => void;
+//   callbackShowInstructionsToClickLinkInEmail: () => void;
+//   callbackShowInstructionsToReEnterEmail: () => void;
+
 /** this class should know nothing about SVGs, loggers and the GUI */
 export class FSMCoordinator {
     private firebaseAuthService: FirebaseAuthService;

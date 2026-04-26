@@ -8,7 +8,13 @@ import {
 import { SVGFlowChartServiceEmail } from "./svg-flowchart-service-email.ts";
 import { SVGCSSClassCategory } from "./svg-flowchart-service.ts";
 
-export class StateToSVGMapperServiceEmail {
+
+export type TStateToSVGMapperServiceEmail = {
+    enqueue(state: TEmailFSMStateID): void;
+    updateSvg(): void;
+}
+
+export class StateToSVGMapperServiceEmail implements TStateToSVGMapperServiceEmail {
     private svgService: SVGFlowChartServiceEmail;
     private queue: TEmailStateBoxKey[] = [];
 

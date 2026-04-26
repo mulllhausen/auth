@@ -15,10 +15,10 @@ import type { TGUIStateDTO } from ".";
 import type {
     TAuthProvider,
     TFirebaseWrapperStateDTO,
-} from "./firebase-wrapper";
-import { authProviders, FirebaseAuthService } from "./firebase-wrapper";
-import type { TLogItem } from "./gui-logger";
-import { StateToSVGMapperServiceEmail } from "./state-to-svg-mapper-service-email";
+} from "./firebase-wrapper.ts";
+import { authProviders, FirebaseAuthService } from "./firebase-wrapper.ts";
+import type { TLogItem } from "./gui-logger.ts";
+import type { TStateToSVGMapperServiceEmail } from "./state-to-svg-mapper-service-email.ts";
 
 // #region consts and types
 
@@ -28,7 +28,7 @@ export type TEmailStateDTO = Partial<TGUIStateDTO & TFirebaseWrapperStateDTO>;
 type TEmailSignInStateConstructorProps = {
     firebaseAuthService: FirebaseAuthService;
     context: EmailSignInFSMContext;
-    stateToSVGMapperService?: StateToSVGMapperServiceEmail;
+    stateToSVGMapperService?: TStateToSVGMapperServiceEmail;
     logger?: (logItem: TLogItem) => void;
 };
 
@@ -58,7 +58,7 @@ const token: unique symbol = Symbol("token");
 export class EmailSignInFSMContext {
     private _window: Window & typeof globalThis;
     private firebaseAuthService: FirebaseAuthService;
-    private stateToSVGMapperService?: StateToSVGMapperServiceEmail;
+    private stateToSVGMapperService?: TStateToSVGMapperServiceEmail;
     private currentState?: EmailSignInState;
     private logger?: (logItemInput: TLogItem) => void;
     private localStorageEmailStateKey = "emailState";
@@ -92,7 +92,7 @@ export class EmailSignInFSMContext {
     constructor(props: {
         window: Window & typeof globalThis;
         firebaseAuthService: FirebaseAuthService;
-        stateToSVGMapperService?: StateToSVGMapperServiceEmail;
+        stateToSVGMapperService?: TStateToSVGMapperServiceEmail;
         logger?: (logItemInput: TLogItem) => void;
         callbackSetProviderFocus?: (authProvider: TAuthProvider) => void;
         callbackEnableEmailInput?: (enabled: boolean) => void;
@@ -243,7 +243,7 @@ abstract class EmailSignInState {
     public abstract readonly ID: TEmailFSMStateID;
     protected firebaseAuthService: FirebaseAuthService;
     protected context: EmailSignInFSMContext;
-    protected stateToSVGMapperService?: StateToSVGMapperServiceEmail;
+    protected stateToSVGMapperService?: TStateToSVGMapperServiceEmail;
 
     constructor(props: TEmailSignInStateConstructorProps) {
         this.firebaseAuthService = props.firebaseAuthService;

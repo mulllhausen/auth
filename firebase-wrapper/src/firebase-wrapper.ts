@@ -1,7 +1,7 @@
 // #region imports
 
 import type { FirebaseOptions } from "firebase/app";
-import { FirebaseError, initializeApp } from "firebase/app";
+import { FirebaseError, getApp, getApps, initializeApp } from "firebase/app";
 import type {
     ActionCodeSettings,
     Auth,
@@ -172,7 +172,8 @@ export class FirebaseAuthService {
             handleCodeInApp: true,
         };
         this.setupSignedInStatus();
-        const app = initializeApp(firebaseOptions);
+        const app = getApps().length > 0 ? getApp() : initializeApp(firebaseOptions);
+        console.log(firebaseOptions);
         this.Auth = getAuth(app);
         this.log(`finished initializing firebase SDK`);
     }
