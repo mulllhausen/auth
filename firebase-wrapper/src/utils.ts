@@ -95,6 +95,10 @@ export function deepCopy<T>(obj: T): T {
     return JSON.parse(JSON.stringify(obj));
 }
 
+export function strIsNullOrEmpty(str: string | null | undefined): boolean {
+    return str == null || str === "";
+}
+
 export function objIsNullOrEmpty<T>(obj: T): boolean {
     return obj == null || Object.keys(obj).length === 0;
 }

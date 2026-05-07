@@ -9,7 +9,7 @@
 // firebase wrapper and the firebase wrapper never calls it, except by invoking the callbacks it has
 // been given by this service.
 
-import { dbSaveUser } from "./db-user.ts";
+import { dbLoginUser, dbSaveUser } from "./db-user.ts";
 import type {
     TAuthProvider,
     TFirebaseWrapperStateDTO,
@@ -47,6 +47,7 @@ const githubFSMStateIDs = [
     "GithubIsUnavailable",
     "GithubAuthFailed",
     "SignedIn",
+    "SentLogoutRequest",
 ] as const;
 export type TGithubFSMStateID = (typeof githubFSMStateIDs)[number];
 
@@ -69,6 +70,7 @@ export class GithubSignInFSMContext {
             GithubIsUnavailable: GithubIsUnavailableState,
             GithubAuthFailed: GithubAuthFailedState,
             SignedIn: SignedInState,
+            SentLogoutRequest: SentLogoutRequestState,
         };
 
     // callbacks
@@ -112,6 +114,7 @@ export class GithubSignInFSMContext {
 
     /** should always be called by an action external to this FSM */
     public async handle(githubStateDTO: TGithubStateDTO): Promise<void> {
+        debugger;
         await this.currentState?.handle(githubStateDTO);
     }
 
@@ -119,6 +122,7 @@ export class GithubSignInFSMContext {
         fsmToken: typeof token, // prevent external access
         newStateClass: TGithubSignInStateConstructor<TState>,
     ): Promise<GithubSignInState> {
+        debugger;
         if (fsmToken !== token) {
             throw new Error(`incorrect transition token`);
         }
@@ -234,9 +238,8 @@ class RedirectingToGithubState extends GithubSignInState {
     public override async handle(
         githubStateDTO: TGithubStateDTO,
     ): Promise<void> {
-        if (githubStateDTO?.userNotSignedIn) {
-            this.context.log("github fsm: detected user is signed out");
-            await this.context.transitionTo(token, IdleState);
+        if (githubStateDTO?.isLogoutClicked) {
+            await this.context.transitionTo(token, SentLogoutRequestState);
             return;
         }
 
@@ -266,9 +269,8 @@ class GithubRespondedState extends GithubSignInState {
     public override async handle(
         githubStateDTO: TGithubStateDTO,
     ): Promise<void> {
-        if (githubStateDTO?.userNotSignedIn) {
-            this.context.log("github fsm: detected user is signed out");
-            await this.context.transitionTo(token, GithubAuthFailedState);
+        if (githubStateDTO?.isLogoutClicked) {
+            await this.context.transitionTo(token, SentLogoutRequestState);
             return;
         }
 
@@ -281,7 +283,9 @@ class GithubRespondedState extends GithubSignInState {
             this.context.log("github fsm: detected user is signed in");
 
             const githubProfilePicUrl =
-                this.firebaseAuthService.User?.[authProviders.Github]?.photoURL;
+                this.firebaseAuthService.User?.providerData[
+                    authProviders.Github
+                ]?.photoURL;
             if (
                 !validateProfilePicUrl(
                     authProviders.Github,
@@ -294,7 +298,6 @@ class GithubRespondedState extends GithubSignInState {
                 );
             }
             await this.context.transitionTo(token, SignedInState);
-
             return;
         }
     }
@@ -336,15 +339,36 @@ class SignedInState extends GithubSignInState {
     public override async handle(
         githubStateDTO: TGithubStateDTO,
     ): Promise<void> {
-        if (githubStateDTO?.userNotSignedIn) {
-            this.context.log("github fsm: detected user is signed out");
-            await this.context.transitionTo(token, IdleState);
+        if (githubStateDTO?.isLogoutClicked) {
+            await this.context.transitionTo(token, SentLogoutRequestState);
             return;
         }
     }
 
     public override async onEnter(): Promise<void> {
         dbSaveUser(this.firebaseAuthService.User);
+        dbLoginUser(this.firebaseAuthService.User?.uid);
         this.context.callbackEnableLoginButton?.(false);
+    }
+}
+
+class SentLogoutRequestState extends GithubSignInState {
+    public override readonly ID = "SentLogoutRequest";
+
+    public override async handle(
+        githubStateDTO: TGithubStateDTO,
+    ): Promise<void> {
+        if (githubStateDTO?.userNotSignedIn) {
+            this.firebaseAuthService.setSignedInStatus(
+                authProviders.Github,
+                false,
+            );
+            await this.context.transitionTo(token, IdleState);
+            return;
+        }
+    }
+
+    public override async onEnter(): Promise<void> {
+        // note: firebaseAuthService.logout() is called a level up
     }
 }

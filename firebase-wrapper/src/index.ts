@@ -45,6 +45,10 @@
 // - you can’t describe the system at a moment in time
 // - Introducing a new state resolves the non-determinism.
 
+// to login the user clicks a provider button
+// if the user clicks more providers then they are associated with the already-logged-in user
+// we need a way of finding the user's ID given any provider
+
 import type { TAuthProvider } from "./firebase-wrapper.ts";
 import { authProviders, FirebaseAuthService } from "./firebase-wrapper.ts";
 import { GUILogger } from "./gui-logger.ts";
@@ -187,6 +191,7 @@ const fsmCoordinator = new FSMCoordinator({
     facebookSignInFSMContext,
     githubSignInFSMContext,
     googleSignInFSMContext,
+    logger: guiLogger.log.bind(guiLogger),
 });
 await fsmCoordinator.setup();
 

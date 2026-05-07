@@ -1,4 +1,5 @@
 import { FirebaseAuthService } from "./firebase-wrapper.ts";
+import { TLogItem } from "./gui-logger.ts";
 import { EmailSignInFSMContext } from "./state-machine-email.ts";
 import { FacebookSignInFSMContext } from "./state-machine-facebook.ts";
 import { GithubSignInFSMContext } from "./state-machine-github.ts";
@@ -12,6 +13,7 @@ export class FSMCoordinator {
     private googleSignInFSMContext: GoogleSignInFSMContext;
     private emailSignInFSMContext: EmailSignInFSMContext;
     private isSetup: boolean = false;
+    private logger?: (logItemInput: TLogItem) => void;
 
     constructor(props: {
         firebaseAuthService: FirebaseAuthService;
@@ -19,12 +21,14 @@ export class FSMCoordinator {
         facebookSignInFSMContext: FacebookSignInFSMContext;
         githubSignInFSMContext: GithubSignInFSMContext;
         googleSignInFSMContext: GoogleSignInFSMContext;
+        logger?: (logItemInput: TLogItem) => void;
     }) {
         this.firebaseAuthService = props.firebaseAuthService;
         this.emailSignInFSMContext = props.emailSignInFSMContext;
         this.facebookSignInFSMContext = props.facebookSignInFSMContext;
         this.githubSignInFSMContext = props.githubSignInFSMContext;
         this.googleSignInFSMContext = props.googleSignInFSMContext;
+        this.logger = props.logger;
     }
 
     public async setup(): Promise<void> {
@@ -39,6 +43,10 @@ export class FSMCoordinator {
 
         // only needed for logout
         await this.firebaseAuthService.setupFirebaseListeners();
+    }
+
+    private log(logMessage: string): void {
+        this.logger?.({ logMessage });
     }
 
     public async loginEmail(): Promise<void> {
@@ -65,6 +73,7 @@ export class FSMCoordinator {
 
     public async logout(): Promise<void> {
         debugger;
+        this.log("logout clicked");
         await this.emailSignInFSMContext.handle({
             isLogoutClicked: true,
         });

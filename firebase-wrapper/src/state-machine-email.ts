@@ -48,6 +48,7 @@ const emailFSMStateIDs = [
     "WaitingForReEnteredEmail",
     "SignedIn",
     "AuthFailed",
+    "SentLogoutRequest",
 ] as const;
 export type TEmailFSMStateID = (typeof emailFSMStateIDs)[number];
 
@@ -76,6 +77,7 @@ export class EmailSignInFSMContext {
         WaitingForReEnteredEmail: WaitingForUserToClickLinkInEmailState,
         SignedIn: SignedInState,
         AuthFailed: AuthFailedState,
+        SentLogoutRequest: SentLogoutRequestState,
     };
 
     // callbacks
@@ -659,5 +661,31 @@ class AuthFailedState extends EmailSignInState {
         this.context.callbackShowInstructionsToReEnterEmail?.(false);
 
         this.firebaseAuthService.signoutProvider(authProviders.Email);
+    }
+}
+
+class SentLogoutRequestState extends EmailSignInState {
+    public override readonly ID = "SentLogoutRequest";
+
+    public override async handle(emailStateDTO: TEmailStateDTO): Promise<void> {
+        if (this.isLoggedOut(emailStateDTO)) {
+            this.firebaseAuthService.setSignedInStatus(
+                authProviders.Email,
+                false,
+            );
+            this.context.callbackPopulateEmailInput?.("");
+            await this.context.transitionTo(token, IdleState);
+            return;
+        }
+    }
+
+    public override async onEnter(): Promise<void> {
+        this.context.callbackEnableEmailInput?.(false);
+        this.context.callbackEnablePasswordInput?.(false);
+        this.context.callbackEnableLoginButton?.(false);
+        this.context.callbackShowInstructionsToClickLinkInEmail?.(false);
+        this.context.callbackShowInstructionsToReEnterEmail?.(false);
+
+        // note: firebaseAuthService.logout() is called a level up
     }
 }

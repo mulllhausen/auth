@@ -111,8 +111,25 @@ export class StateToSVGMapperServiceGithub {
             case this.generateTransition("AuthFailed0", "Idle0"):
                 return "Reset1";
 
-            case this.generateTransition("SignedIn0", "Idle0"):
+            // logout
+
+            case this.generateTransition(
+                "GithubResponded0",
+                "SentLogoutRequest0",
+            ):
+                return "LogoutButtonClicked1";
+
+            case this.generateTransition(
+                "RedirectingToGithub0",
+                "SentLogoutRequest0",
+            ):
+                return "LogoutButtonClicked2";
+
+            case this.generateTransition("SignedIn0", "SentLogoutRequest0"):
                 return "LogoutButtonClicked0";
+
+            case this.generateTransition("SentLogoutRequest0", "Idle0"):
+                return "LogoutSuccessful0";
 
             default:
                 return null;
@@ -137,5 +154,6 @@ export class StateToSVGMapperServiceGithub {
         GithubIsUnavailable: "GithubIsUnavailable0",
         GithubAuthFailed: "AuthFailed0",
         SignedIn: "SignedIn0",
+        SentLogoutRequest: "SentLogoutRequest0",
     };
 }

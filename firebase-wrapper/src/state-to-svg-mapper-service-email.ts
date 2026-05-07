@@ -170,6 +170,38 @@ export class StateToSVGMapperServiceEmail {
             case this.generateTransition("SignedIn0", "Idle0"):
                 return "ClearUserData0";
 
+            // logout
+
+            case this.generateTransition(
+                "SignInLinkOpenedOnDifferentBrowser0",
+                "SentLogoutRequest0",
+            ):
+                return "LogoutButtonClicked4";
+
+            case this.generateTransition(
+                "SignInLinkOpenedOnSameBrowser0",
+                "SentLogoutRequest0",
+            ):
+                return "LogoutButtonClicked1";
+
+            case this.generateTransition(
+                "WaitingForEmailAddressInGui0",
+                "SentLogoutRequest0",
+            ):
+                return "LogoutButtonClicked3";
+
+            case this.generateTransition("SignedIn0", "SentLogoutRequest0"):
+                return "LogoutButtonClicked2";
+
+            case this.generateTransition(
+                "AuthorisingViaFirebase0",
+                "SentLogoutRequest0",
+            ):
+                return "LogoutButtonClicked0";
+
+            case this.generateTransition("SentLogoutRequest0", "Idle0"):
+                return "LogoutSuccessful0";
+
             default:
                 return null;
         }
@@ -199,5 +231,6 @@ export class StateToSVGMapperServiceEmail {
         AuthorisingViaFirebase: "AuthorisingViaFirebase0",
         SignedIn: "SignedIn0",
         AuthFailed: "AuthFailed0",
+        SentLogoutRequest: "SentLogoutRequest0",
     };
 }
