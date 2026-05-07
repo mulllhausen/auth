@@ -15,10 +15,10 @@ import type { TGUIStateDTO } from ".";
 import type {
     TAuthProvider,
     TFirebaseWrapperStateDTO,
-} from "./firebase-wrapper";
-import { authProviders, FirebaseAuthService } from "./firebase-wrapper";
-import type { TLogItem } from "./gui-logger";
-import { StateToSVGMapperServiceEmail } from "./state-to-svg-mapper-service-email";
+} from "./firebase-wrapper.ts";
+import { authProviders, FirebaseAuthService } from "./firebase-wrapper.ts";
+import type { TLogItem } from "./gui-logger.ts";
+import type { TStateToSVGMapperServiceEmail } from "./state-to-svg-mapper-service-email.ts";
 
 // #region consts and types
 
@@ -28,7 +28,7 @@ export type TEmailStateDTO = Partial<TGUIStateDTO & TFirebaseWrapperStateDTO>;
 type TEmailSignInStateConstructorProps = {
     firebaseAuthService: FirebaseAuthService;
     context: EmailSignInFSMContext;
-    stateToSVGMapperService?: StateToSVGMapperServiceEmail;
+    stateToSVGMapperService?: TStateToSVGMapperServiceEmail;
     logger?: (logItem: TLogItem) => void;
 };
 
@@ -59,7 +59,7 @@ const token: unique symbol = Symbol("token");
 export class EmailSignInFSMContext {
     private _window: Window & typeof globalThis;
     private firebaseAuthService: FirebaseAuthService;
-    private stateToSVGMapperService?: StateToSVGMapperServiceEmail;
+    private stateToSVGMapperService?: TStateToSVGMapperServiceEmail;
     private currentState?: EmailSignInState;
     private logger?: (logItemInput: TLogItem) => void;
     private localStorageEmailStateKey = "emailState";
@@ -81,7 +81,7 @@ export class EmailSignInFSMContext {
     };
 
     // callbacks
-    public callbackSetTab?: (authProvider: TAuthProvider) => void;
+    public callbackSetProviderFocus?: (authProvider: TAuthProvider) => void;
     public callbackEnableEmailInput?: (enabled: boolean) => void;
     public callbackPopulateEmailInput?: (value: string | null) => void;
     public callbackEnablePasswordInput?: (enabled: boolean) => void;
@@ -94,9 +94,9 @@ export class EmailSignInFSMContext {
     constructor(props: {
         window: Window & typeof globalThis;
         firebaseAuthService: FirebaseAuthService;
-        stateToSVGMapperService?: StateToSVGMapperServiceEmail;
+        stateToSVGMapperService?: TStateToSVGMapperServiceEmail;
         logger?: (logItemInput: TLogItem) => void;
-        callbackSetTab?: (authProvider: TAuthProvider) => void;
+        callbackSetProviderFocus?: (authProvider: TAuthProvider) => void;
         callbackEnableEmailInput?: (enabled: boolean) => void;
         callbackPopulateEmailInput?: (value: string | null) => void;
         callbackEnablePasswordInput?: (enabled: boolean) => void;
@@ -108,7 +108,7 @@ export class EmailSignInFSMContext {
         this.firebaseAuthService = props.firebaseAuthService;
         this.stateToSVGMapperService = props.stateToSVGMapperService;
         this.logger = props.logger;
-        this.callbackSetTab = props.callbackSetTab;
+        this.callbackSetProviderFocus = props.callbackSetProviderFocus;
         this.callbackEnableLoginButton = props.callbackEnableLoginButton;
         this.callbackPopulateEmailInput = props.callbackPopulateEmailInput;
         this.callbackEnableEmailInput = props.callbackEnableEmailInput;
@@ -185,7 +185,7 @@ export class EmailSignInFSMContext {
     private async setState<TState extends EmailSignInState>(
         newStateClass: TEmailSignInStateConstructor<TState>,
     ): Promise<EmailSignInState> {
-        this.callbackSetTab?.(authProviders.Email);
+        this.callbackSetProviderFocus?.(authProviders.Email);
         this.currentState = new newStateClass({
             firebaseAuthService: this.firebaseAuthService,
             context: this,
@@ -245,7 +245,7 @@ abstract class EmailSignInState {
     public abstract readonly ID: TEmailFSMStateID;
     protected firebaseAuthService: FirebaseAuthService;
     protected context: EmailSignInFSMContext;
-    protected stateToSVGMapperService?: StateToSVGMapperServiceEmail;
+    protected stateToSVGMapperService?: TStateToSVGMapperServiceEmail;
 
     constructor(props: TEmailSignInStateConstructorProps) {
         this.firebaseAuthService = props.firebaseAuthService;

@@ -1,28 +1,29 @@
-import dotenv from "dotenv";
+// todo: confirm this file is not being used then delete it
+// import dotenv from "dotenv";
 
-type TProcessEnv = {
-    [key: string]: string | undefined;
-};
+// type TProcessEnv = {
+//     [key: string]: string | undefined;
+// };
 
-// get cli args
-const args: string[] = process.argv.slice(2); // skip "node" and script name
-if (args.length === 0) {
-    console.error("Error: You must provide an environment variable to fetch");
-    process.exit(1);
-}
+// // get cli args
+// const args: string[] = process.argv.slice(2); // skip "node" and script name
+// if (args.length === 0) {
+//     console.error("Error: You must provide an environment variable to fetch");
+//     process.exit(1);
+// }
 
-dotenv.config();
+// dotenv.config();
 
-const envVariableName: string = args[0];
-const env: TProcessEnv = process.env;
+// const envVariableName: string = args[0];
+// const env: TProcessEnv = process.env;
 
-const envValue: string | undefined = env[envVariableName];
+// const envValue: string | undefined = env[envVariableName];
 
-if (envValue === undefined) {
-    console.error(
-        `Error: Environment variable "${envVariableName}" does not exist.`,
-    );
-    process.exit(1);
-}
+// if (envValue === undefined) {
+//     console.error(
+//         `Error: Environment variable "${envVariableName}" does not exist.`,
+//     );
+//     process.exit(1);
+// }
 
-console.log(envValue);
+// console.log(envValue);

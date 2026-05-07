@@ -1,5 +1,5 @@
 import { baseEnv } from "./dotenv.base.ts";
-import type { TProcessEnv } from "./dotenv.d.ts";
+import type { TFirebaseWrapperEnv } from "./dotenv.d.ts";
 import { developmentEnv } from "./dotenv.development.ts";
 import { productionEnv } from "./dotenv.production.ts";
 
@@ -7,8 +7,8 @@ export type TMutable<T> = {
     -readonly [K in keyof T]: T[K];
 };
 
-export function getEnv(): TProcessEnv {
-    let overrideEnv: Partial<TProcessEnv> = {};
+export function getFirebaseWrapperEnv(): TFirebaseWrapperEnv {
+    let overrideEnv: Partial<TFirebaseWrapperEnv> = {};
     switch (import.meta.env.MODE) {
         case "development":
             const modules = import.meta.glob("./dotenv.development.secret.ts", {
@@ -16,7 +16,7 @@ export function getEnv(): TProcessEnv {
             });
             const developmentSecrets = modules[
                 "./dotenv.development.secret.ts"
-            ] as { developmentSecretEnv?: Partial<TProcessEnv> } | undefined;
+            ] as { developmentSecretEnv?: Partial<TFirebaseWrapperEnv> } | undefined;
             overrideEnv = {
                 ...developmentEnv,
                 ...(developmentSecrets?.developmentSecretEnv ?? {}),

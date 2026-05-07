@@ -4,12 +4,12 @@ import { authProviders } from "../firebase-wrapper.ts";
 export type TGUIAuthProviderNames =
     (typeof authProviderToGUINameMap)[TAuthProvider];
 
-export const authProviderToGUINameMap = {
-    [authProviders.Email]: "email",
-    [authProviders.Facebook]: "facebook",
-    [authProviders.Github]: "github",
-    [authProviders.Google]: "google",
-} as const;
+export const authProviderToGUINameMap: Record<TAuthProvider, string> = {
+    [authProviders.Email]: "Email",
+    [authProviders.Facebook]: "Facebook",
+    [authProviders.Github]: "Github",
+    [authProviders.Google]: "Google",
+};
 
 export function mapAuthProvider2NavTabElement(
     authProvider: TAuthProvider,

@@ -8,7 +8,12 @@ import { FacebookSVGStateBoxCSSClass } from "./svg-flowchart-auto-types-facebook
 import { SVGFlowChartServiceFacebook } from "./svg-flowchart-service-facebook.ts";
 import { SVGCSSClassCategory } from "./svg-flowchart-service.ts";
 
-export class StateToSVGMapperServiceFacebook {
+export type TStateToSVGMapperServiceFacebook = {
+    enqueue(state: TFacebookFSMStateID): void;
+    updateSvg(): void;
+}
+
+export class StateToSVGMapperServiceFacebook implements TStateToSVGMapperServiceFacebook {
     private svgService: SVGFlowChartServiceFacebook;
     private queue: TFacebookStateBoxKey[] = [];
 

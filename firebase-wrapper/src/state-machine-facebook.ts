@@ -17,7 +17,7 @@ import type {
 } from "./firebase-wrapper.ts";
 import { authProviders, FirebaseAuthService } from "./firebase-wrapper.ts";
 import type { TLogItem } from "./gui-logger.ts";
-import { StateToSVGMapperServiceFacebook } from "./state-to-svg-mapper-service-facebook.ts";
+import type { TStateToSVGMapperServiceFacebook } from "./state-to-svg-mapper-service-facebook.ts";
 import { wait } from "./utils.ts";
 import {
     facebookProfilePicRegex,
@@ -34,7 +34,7 @@ export type TFacebookStateDTO = Partial<
 type TFacebookSignInStateConstructorProps = {
     firebaseAuthService: FirebaseAuthService;
     context: FacebookSignInFSMContext;
-    stateToSVGMapperService?: StateToSVGMapperServiceFacebook;
+    stateToSVGMapperService?: TStateToSVGMapperServiceFacebook;
     logger?: (logItem: TLogItem) => void;
 };
 
@@ -62,7 +62,7 @@ const token: unique symbol = Symbol("token");
 export class FacebookSignInFSMContext {
     private _window: Window & typeof globalThis;
     private firebaseAuthService: FirebaseAuthService;
-    private stateToSVGMapperService?: StateToSVGMapperServiceFacebook;
+    private stateToSVGMapperService?: TStateToSVGMapperServiceFacebook;
     private currentState?: FacebookSignInState; // todo - prevent setting except via transitionTo()
     private logger?: (logItemInput: TLogItem) => void;
     private localStorageFacebookStateKey = "facebookState";
@@ -82,22 +82,22 @@ export class FacebookSignInFSMContext {
     };
 
     // callbacks
-    public callbackSetTab?: (authProvider: TAuthProvider) => void;
+    public callbackSetProviderFocus?: (authProvider: TAuthProvider) => void;
     public callbackEnableLoginButton?: (enabled: boolean) => void;
 
     constructor(props: {
         window: Window & typeof globalThis;
         firebaseAuthService: FirebaseAuthService;
-        stateToSVGMapperService?: StateToSVGMapperServiceFacebook;
+        stateToSVGMapperService?: TStateToSVGMapperServiceFacebook;
         logger?: (logItemInput: TLogItem) => void;
-        callbackSetTab?: (authProvider: TAuthProvider) => void;
+        callbackSetProviderFocus?: (authProvider: TAuthProvider) => void;
         callbackEnableLoginButton?: (enabled: boolean) => void;
     }) {
         this._window = props.window;
         this.firebaseAuthService = props.firebaseAuthService;
         this.stateToSVGMapperService = props.stateToSVGMapperService;
         this.logger = props.logger;
-        this.callbackSetTab = props.callbackSetTab;
+        this.callbackSetProviderFocus = props.callbackSetProviderFocus;
         this.callbackEnableLoginButton = props.callbackEnableLoginButton;
 
         this.firebaseAuthService.subscribeStateChanged(this.handle.bind(this));
@@ -161,7 +161,7 @@ export class FacebookSignInFSMContext {
     private async setState<TState extends FacebookSignInState>(
         newStateClass: TFacebookSignInStateConstructor<TState>,
     ): Promise<FacebookSignInState> {
-        this.callbackSetTab?.(authProviders.Facebook);
+        this.callbackSetProviderFocus?.(authProviders.Facebook);
         this.currentState = new newStateClass({
             firebaseAuthService: this.firebaseAuthService,
             context: this,
@@ -204,7 +204,7 @@ abstract class FacebookSignInState {
     public abstract readonly ID: TFacebookFSMStateID;
     protected firebaseAuthService: FirebaseAuthService;
     protected context: FacebookSignInFSMContext;
-    protected stateToSVGMapperService?: StateToSVGMapperServiceFacebook;
+    protected stateToSVGMapperService?: TStateToSVGMapperServiceFacebook;
 
     constructor(props: TFacebookSignInStateConstructorProps) {
         this.firebaseAuthService = props.firebaseAuthService;

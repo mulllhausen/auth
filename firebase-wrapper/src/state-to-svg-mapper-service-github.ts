@@ -8,7 +8,12 @@ import {
 import { SVGFlowChartServiceGithub } from "./svg-flowchart-service-github.ts";
 import { SVGCSSClassCategory } from "./svg-flowchart-service.ts";
 
-export class StateToSVGMapperServiceGithub {
+export type TStateToSVGMapperServiceGithub = {
+    enqueue(state: TGithubFSMStateID): void;
+    updateSvg(): void;
+}
+
+export class StateToSVGMapperServiceGithub implements TStateToSVGMapperServiceGithub {
     private svgService: SVGFlowChartServiceGithub;
     private queue: TGithubStateBoxKey[] = [];
 

@@ -17,7 +17,7 @@ import type {
 import { authProviders, FirebaseAuthService } from "./firebase-wrapper.ts";
 import type { TLogItem } from "./gui-logger.ts";
 import type { TGUIStateDTO } from "./index.ts";
-import { StateToSVGMapperServiceGithub } from "./state-to-svg-mapper-service-github.ts";
+import type { TStateToSVGMapperServiceGithub } from "./state-to-svg-mapper-service-github.ts";
 import { wait } from "./utils.ts";
 import {
     githubProfilePicRegex,
@@ -32,7 +32,7 @@ export type TGithubStateDTO = Partial<TGUIStateDTO & TFirebaseWrapperStateDTO>;
 type TGithubSignInStateConstructorProps = {
     firebaseAuthService: FirebaseAuthService;
     context: GithubSignInFSMContext;
-    stateToSVGMapperService?: StateToSVGMapperServiceGithub;
+    stateToSVGMapperService?: TStateToSVGMapperServiceGithub;
     logger?: (logItem: TLogItem) => void;
 };
 
@@ -58,7 +58,7 @@ const token: unique symbol = Symbol("token");
 export class GithubSignInFSMContext {
     private _window: Window & typeof globalThis;
     private firebaseAuthService: FirebaseAuthService;
-    private stateToSVGMapperService?: StateToSVGMapperServiceGithub;
+    private stateToSVGMapperService?: TStateToSVGMapperServiceGithub;
     private currentState?: GithubSignInState; // todo - prevent setting except via transitionTo()
     private logger?: (logItemInput: TLogItem) => void;
     private localStorageGithubStateKey = "githubState";
@@ -74,22 +74,22 @@ export class GithubSignInFSMContext {
         };
 
     // callbacks
-    public callbackSetTab?: (authProvider: TAuthProvider) => void;
+    public callbackSetProviderFocus?: (authProvider: TAuthProvider) => void;
     public callbackEnableLoginButton?: (enabled: boolean) => void;
 
     constructor(props: {
         window: Window & typeof globalThis;
         firebaseAuthService: FirebaseAuthService;
-        stateToSVGMapperService?: StateToSVGMapperServiceGithub;
+        stateToSVGMapperService?: TStateToSVGMapperServiceGithub;
         logger?: (logItemInput: TLogItem) => void;
-        callbackSetTab?: (authProvider: TAuthProvider) => void;
+        callbackSetProviderFocus?: (authProvider: TAuthProvider) => void;
         callbackEnableLoginButton?: (enabled: boolean) => void;
     }) {
         this._window = props.window;
         this.firebaseAuthService = props.firebaseAuthService;
         this.stateToSVGMapperService = props.stateToSVGMapperService;
         this.logger = props.logger;
-        this.callbackSetTab = props.callbackSetTab;
+        this.callbackSetProviderFocus = props.callbackSetProviderFocus;
         this.callbackEnableLoginButton = props.callbackEnableLoginButton;
 
         this.firebaseAuthService.subscribeStateChanged(this.handle.bind(this));
@@ -155,7 +155,7 @@ export class GithubSignInFSMContext {
     private async setState<TState extends GithubSignInState>(
         newStateClass: TGithubSignInStateConstructor<TState>,
     ): Promise<GithubSignInState> {
-        this.callbackSetTab?.(authProviders.Github);
+        this.callbackSetProviderFocus?.(authProviders.Github);
         this.currentState = new newStateClass({
             firebaseAuthService: this.firebaseAuthService,
             context: this,
@@ -198,7 +198,7 @@ abstract class GithubSignInState {
     public abstract readonly ID: TGithubFSMStateID;
     protected firebaseAuthService: FirebaseAuthService;
     protected context: GithubSignInFSMContext;
-    protected stateToSVGMapperService?: StateToSVGMapperServiceGithub;
+    protected stateToSVGMapperService?: TStateToSVGMapperServiceGithub;
 
     constructor(props: TGithubSignInStateConstructorProps) {
         this.firebaseAuthService = props.firebaseAuthService;
