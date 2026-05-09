@@ -25,20 +25,16 @@
         "type": 3
       },
       "seed": 957700417,
-      "version": 562,
-      "versionNonce": 1930593886,
+      "version": 563,
+      "versionNonce": 127013791,
       "isDeleted": false,
       "boundElements": [
         {
           "type": "text",
           "id": "8ePR3CUzg49yPptM1nCmX"
-        },
-        {
-          "id": "lHkg9a3mWgizt8HOBVioB",
-          "type": "arrow"
         }
       ],
-      "updated": 1773981696309,
+      "updated": 1778320903089,
       "link": null,
       "locked": false
     },
@@ -1199,8 +1195,8 @@
         "type": 3
       },
       "seed": 1039762434,
-      "version": 1273,
-      "versionNonce": 1267740383,
+      "version": 1274,
+      "versionNonce": 16890321,
       "isDeleted": false,
       "boundElements": [
         {
@@ -1216,15 +1212,11 @@
           "type": "arrow"
         },
         {
-          "id": "lHkg9a3mWgizt8HOBVioB",
-          "type": "arrow"
-        },
-        {
           "id": "cJP7dJQe6ISgSlEbRiC7P",
           "type": "arrow"
         }
       ],
-      "updated": 1778310878992,
+      "updated": 1778320903089,
       "link": null,
       "locked": false
     },
@@ -1469,12 +1461,7 @@
       "version": 467,
       "versionNonce": 785803999,
       "isDeleted": true,
-      "boundElements": [
-        {
-          "type": "text",
-          "id": "Aum2SZhoJsEqVVsqIVldj"
-        }
-      ],
+      "boundElements": [],
       "updated": 1778310839896,
       "link": null,
       "locked": false,
@@ -1572,16 +1559,16 @@
         "type": 2
       },
       "seed": 2072212766,
-      "version": 408,
-      "versionNonce": 914425118,
-      "isDeleted": false,
+      "version": 409,
+      "versionNonce": 662428543,
+      "isDeleted": true,
       "boundElements": [
         {
           "type": "text",
           "id": "bfFt5txXRpy6crZZ-lBch"
         }
       ],
-      "updated": 1773981701098,
+      "updated": 1778320903089,
       "link": null,
       "locked": false,
       "points": [
@@ -1639,11 +1626,11 @@
       "index": "b1K",
       "roundness": null,
       "seed": 1272127838,
-      "version": 9,
-      "versionNonce": 971901598,
-      "isDeleted": false,
+      "version": 10,
+      "versionNonce": 56680433,
+      "isDeleted": true,
       "boundElements": [],
-      "updated": 1773981696310,
+      "updated": 1778320903089,
       "link": null,
       "locked": false,
       "text": "logout\nbutton\nclicked",

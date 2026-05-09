@@ -9,7 +9,6 @@ export const GithubSVGArrowCSSClass = {
     Fail1: "fail-1",
     FirebaseReturnedAnError0: "firebase-returned-an-error-0",
     LogoutButtonClicked0: "logout-button-clicked-0",
-    LogoutButtonClicked1: "logout-button-clicked-1",
     LogoutSuccessful0: "logout-successful-0",
     OkResponse0: "ok-response-0",
     OkResponse1: "ok-response-1",

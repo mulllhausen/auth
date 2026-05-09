@@ -14,7 +14,7 @@ import { SVGCSSClassCategory } from "../src/svg-flowchart-service.ts";
 //    generate typescript types.
 // the gui can then interact with the svg.
 
-const serviceProvider: TAuthProvider = authProviders.Email;
+const serviceProvider: TAuthProvider = authProviders.Github;
 const { serviceProviderName, inputSVGFileName, outputSVGTypesFileName } =
     mapAuthProvider(serviceProvider);
 

@@ -124,7 +124,7 @@ export class StateToSVGMapperServiceGithub
                 "GithubResponded0",
                 "SentLogoutRequest0",
             ):
-                return "LogoutButtonClicked1";
+                return "LogoutButtonClicked0";
 
             case this.generateTransition("SignedIn0", "SentLogoutRequest0"):
                 return "LogoutButtonClicked0";
