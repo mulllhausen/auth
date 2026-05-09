@@ -164,6 +164,10 @@ export class GoogleSignInFSMContext {
         return this.currentState;
     }
 
+    public get stateID(): TGoogleFSMStateID | undefined {
+        return this.currentState?.ID;
+    }
+
     public log(logMessage: string): void {
         this.logger?.({ logMessage });
     }

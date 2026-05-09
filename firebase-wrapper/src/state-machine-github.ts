@@ -164,6 +164,10 @@ export class GithubSignInFSMContext {
         return this.currentState;
     }
 
+    public get stateID(): TGithubFSMStateID | undefined {
+        return this.currentState?.ID;
+    }
+
     public log(logMessage: string): void {
         this.logger?.({ logMessage });
     }

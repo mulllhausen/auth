@@ -196,6 +196,10 @@ export class EmailSignInFSMContext {
         return this.currentState;
     }
 
+    public get stateID(): TEmailFSMStateID | undefined {
+        return this.currentState?.ID;
+    }
+
     public log(logMessage: string): void {
         this.logger?.({ logMessage });
     }

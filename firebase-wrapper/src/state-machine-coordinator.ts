@@ -1,8 +1,8 @@
 import { FirebaseAuthService } from "./firebase-wrapper.ts";
-import { EmailSignInFSMContext } from "./state-machine-email.ts";
-import { FacebookSignInFSMContext } from "./state-machine-facebook.ts";
-import { GithubSignInFSMContext } from "./state-machine-github.ts";
-import { GoogleSignInFSMContext } from "./state-machine-google.ts";
+import { EmailSignInFSMContext, TEmailFSMStateID } from "./state-machine-email.ts";
+import { FacebookSignInFSMContext, TFacebookFSMStateID } from "./state-machine-facebook.ts";
+import { GithubSignInFSMContext, TGithubFSMStateID } from "./state-machine-github.ts";
+import { GoogleSignInFSMContext, TGoogleFSMStateID } from "./state-machine-google.ts";
 
 // todo: put all these callbacks into a single type
 //   callbackSetProviderFocus: (authProvider: TAuthProvider) => void;
@@ -53,6 +53,20 @@ export class FSMCoordinator {
         await this.firebaseAuthService.setupFirebaseListeners();
     }
 
+    public get currentStateIDs(): {
+        facebookStateID: TFacebookFSMStateID | null;
+        githubStateID: TGithubFSMStateID | null;
+        googleStateID: TGoogleFSMStateID | null;
+        emailStateID: TEmailFSMStateID | null;
+    } {
+        return { 
+            facebookStateID: this.facebookSignInFSMContext.stateID ?? null,
+            githubStateID: this.githubSignInFSMContext.stateID ?? null,
+            googleStateID: this.googleSignInFSMContext.stateID ?? null,
+            emailStateID: this.emailSignInFSMContext.stateID ?? null,
+        };
+    }
+
     public async loginEmail(): Promise<void> {
         await this.emailSignInFSMContext.handle({ isEmailLoginClicked: true });
     }
@@ -76,7 +90,6 @@ export class FSMCoordinator {
     }
 
     public async logout(): Promise<void> {
-        debugger;
         await this.emailSignInFSMContext.handle({
             isLogoutClicked: true,
         });

@@ -174,6 +174,10 @@ export class FacebookSignInFSMContext {
         return this.currentState;
     }
 
+    public get stateID(): TFacebookFSMStateID | undefined {
+        return this.currentState?.ID;
+    }
+
     public log(logMessage: string): void {
         this.logger?.({ logMessage });
     }
