@@ -6,10 +6,10 @@ export type TGithubSVGCSSClassKeys = TGithubArrowKey | TGithubStateBoxKey;
 
 export const GithubSVGArrowCSSClass = {
     Fail0: "fail-0",
+    Fail1: "fail-1",
     FirebaseReturnedAnError0: "firebase-returned-an-error-0",
     LogoutButtonClicked0: "logout-button-clicked-0",
     LogoutButtonClicked1: "logout-button-clicked-1",
-    LogoutButtonClicked2: "logout-button-clicked-2",
     LogoutSuccessful0: "logout-successful-0",
     OkResponse0: "ok-response-0",
     OkResponse1: "ok-response-1",

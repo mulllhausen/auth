@@ -11,9 +11,11 @@ import { SVGCSSClassCategory } from "./svg-flowchart-service.ts";
 export type TStateToSVGMapperServiceFacebook = {
     enqueue(state: TFacebookFSMStateID): void;
     updateSvg(): void;
-}
+};
 
-export class StateToSVGMapperServiceFacebook implements TStateToSVGMapperServiceFacebook {
+export class StateToSVGMapperServiceFacebook
+    implements TStateToSVGMapperServiceFacebook
+{
     private svgService: SVGFlowChartServiceFacebook;
     private queue: TFacebookStateBoxKey[] = [];
 
@@ -134,28 +136,19 @@ export class StateToSVGMapperServiceFacebook implements TStateToSVGMapperService
             // logout
 
             case this.generateTransition(
-                "RedirectingToFacebook0",
+                "GotProfilePic0",
                 "SentLogoutRequest0",
             ):
                 return "LogoutButtonClicked0";
 
-            case this.generateTransition(
-                "CheckingRedirectResult0",
-                "SentLogoutRequest0",
-            ):
-                return "LogoutButtonClicked1";
-
-            case this.generateTransition("SignedIn0", "SentLogoutRequest0"):
-                return "LogoutButtonClicked2";
-
-            case this.generateTransition(
-                "GotProfilePic0",
-                "SentLogoutRequest0",
-            ):
-                return "LogoutButtonClicked3";
-
             case this.generateTransition("SentLogoutRequest0", "Idle0"):
                 return "LogoutSuccessful0";
+
+            case this.generateTransition(
+                "SentLogoutRequest0",
+                "GotProfilePic0",
+            ):
+                return "Fail1";
 
             default:
                 return null;

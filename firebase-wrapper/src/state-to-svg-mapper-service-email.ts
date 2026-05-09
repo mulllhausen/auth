@@ -8,13 +8,14 @@ import {
 import { SVGFlowChartServiceEmail } from "./svg-flowchart-service-email.ts";
 import { SVGCSSClassCategory } from "./svg-flowchart-service.ts";
 
-
 export type TStateToSVGMapperServiceEmail = {
     enqueue(state: TEmailFSMStateID): void;
     updateSvg(): void;
-}
+};
 
-export class StateToSVGMapperServiceEmail implements TStateToSVGMapperServiceEmail {
+export class StateToSVGMapperServiceEmail
+    implements TStateToSVGMapperServiceEmail
+{
     private svgService: SVGFlowChartServiceEmail;
     private queue: TEmailStateBoxKey[] = [];
 
@@ -178,35 +179,14 @@ export class StateToSVGMapperServiceEmail implements TStateToSVGMapperServiceEma
 
             // logout
 
-            case this.generateTransition(
-                "SignInLinkOpenedOnDifferentBrowser0",
-                "SentLogoutRequest0",
-            ):
-                return "LogoutButtonClicked4";
-
-            case this.generateTransition(
-                "SignInLinkOpenedOnSameBrowser0",
-                "SentLogoutRequest0",
-            ):
-                return "LogoutButtonClicked1";
-
-            case this.generateTransition(
-                "WaitingForEmailAddressInGui0",
-                "SentLogoutRequest0",
-            ):
-                return "LogoutButtonClicked3";
-
             case this.generateTransition("SignedIn0", "SentLogoutRequest0"):
-                return "LogoutButtonClicked2";
-
-            case this.generateTransition(
-                "AuthorisingViaFirebase0",
-                "SentLogoutRequest0",
-            ):
                 return "LogoutButtonClicked0";
 
             case this.generateTransition("SentLogoutRequest0", "Idle0"):
                 return "LogoutSuccessful0";
+
+            case this.generateTransition("SentLogoutRequest0", "SignedIn0"):
+                return "Fail1";
 
             default:
                 return null;

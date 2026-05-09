@@ -114,7 +114,6 @@ export class GithubSignInFSMContext {
 
     /** should always be called by an action external to this FSM */
     public async handle(githubStateDTO: TGithubStateDTO): Promise<void> {
-        debugger;
         await this.currentState?.handle(githubStateDTO);
     }
 
@@ -122,7 +121,6 @@ export class GithubSignInFSMContext {
         fsmToken: typeof token, // prevent external access
         newStateClass: TGithubSignInStateConstructor<TState>,
     ): Promise<GithubSignInState> {
-        debugger;
         if (fsmToken !== token) {
             throw new Error(`incorrect transition token`);
         }

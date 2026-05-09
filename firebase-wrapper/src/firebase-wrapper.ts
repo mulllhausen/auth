@@ -209,7 +209,6 @@ export class FirebaseAuthService {
 
     private set User(user: TUserWithAccessToken | null) {
         if (objIsNullOrEmpty(user)) {
-            debugger;
             //this.deleteUser();
             dbDeleteUser();
             return;
@@ -441,7 +440,6 @@ export class FirebaseAuthService {
 
     private async authStateChanged(user: User | null): Promise<void> {
         if (!user) {
-            debugger;
             this.log(`firebase auth event: user is not signed in`);
             dbLogoutUser(this.User?.uid);
             //this.setSignedInStatus("all", false);
