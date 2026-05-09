@@ -11,9 +11,11 @@ import { SVGCSSClassCategory } from "./svg-flowchart-service.ts";
 export type TStateToSVGMapperServiceGithub = {
     enqueue(state: TGithubFSMStateID): void;
     updateSvg(): void;
-}
+};
 
-export class StateToSVGMapperServiceGithub implements TStateToSVGMapperServiceGithub {
+export class StateToSVGMapperServiceGithub
+    implements TStateToSVGMapperServiceGithub
+{
     private svgService: SVGFlowChartServiceGithub;
     private queue: TGithubStateBoxKey[] = [];
 
@@ -116,8 +118,22 @@ export class StateToSVGMapperServiceGithub implements TStateToSVGMapperServiceGi
             case this.generateTransition("AuthFailed0", "Idle0"):
                 return "Reset1";
 
-            case this.generateTransition("SignedIn0", "Idle0"):
+            // logout
+
+            case this.generateTransition(
+                "GithubResponded0",
+                "SentLogoutRequest0",
+            ):
                 return "LogoutButtonClicked0";
+
+            case this.generateTransition("SignedIn0", "SentLogoutRequest0"):
+                return "LogoutButtonClicked0";
+
+            case this.generateTransition("SentLogoutRequest0", "Idle0"):
+                return "LogoutSuccessful0";
+
+            case this.generateTransition("SentLogoutRequest0", "SignedIn0"):
+                return "Fail1";
 
             default:
                 return null;
@@ -142,5 +158,6 @@ export class StateToSVGMapperServiceGithub implements TStateToSVGMapperServiceGi
         GithubIsUnavailable: "GithubIsUnavailable0",
         GithubAuthFailed: "AuthFailed0",
         SignedIn: "SignedIn0",
+        SentLogoutRequest: "SentLogoutRequest0",
     };
 }

@@ -45,13 +45,17 @@
 // - you can’t describe the system at a moment in time
 // - Introducing a new state resolves the non-determinism.
 
+// to login the user clicks a provider button
+// if the user clicks more providers then they are associated with the already-logged-in user
+// we need a way of finding the user's ID given any provider
+
 import type { TAuthProvider } from "./firebase-wrapper.ts";
 import { authProviders, FirebaseAuthService } from "./firebase-wrapper.ts";
 import { GUILogger } from "./gui-logger.ts";
 import { HTMLTemplateManager } from "./html-template-manager.ts";
 import "./index.css";
 import {
-    authProviderToGUINameMap,
+    authProviderToGUICodeMap,
     mapAuthProvider2NavTabElement,
 } from "./mappers/gui.ts";
 import { FSMCoordinator } from "./state-machine-coordinator.ts";
@@ -187,6 +191,7 @@ const fsmCoordinator = new FSMCoordinator({
     facebookSignInFSMContext,
     githubSignInFSMContext,
     googleSignInFSMContext,
+    logger: guiLogger.log.bind(guiLogger),
 });
 await fsmCoordinator.setup();
 
@@ -220,28 +225,28 @@ onReady(() => {
     document
         .querySelector<HTMLInputElement>(
             `button.login[data-service-provider` +
-                `="${authProviderToGUINameMap[authProviders.Email]}"]`,
+                `="${authProviderToGUICodeMap[authProviders.Email]}"]`,
         )
         ?.addEventListener("click", onLoginClickEmail);
 
     document
         .querySelector<HTMLInputElement>(
             `button.login[data-service-provider` +
-                `="${authProviderToGUINameMap[authProviders.Facebook]}"]`,
+                `="${authProviderToGUICodeMap[authProviders.Facebook]}"]`,
         )
         ?.addEventListener("click", onLoginClickFacebook);
 
     document
         .querySelector<HTMLInputElement>(
             `button.login[data-service-provider` +
-                `="${authProviderToGUINameMap[authProviders.Github]}"]`,
+                `="${authProviderToGUICodeMap[authProviders.Github]}"]`,
         )
         ?.addEventListener("click", onLoginClickGithub);
 
     document
         .querySelector<HTMLInputElement>(
             `button.login[data-service-provider` +
-                `="${authProviderToGUINameMap[authProviders.Google]}"]`,
+                `="${authProviderToGUICodeMap[authProviders.Google]}"]`,
         )
         ?.addEventListener("click", onLoginClickGoogle);
 
@@ -368,28 +373,28 @@ function callbackSetTab(authProvider: TAuthProvider): void {
 }
 
 function callbackEnableLoginButtonEmail(enabled: boolean): void {
-    const guiName = authProviderToGUINameMap[authProviders.Email];
+    const guiName = authProviderToGUICodeMap[authProviders.Email];
     document.querySelector<HTMLInputElement>(
         `button.login[data-service-provider="${guiName}"]`,
     )!.disabled = !enabled;
 }
 
 function callbackEnableLoginButtonFacebook(enabled: boolean): void {
-    const guiName = authProviderToGUINameMap[authProviders.Facebook];
+    const guiName = authProviderToGUICodeMap[authProviders.Facebook];
     document.querySelector<HTMLInputElement>(
         `button.login[data-service-provider="${guiName}"]`,
     )!.disabled = !enabled;
 }
 
 function callbackEnableLoginButtonGithub(enabled: boolean): void {
-    const guiName = authProviderToGUINameMap[authProviders.Github];
+    const guiName = authProviderToGUICodeMap[authProviders.Github];
     document.querySelector<HTMLInputElement>(
         `button.login[data-service-provider="${guiName}"]`,
     )!.disabled = !enabled;
 }
 
 function callbackEnableLoginButtonGoogle(enabled: boolean): void {
-    const guiName = authProviderToGUINameMap[authProviders.Google];
+    const guiName = authProviderToGUICodeMap[authProviders.Google];
     document.querySelector<HTMLInputElement>(
         `button.login[data-service-provider="${guiName}"]`,
     )!.disabled = !enabled;

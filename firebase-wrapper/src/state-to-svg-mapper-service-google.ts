@@ -11,9 +11,11 @@ import { SVGCSSClassCategory } from "./svg-flowchart-service.ts";
 export type TStateToSVGMapperServiceGoogle = {
     enqueue(state: TGoogleFSMStateID): void;
     updateSvg(): void;
-}
+};
 
-export class StateToSVGMapperServiceGoogle implements TStateToSVGMapperServiceGoogle {
+export class StateToSVGMapperServiceGoogle
+    implements TStateToSVGMapperServiceGoogle
+{
     private svgService: SVGFlowChartServiceGoogle;
     private queue: TGoogleStateBoxKey[] = [];
 
@@ -116,8 +118,16 @@ export class StateToSVGMapperServiceGoogle implements TStateToSVGMapperServiceGo
             case this.generateTransition("AuthFailed0", "Idle0"):
                 return "Reset1";
 
-            case this.generateTransition("SignedIn0", "Idle0"):
+            // logout
+
+            case this.generateTransition("SignedIn0", "SentLogoutRequest0"):
                 return "LogoutButtonClicked0";
+
+            case this.generateTransition("SentLogoutRequest0", "Idle0"):
+                return "LogoutSuccessful0";
+
+            case this.generateTransition("SentLogoutRequest0", "SignedIn0"):
+                return "Fail1";
 
             default:
                 return null;
@@ -142,5 +152,6 @@ export class StateToSVGMapperServiceGoogle implements TStateToSVGMapperServiceGo
         GoogleIsUnavailable: "GoogleIsUnavailable0",
         GoogleAuthFailed: "AuthFailed0",
         SignedIn: "SignedIn0",
+        SentLogoutRequest: "SentLogoutRequest0",
     };
 }

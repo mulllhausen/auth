@@ -25,8 +25,10 @@ import {
     signOut,
 } from "firebase/auth";
 import type { TDBUserDTO } from "./db-user.ts";
-import { dbDeleteUser, dbGetUser } from "./db-user.ts";
+import { dbDeleteUser, dbGetUser, dbLogoutUser } from "./db-user.ts";
+
 import type { TFirebaseWrapperEnv } from "./dotenv.d.ts";
+
 import type { TLogItem } from "./gui-logger.ts";
 import {
     mapFirebaseUser2DBUserDTO,
@@ -171,9 +173,12 @@ export class FirebaseAuthService {
             url: this._window.location.href,
             handleCodeInApp: true,
         };
-        this.setupSignedInStatus();
-        const app = getApps().length > 0 ? getApp() : initializeApp(firebaseOptions);
+
+        //this.setupSignedInStatus();
+        const app =
+            getApps().length > 0 ? getApp() : initializeApp(firebaseOptions);
         console.log(firebaseOptions);
+
         this.Auth = getAuth(app);
         this.log(`finished initializing firebase SDK`);
     }
@@ -233,15 +238,15 @@ export class FirebaseAuthService {
             return;
         }
         if (accessToken == null) return;
-        this.User![providerID]!.accessToken = accessToken;
-        this.User![providerID]!.tokenExpiry = tokenExpiry;
+        this.User!.providerData[providerID]!.accessToken = accessToken;
+        this.User!.providerData[providerID]!.tokenExpiry = tokenExpiry;
     }
 
-    private setupSignedInStatus(): void {
-        for (const providerID in this.User) {
-            this.signedInStatus[providerID as TAuthProvider] = true;
-        }
-    }
+    // private setupSignedInStatus(): void {
+    //     for (const providerID in this.User) {
+    //         this.signedInStatus[providerID as TAuthProvider] = true;
+    //     }
+    // }
 
     private log(logMessage: string): void {
         this.logger?.({ logMessage });
@@ -280,7 +285,7 @@ export class FirebaseAuthService {
         clearQueryParams(this._window, ["apiKey", "oobCode", "mode", "lang"]);
     }
 
-    private setSignedInStatus(providerID: TAuthProvider, status: boolean) {
+    public setSignedInStatus(providerID: TAuthProvider, status: boolean) {
         this.signedInStatus[providerID] = status;
     }
 
@@ -337,6 +342,7 @@ export class FirebaseAuthService {
     }
 
     public async checkIfRedirectResult(): Promise<void> {
+        debugger;
         try {
             const redirectResult: UserCredential | null =
                 await getRedirectResult(this.Auth);
@@ -410,7 +416,7 @@ export class FirebaseAuthService {
                     isIdempotent,
                     this.hiddenMessage,
                 ),
-                imageURL: this.User?.[providerID]?.photoURL,
+                imageURL: this.User?.providerData[providerID]?.photoURL,
             });
 
             await this.publishStateChanged?.({ foundAccessToken: providerID });
@@ -435,13 +441,12 @@ export class FirebaseAuthService {
 
     private async authStateChanged(user: User | null): Promise<void> {
         if (!user) {
-            debugger;
-            //    this.afterUserSignedIn(user);
-            //} else {
             this.log(`firebase auth event: user is not signed in`);
-            this.User = null;
+            dbLogoutUser(this.User?.uid);
+            //this.setSignedInStatus("all", false);
+            //this.User = null;
             //this.clearUserCache();
-            this.deleteFirebaseQuerystringParams();
+            //this.deleteFirebaseQuerystringParams();
             //this.deleteCachedEmail();
             await this.publishStateChanged?.({
                 userNotSignedIn: true,
@@ -544,7 +549,8 @@ export class FirebaseAuthService {
             switch (serviceProvider) {
                 case authProviders.Facebook:
                     const accessToken =
-                        this.User?.[authProviders.Facebook]?.accessToken;
+                        this.User?.providerData[authProviders.Facebook]
+                            ?.accessToken;
                     const getMeResponse = await fetch(
                         `https://graph.facebook.com/me?fields=picture.type(large)&` +
                             `access_token=${accessToken}`,
@@ -562,7 +568,8 @@ export class FirebaseAuthService {
                         imageURL,
                     });
 
-                    this.User![authProviders.Facebook]!.photoURL = imageURL;
+                    this.User!.providerData[authProviders.Facebook]!.photoURL =
+                        imageURL;
                     this.updateUser(this.User as TUserWithAccessToken);
                     await this.publishStateChanged?.({
                         gotProfilePic: serviceProvider,

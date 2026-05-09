@@ -16,7 +16,9 @@ export function getFirebaseWrapperEnv(): TFirebaseWrapperEnv {
             });
             const developmentSecrets = modules[
                 "./dotenv.development.secret.ts"
-            ] as { developmentSecretEnv?: Partial<TFirebaseWrapperEnv> } | undefined;
+            ] as
+                | { developmentSecretEnv?: Partial<TFirebaseWrapperEnv> }
+                | undefined;
             overrideEnv = {
                 ...developmentEnv,
                 ...(developmentSecrets?.developmentSecretEnv ?? {}),
@@ -87,12 +89,12 @@ export function clearQueryParams(
     }
 }
 
-export function capsFirstLetter(str: string): string {
-    return str[0].toUpperCase() + str.slice(1);
-}
-
 export function deepCopy<T>(obj: T): T {
     return JSON.parse(JSON.stringify(obj));
+}
+
+export function strIsNullOrEmpty(str: string | null | undefined): boolean {
+    return str == null || str === "";
 }
 
 export function objIsNullOrEmpty<T>(obj: T): boolean {

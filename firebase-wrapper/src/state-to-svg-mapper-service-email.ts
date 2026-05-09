@@ -8,13 +8,14 @@ import {
 import { SVGFlowChartServiceEmail } from "./svg-flowchart-service-email.ts";
 import { SVGCSSClassCategory } from "./svg-flowchart-service.ts";
 
-
 export type TStateToSVGMapperServiceEmail = {
     enqueue(state: TEmailFSMStateID): void;
     updateSvg(): void;
-}
+};
 
-export class StateToSVGMapperServiceEmail implements TStateToSVGMapperServiceEmail {
+export class StateToSVGMapperServiceEmail
+    implements TStateToSVGMapperServiceEmail
+{
     private svgService: SVGFlowChartServiceEmail;
     private queue: TEmailStateBoxKey[] = [];
 
@@ -176,6 +177,17 @@ export class StateToSVGMapperServiceEmail implements TStateToSVGMapperServiceEma
             case this.generateTransition("SignedIn0", "Idle0"):
                 return "ClearUserData0";
 
+            // logout
+
+            case this.generateTransition("SignedIn0", "SentLogoutRequest0"):
+                return "LogoutButtonClicked0";
+
+            case this.generateTransition("SentLogoutRequest0", "Idle0"):
+                return "LogoutSuccessful0";
+
+            case this.generateTransition("SentLogoutRequest0", "SignedIn0"):
+                return "Fail1";
+
             default:
                 return null;
         }
@@ -205,5 +217,6 @@ export class StateToSVGMapperServiceEmail implements TStateToSVGMapperServiceEma
         AuthorisingViaFirebase: "AuthorisingViaFirebase0",
         SignedIn: "SignedIn0",
         AuthFailed: "AuthFailed0",
+        SentLogoutRequest: "SentLogoutRequest0",
     };
 }

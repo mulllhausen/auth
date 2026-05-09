@@ -9,14 +9,14 @@
 // firebase wrapper and the firebase wrapper never calls it, except by invoking the callbacks it has
 // been given by this service.
 
-import { dbSaveUser } from "./db-user.ts";
+import type { TGUIStateDTO } from ".";
+import { dbLoginUser, dbSaveUser } from "./db-user.ts";
 import type {
     TAuthProvider,
     TFirebaseWrapperStateDTO,
 } from "./firebase-wrapper.ts";
 import { authProviders, FirebaseAuthService } from "./firebase-wrapper.ts";
 import type { TLogItem } from "./gui-logger.ts";
-import type { TGUIStateDTO } from "./index.ts";
 import type { TStateToSVGMapperServiceFacebook } from "./state-to-svg-mapper-service-facebook.ts";
 import { wait } from "./utils.ts";
 import {
@@ -342,8 +342,9 @@ class SignedInState extends FacebookSignInState {
     ): Promise<void> {
         if (facebookStateDTO?.gotProfilePic == authProviders.Facebook) {
             const fbProfilePicUrl =
-                this.firebaseAuthService.User?.[authProviders.Facebook]
-                    ?.photoURL;
+                this.firebaseAuthService.User?.providerData[
+                    authProviders.Facebook
+                ]?.photoURL;
             if (
                 validateProfilePicUrl(authProviders.Facebook, fbProfilePicUrl)
             ) {
@@ -393,6 +394,7 @@ class GotProfilePicState extends FacebookSignInState {
 
     public override async onEnter(): Promise<void> {
         dbSaveUser(this.firebaseAuthService.User);
+        dbLoginUser(this.firebaseAuthService.User?.uid);
     }
 }
 
@@ -416,11 +418,17 @@ class SentLogoutRequestState extends FacebookSignInState {
     public override async handle(
         facebookStateDTO: TFacebookStateDTO,
     ): Promise<void> {
-        if (facebookStateDTO.userNotSignedIn) {
+        if (facebookStateDTO?.userNotSignedIn) {
+            this.firebaseAuthService.setSignedInStatus(
+                authProviders.Facebook,
+                false,
+            );
             await this.context.transitionTo(token, IdleState);
             return;
         }
     }
 
-    public override async onEnter(): Promise<void> {}
+    public override async onEnter(): Promise<void> {
+        // note: firebaseAuthService.logout() is called a level up
+    }
 }

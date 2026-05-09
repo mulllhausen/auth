@@ -9,7 +9,7 @@
 // firebase wrapper and the firebase wrapper never calls it, except by invoking the callbacks it has
 // been given by this service.
 
-import { dbSaveUser } from "./db-user.ts";
+import { dbLoginUser, dbSaveUser } from "./db-user.ts";
 import type {
     TAuthProvider,
     TFirebaseWrapperStateDTO,
@@ -47,6 +47,7 @@ const googleFSMStateIDs = [
     "GoogleIsUnavailable",
     "GoogleAuthFailed",
     "SignedIn",
+    "SentLogoutRequest",
 ] as const;
 export type TGoogleFSMStateID = (typeof googleFSMStateIDs)[number];
 
@@ -69,6 +70,7 @@ export class GoogleSignInFSMContext {
             GoogleIsUnavailable: GoogleIsUnavailableState,
             GoogleAuthFailed: GoogleAuthFailedState,
             SignedIn: SignedInState,
+            SentLogoutRequest: SentLogoutRequestState,
         };
 
     // callbacks
@@ -238,9 +240,8 @@ class RedirectingToGoogleState extends GoogleSignInState {
     public override async handle(
         googleStateDTO: TGoogleStateDTO,
     ): Promise<void> {
-        if (googleStateDTO?.userNotSignedIn) {
-            this.context.log("google fsm: detected user is signed out");
-            await this.context.transitionTo(token, IdleState);
+        if (googleStateDTO?.isLogoutClicked) {
+            await this.context.transitionTo(token, SentLogoutRequestState);
             return;
         }
 
@@ -270,9 +271,8 @@ class GoogleRespondedState extends GoogleSignInState {
     public override async handle(
         googleStateDTO: TGoogleStateDTO,
     ): Promise<void> {
-        if (googleStateDTO?.userNotSignedIn) {
-            this.context.log("google fsm: detected user is signed out");
-            await this.context.transitionTo(token, GoogleAuthFailedState);
+        if (googleStateDTO?.isLogoutClicked) {
+            await this.context.transitionTo(token, SentLogoutRequestState);
             return;
         }
 
@@ -285,7 +285,9 @@ class GoogleRespondedState extends GoogleSignInState {
             this.context.log("google fsm: detected user is signed in");
 
             const googleProfilePicUrl =
-                this.firebaseAuthService.User?.[authProviders.Google]?.photoURL;
+                this.firebaseAuthService.User?.providerData[
+                    authProviders.Google
+                ]?.photoURL;
             if (
                 !validateProfilePicUrl(
                     authProviders.Google,
@@ -339,14 +341,36 @@ class SignedInState extends GoogleSignInState {
     public override async handle(
         googleStateDTO: TGoogleStateDTO,
     ): Promise<void> {
-        if (googleStateDTO?.userNotSignedIn) {
-            this.context.log("google fsm: detected user is signed out");
-            await this.context.transitionTo(token, IdleState);
+        if (googleStateDTO?.isLogoutClicked) {
+            await this.context.transitionTo(token, SentLogoutRequestState);
             return;
         }
     }
 
     public override async onEnter(): Promise<void> {
         dbSaveUser(this.firebaseAuthService.User);
+        dbLoginUser(this.firebaseAuthService.User?.uid);
+        this.context.callbackEnableLoginButton?.(false);
+    }
+}
+
+class SentLogoutRequestState extends GoogleSignInState {
+    public override readonly ID = "SentLogoutRequest";
+
+    public override async handle(
+        googleStateDTO: TGoogleStateDTO,
+    ): Promise<void> {
+        if (googleStateDTO?.userNotSignedIn) {
+            this.firebaseAuthService.setSignedInStatus(
+                authProviders.Google,
+                false,
+            );
+            await this.context.transitionTo(token, IdleState);
+            return;
+        }
+    }
+
+    public override async onEnter(): Promise<void> {
+        // note: firebaseAuthService.logout() is called a level up
     }
 }

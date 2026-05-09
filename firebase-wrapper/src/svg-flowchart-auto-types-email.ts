@@ -8,7 +8,10 @@ export const EmailSVGArrowCSSClass = {
     AutomaticallySubmitToFirebase0: "automatically-submit-to-firebase-0",
     ClearUserData0: "clear-user-data-0",
     Fail0: "fail-0",
+    Fail1: "fail-1",
     FirebaseReturnedAnError0: "firebase-returned-an-error-0",
+    LogoutButtonClicked0: "logout-button-clicked-0",
+    LogoutSuccessful0: "logout-successful-0",
     OkResponse0: "ok-response-0",
     OkResponse1: "ok-response-1",
     RequestEmailAddressFromUserAgain0:
@@ -29,6 +32,7 @@ export const EmailSVGStateBoxCSSClass = {
     BadEmailAddress0: "bad-email-address-0",
     Idle0: "idle-0",
     SendingEmailAddressToFirebase0: "sending-email-address-to-firebase-0",
+    SentLogoutRequest0: "sent-logout-request-0",
     SignedIn0: "signed-in-0",
     SignInLinkOpenedOnDifferentBrowser0:
         "sign-in-link-opened-on-different-browser-0",

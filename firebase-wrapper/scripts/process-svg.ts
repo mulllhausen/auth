@@ -6,7 +6,6 @@ import { authProviders } from "../src/firebase-wrapper.ts";
 import { authProviderToGUINameMap } from "../src/mappers/gui.ts";
 import type { TSVGCSSClassCategoryValues } from "../src/svg-flowchart-service.ts";
 import { SVGCSSClassCategory } from "../src/svg-flowchart-service.ts";
-import { capsFirstLetter } from "../src/utils.ts";
 
 // instructions:
 // 1. create the finite state machine flowchart in excalidraw.
@@ -15,7 +14,7 @@ import { capsFirstLetter } from "../src/utils.ts";
 //    generate typescript types.
 // the gui can then interact with the svg.
 
-const serviceProvider: TAuthProvider = authProviders.Google;
+const serviceProvider: TAuthProvider = authProviders.Github;
 const { serviceProviderName, inputSVGFileName, outputSVGTypesFileName } =
     mapAuthProvider(serviceProvider);
 
@@ -43,9 +42,7 @@ function mapAuthProvider(serviceProvider: TAuthProvider): {
     inputSVGFileName: string;
     outputSVGTypesFileName: string;
 } {
-    const serviceProviderName = capsFirstLetter(
-        authProviderToGUINameMap[serviceProvider],
-    );
+    const serviceProviderName = authProviderToGUINameMap[serviceProvider];
     return {
         serviceProviderName,
         inputSVGFileName: `fsm-${serviceProviderName}-flowchart`,
