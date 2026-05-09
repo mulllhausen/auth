@@ -24,27 +24,33 @@ import type {
 } from "../firebase-wrapper.ts";
 
 export function mapFirebaseUser2DBUserDTO(
-    user: TUserWithAccessToken,
+    inputUser: TUserWithAccessToken,
 ): TDBUserDTO {
-    if (user?.providerData == null) {
+    if (inputUser?.providerData == null) {
         return null;
     }
-    const dbUserDTO: TDBUserDTO = {};
-    for (const userInfo of user.providerData) {
+    if (inputUser?.uid == null) {
+        return null;
+    }
+    const outputDBUserDTO: TDBUserDTO = {
+        providerData: {},
+        uid: inputUser.uid,
+    };
+    for (const userInfo of inputUser.providerData) {
         const providerID = userInfo.providerId as TAuthProvider;
-        dbUserDTO[providerID] = mapUserInfo2DBSafeUserInfo(
+        outputDBUserDTO.providerData[providerID] = mapUserInfo2DBSafeUserInfo(
             userInfo,
         ) as TDBUserInfo;
     }
-    return dbUserDTO;
+    return outputDBUserDTO;
 }
 
 export function mapDBUserDTO2SafeUserDTO(userDTO: TDBUserDTO): TDBSafeUserDTO {
-    if (!userDTO) return null;
+    if (!userDTO || !userDTO.providerData) return null;
 
     const safeUserDTO: TDBSafeUserDTO = {};
-    for (const provider in userDTO) {
-        const userInfo = userDTO[provider as TAuthProvider];
+    for (const provider in userDTO.providerData) {
+        const userInfo = userDTO.providerData[provider as TAuthProvider];
         if (!userInfo) continue;
         safeUserDTO[provider as TAuthProvider] =
             mapUserInfo2DBSafeUserInfo(userInfo);
@@ -70,8 +76,11 @@ export function mapMergeUserDTOs(
 ): TDBUserDTO {
     if (!originalUserDTO && !newUserDTO) return null;
     return {
-        ...(originalUserDTO ?? {}),
-        ...(newUserDTO ?? {}),
+        uid: newUserDTO?.uid ?? originalUserDTO?.uid ?? "",
+        providerData: {
+            ...(originalUserDTO?.providerData ?? {}),
+            ...(newUserDTO?.providerData ?? {}),
+        },
     };
 }
 

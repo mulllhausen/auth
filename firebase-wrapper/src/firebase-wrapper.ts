@@ -342,6 +342,7 @@ export class FirebaseAuthService {
     }
 
     public async checkIfRedirectResult(): Promise<void> {
+        debugger;
         try {
             const redirectResult: UserCredential | null =
                 await getRedirectResult(this.Auth);
