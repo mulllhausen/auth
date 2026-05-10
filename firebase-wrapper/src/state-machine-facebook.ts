@@ -161,7 +161,6 @@ export class FacebookSignInFSMContext {
     private async setState<TState extends FacebookSignInState>(
         newStateClass: TFacebookSignInStateConstructor<TState>,
     ): Promise<FacebookSignInState> {
-        this.callbackSetProviderFocus?.(authProviders.Facebook);
         this.currentState = new newStateClass({
             firebaseAuthService: this.firebaseAuthService,
             context: this,
@@ -171,6 +170,7 @@ export class FacebookSignInFSMContext {
         const newStateID = this.currentState.ID;
         await this.stateToSVGMapperService?.enqueue(newStateID);
         this.backupStateToLocalstorage(newStateID);
+        this.callbackSetProviderFocus?.(authProviders.Facebook); // call after new state is set
         return this.currentState;
     }
 

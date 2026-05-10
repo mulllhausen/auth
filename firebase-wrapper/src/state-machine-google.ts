@@ -114,6 +114,7 @@ export class GoogleSignInFSMContext {
 
     /** should always be called by an action external to this FSM */
     public async handle(googleStateDTO: TGoogleStateDTO): Promise<void> {
+        debugger;
         await this.currentState?.handle(googleStateDTO);
     }
 
@@ -124,6 +125,7 @@ export class GoogleSignInFSMContext {
         if (fsmToken !== token) {
             throw new Error(`incorrect transition token`);
         }
+        debugger;
         const oldStateID = this.currentState
             ? this.currentState.ID
             : (this.getStateFromLocalstorage() ?? "null");
@@ -153,7 +155,6 @@ export class GoogleSignInFSMContext {
     private async setState<TState extends GoogleSignInState>(
         newStateClass: TGoogleSignInStateConstructor<TState>,
     ): Promise<GoogleSignInState> {
-        this.callbackSetProviderFocus?.(authProviders.Google);
         this.currentState = new newStateClass({
             firebaseAuthService: this.firebaseAuthService,
             context: this,
@@ -163,6 +164,7 @@ export class GoogleSignInFSMContext {
         const newStateID = this.currentState.ID;
         await this.stateToSVGMapperService?.enqueue(newStateID);
         this.backupStateToLocalstorage(newStateID);
+        this.callbackSetProviderFocus?.(authProviders.Google); // call after new state is set
         return this.currentState;
     }
 

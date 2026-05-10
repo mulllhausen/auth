@@ -185,7 +185,6 @@ export class EmailSignInFSMContext {
     private async setState<TState extends EmailSignInState>(
         newStateClass: TEmailSignInStateConstructor<TState>,
     ): Promise<EmailSignInState> {
-        this.callbackSetProviderFocus?.(authProviders.Email);
         this.currentState = new newStateClass({
             firebaseAuthService: this.firebaseAuthService,
             context: this,
@@ -195,6 +194,7 @@ export class EmailSignInFSMContext {
         const newStateID = this.currentState.ID;
         await this.stateToSVGMapperService?.enqueue(newStateID);
         this.backupStateToLocalstorage(newStateID);
+        this.callbackSetProviderFocus?.(authProviders.Email); // call after new state is set
         return this.currentState;
     }
 

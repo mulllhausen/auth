@@ -153,7 +153,6 @@ export class GithubSignInFSMContext {
     private async setState<TState extends GithubSignInState>(
         newStateClass: TGithubSignInStateConstructor<TState>,
     ): Promise<GithubSignInState> {
-        this.callbackSetProviderFocus?.(authProviders.Github);
         this.currentState = new newStateClass({
             firebaseAuthService: this.firebaseAuthService,
             context: this,
@@ -163,6 +162,7 @@ export class GithubSignInFSMContext {
         const newStateID = this.currentState.ID;
         await this.stateToSVGMapperService?.enqueue(newStateID);
         this.backupStateToLocalstorage(newStateID);
+        this.callbackSetProviderFocus?.(authProviders.Github); // call after new state is set
         return this.currentState;
     }
 
